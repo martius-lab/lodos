@@ -1,0 +1,124 @@
+{
+ "scene": "house_of_cards_sdf",
+ "B": 2048,
+ "states": 347,
+ "baseline": {
+  "B": 128,
+  "settings": {
+   "collision": {},
+   "runtime": {
+    "nconmax": 4096,
+    "njmax": 16384
+   },
+   "sim": {},
+   "solver_kwargs": {}
+  },
+  "error_at_B": null,
+  "throughput": {
+   "world_steps_per_s": 7183.100185054261,
+   "ms_per_step": 17.819603890020517,
+   "B": 128,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.005788392414315329,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 11175.57255077362
+  },
+  "artifacts": {
+   "nan": 0,
+   "escaped": 0,
+   "deep_mean": 0.0085768819482837,
+   "deep_p99": 0.019994397573173048,
+   "creep": 0.0453596061740745,
+   "rest_speed": 0.11867771895049373,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "guard_B": 128
+ },
+ "capacities": {
+  "throughput": {
+   "world_steps_per_s": 17084.744869515536,
+   "ms_per_step": 119.87302214001829,
+   "B": 2048,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.0012549143869464245,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 6398.557131767273
+  },
+  "rounds": 1
+ },
+ "noise": {
+  "deep_mean": 8.850947006067145e-05,
+  "deep_p99": 1.4990009367457646e-06,
+  "creep": 0.005394549772141287,
+  "rest_speed": 0.027851196929987054
+ },
+ "compacted": {
+  "world_steps_per_s": 17526.357534163482,
+  "ms_per_step": 116.85257452998485,
+  "B": 2048,
+  "steps": 100,
+  "reps": 3,
+  "spread": 0.0046114549220081825,
+  "overflowed": false,
+  "overflow": [],
+  "mempool_mb": 5676.536581993103
+ },
+ "budgets": [
+  {
+   "candidate": {
+    "contact_reduction": true
+   },
+   "throughput": 17046.44320113167,
+   "artifacts": {
+    "nan": 0,
+    "escaped": 0,
+    "deep_mean": 0.008532415287754702,
+    "deep_p99": 0.019996702708303928,
+    "creep": 0.06317689955986215,
+    "rest_speed": 0.0868030888341309,
+    "rest_nan": 0,
+    "overflow": []
+   },
+   "ok": true,
+   "why": ""
+  }
+ ],
+ "batch": [
+  {
+   "B": 2048,
+   "world_steps_per_s": 17084.744869515536
+  },
+  {
+   "B": 4096,
+   "world_steps_per_s": null,
+   "error": "RuntimeError: Failed to allocate 1795424256 bytes on device 'cuda:0'"
+  }
+ ],
+ "tuned": {
+  "B": 2048,
+  "world_steps_per_s": 17084.744869515536,
+  "settings": {
+   "collision": {
+    "capacity_tile": 0.10051624253216912,
+    "capacity2": 0.02446912682716908
+   },
+   "runtime": {
+    "naconmax": 3343274,
+    "nconmax": 1633,
+    "njmax": 6975
+   },
+   "sim": {},
+   "solver_kwargs": {},
+   "B": 2048
+  },
+  "artifacts_ok": true,
+  "why": ""
+ },
+ "speedup": 2.378463954193962,
+ "seconds": 460.2758586406708
+}

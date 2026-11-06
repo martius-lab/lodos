@@ -1,0 +1,383 @@
+{
+ "format": "lodos-tuning/2",
+ "scene": "cube_walled_5_sdf",
+ "B": 2048,
+ "layout": "independent",
+ "fingerprint": {
+  "model": {
+   "nq": 35,
+   "nv": 30,
+   "nu": 0,
+   "na": 0,
+   "structure": "24515cf044c33b30"
+  },
+  "geometry": "509c52be9a1d2eac",
+  "timestep": 0.002,
+  "hulls": {
+   "hulls": 0
+  },
+  "surfaces": [
+   {
+    "kind": "surface",
+    "vertices": 386,
+    "faces": 768,
+    "grid_N": [
+     100,
+     100,
+     100
+    ],
+    "voxel_h": [
+     0.01600000075995922,
+     0.01600000075995922,
+     0.01600000075995922
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.8,
+     0.8,
+     0.8
+    ],
+    "sha": "f4f44326abc1a5c3",
+    "file": "viewer/assets/surfaces/cube_0.8/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 386,
+    "faces": 768,
+    "grid_N": [
+     100,
+     100,
+     100
+    ],
+    "voxel_h": [
+     0.01600000075995922,
+     0.01600000075995922,
+     0.01600000075995922
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.8,
+     0.8,
+     0.8
+    ],
+    "sha": "f4f44326abc1a5c3",
+    "file": "viewer/assets/surfaces/cube_0.8/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 386,
+    "faces": 768,
+    "grid_N": [
+     100,
+     100,
+     100
+    ],
+    "voxel_h": [
+     0.01600000075995922,
+     0.01600000075995922,
+     0.01600000075995922
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.8,
+     0.8,
+     0.8
+    ],
+    "sha": "f4f44326abc1a5c3",
+    "file": "viewer/assets/surfaces/cube_0.8/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 386,
+    "faces": 768,
+    "grid_N": [
+     100,
+     100,
+     100
+    ],
+    "voxel_h": [
+     0.01600000075995922,
+     0.01600000075995922,
+     0.01600000075995922
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.8,
+     0.8,
+     0.8
+    ],
+    "sha": "f4f44326abc1a5c3",
+    "file": "viewer/assets/surfaces/cube_0.8/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 386,
+    "faces": 768,
+    "grid_N": [
+     100,
+     100,
+     100
+    ],
+    "voxel_h": [
+     0.01600000075995922,
+     0.01600000075995922,
+     0.01600000075995922
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.8,
+     0.8,
+     0.8
+    ],
+    "sha": "f4f44326abc1a5c3",
+    "file": "viewer/assets/surfaces/cube_0.8/surface_data.npz"
+   },
+   {
+    "kind": "plane"
+   },
+   {
+    "kind": "plane"
+   },
+   {
+    "kind": "plane"
+   },
+   {
+    "kind": "plane"
+   },
+   {
+    "kind": "plane"
+   }
+  ],
+  "pairs": 45
+ },
+ "states": {
+  "path": "results/tuning/states/mj/cube_walled_5_sdf.states.npz",
+  "digest": "21ae252c5a2f7f13",
+  "size": 2199,
+  "source": {
+   "kind": "explore",
+   "scene": "cube_walled_5_sdf",
+   "strategy": [
+    "scatter"
+   ],
+   "starts": 64,
+   "horizon": 2000,
+   "stride": 50,
+   "seed": 0,
+   "jitter": 0.01,
+   "sigma": 0.5,
+   "max_depth": 0.01,
+   "dropped_nonfinite": 0,
+   "dropped_deep": 361
+  },
+  "horizon": 200,
+  "controls": {
+   "kind": "hold"
+  }
+ },
+ "safety": 1.5,
+ "created": "2026-11-01T09:37:07",
+ "commit": null,
+ "device": "NVIDIA GeForce RTX 4080",
+ "collision": {
+  "capacity_tile": 0.06760104432397959,
+  "capacity2": 0.2472209574286875
+ },
+ "runtime": {
+  "naconmax": 353861,
+  "nconmax": 173,
+  "njmax": 1823
+ },
+ "sim": {
+  "contact_reduction": true
+ },
+ "solver_kwargs": {
+  "mode": "mj"
+ },
+ "tiles": {
+  "groups": {
+   "f4f44326abc1a5c3|plane": 25,
+   "f4f44326abc1a5c3|f4f44326abc1a5c3": 20
+  },
+  "trials": [
+   {
+    "sizes": {
+     "f4f44326abc1a5c3|plane": 8,
+     "f4f44326abc1a5c3|f4f44326abc1a5c3": 8
+    },
+    "ms": 0.260998899830156
+   },
+   {
+    "sizes": {
+     "f4f44326abc1a5c3|plane": 4,
+     "f4f44326abc1a5c3|f4f44326abc1a5c3": 8
+    },
+    "ms": 0.3438865500356769,
+    "error": null
+   },
+   {
+    "sizes": {
+     "f4f44326abc1a5c3|plane": 16,
+     "f4f44326abc1a5c3|f4f44326abc1a5c3": 8
+    },
+    "ms": 0.27642525019473396,
+    "error": null
+   },
+   {
+    "sizes": {
+     "f4f44326abc1a5c3|plane": 32,
+     "f4f44326abc1a5c3|f4f44326abc1a5c3": 8
+    },
+    "ms": 0.2563821501098573,
+    "error": null
+   },
+   {
+    "sizes": {
+     "f4f44326abc1a5c3|plane": 8,
+     "f4f44326abc1a5c3|f4f44326abc1a5c3": 4
+    },
+    "ms": 0.34338164987275377,
+    "error": null
+   },
+   {
+    "sizes": {
+     "f4f44326abc1a5c3|plane": 8,
+     "f4f44326abc1a5c3|f4f44326abc1a5c3": 16
+    },
+    "ms": 0.2863912501197774,
+    "error": null
+   },
+   {
+    "sizes": {
+     "f4f44326abc1a5c3|plane": 8,
+     "f4f44326abc1a5c3|f4f44326abc1a5c3": 32
+    },
+    "ms": null,
+    "error": "RuntimeError: the timing context overflowed"
+   }
+  ],
+  "base_ms": 0.260998899830156,
+  "best_ms": 0.260998899830156,
+  "sizes": {
+   "f4f44326abc1a5c3|plane": 8,
+   "f4f44326abc1a5c3|f4f44326abc1a5c3": 8
+  }
+ },
+ "baseline": {
+  "B": 2048,
+  "settings": {
+   "collision": {},
+   "runtime": {
+    "nconmax": 4096,
+    "njmax": 12288
+   },
+   "sim": {},
+   "solver_kwargs": {}
+  },
+  "throughput": {
+   "world_steps_per_s": 112057.54756480035,
+   "ms_per_step": 18.276323590034735,
+   "B": 2048,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.0017373351818027883,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 9303.064012527466
+  },
+  "artifacts": {
+   "nan": 0,
+   "escaped": 0,
+   "deep_mean": 0.003138337916295342,
+   "deep_p99": 0.02870061596855521,
+   "creep": 0.006610831918189733,
+   "rest_speed": 0.011495304190283662,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "guard_B": 512
+ },
+ "peaks": {
+  "B": 2048,
+  "runtime": {
+   "nacon": 235907,
+   "ncollision": 0,
+   "naconmax": 468608,
+   "contacts_per_world": 405,
+   "overflow": false,
+   "nefc_per_world": 1215,
+   "njmax": 2430,
+   "efc_overflow": false
+  },
+  "lodos_col": {
+   "peak": {
+    "nCa1": 1628136,
+    "nCa2": 402510,
+    "nCa3": 235907,
+    "nTa": 203517,
+    "nTb": 0
+   },
+   "allocated": {
+    "nCa1": 3204096,
+    "nCa2": 782528,
+    "nCa3": 782528,
+    "nTa": 400512,
+    "nTb": 4515840
+   },
+   "overflow": {
+    "nCa1": false,
+    "nCa2": false,
+    "nCa3": false,
+    "nTa": false,
+    "nTb": false
+   },
+   "tile_slots": 4515840,
+   "slots_per_world": 17640,
+   "uniform_K": 1,
+   "tile_K": 8,
+   "compacts": 0,
+   "contacts_per_world": 405
+  },
+  "overflowed": false,
+  "layout": "independent",
+  "horizon": 200,
+  "batches": 2,
+  "states": 2199,
+  "controls": {
+   "kind": "hold"
+  }
+ },
+ "throughput": {
+  "world_steps_per_s": 340365.79477631603,
+  "B": 2048
+ },
+ "artifacts": {
+  "tuned": {
+   "nan": 0,
+   "escaped": 0,
+   "deep_mean": 0.003190169030528267,
+   "deep_p99": 0.029040840193629406,
+   "creep": 0.00832320245897505,
+   "rest_speed": 0.016051160233001127,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "baseline": {
+   "nan": 0,
+   "escaped": 0,
+   "deep_mean": 0.003138337916295342,
+   "deep_p99": 0.02870061596855521,
+   "creep": 0.006610831918189733,
+   "rest_speed": 0.011495304190283662,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "ok": true,
+  "why": ""
+ }
+}

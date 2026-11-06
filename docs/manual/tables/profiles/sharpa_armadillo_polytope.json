@@ -1,0 +1,27 @@
+{
+ "scene": "sharpa_armadillo_polytope",
+ "B": 4096,
+ "pre": 50,
+ "ms": {
+  "rbd": 0.6044562653793643,
+  "prim_collision": 1.6037433000747114,
+  "contact_dynamics": 6.183426933906351,
+  "integrate": 0.08779703251396617,
+  "whole_step": 8.575544799289977
+ },
+ "stages_sum_ms": 8.479423531874392,
+ "world_steps_per_s": 477637.2925413594,
+ "funnel": {
+  "runtime": {
+   "contacts": {
+    "n": 70086,
+    "allocated": 377718
+   },
+   "rows_per_world": {
+    "n": 93,
+    "allocated": 194
+   }
+  }
+ },
+ "mempool_mb": 857.1874341964722
+}

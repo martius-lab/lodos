@@ -1,0 +1,1390 @@
+{
+ "format": "lodos-tuning/2",
+ "scene": "shadow_grasp_sdf",
+ "B": 8192,
+ "layout": "independent",
+ "fingerprint": {
+  "model": {
+   "nq": 35,
+   "nv": 34,
+   "nu": 29,
+   "na": 0,
+   "structure": "3cc18dd071887106"
+  },
+  "geometry": "ae1fd4836eb0d7ba",
+  "timestep": 0.002,
+  "hulls": {
+   "hulls": 0
+  },
+  "surfaces": [
+   {
+    "kind": "surface",
+    "vertices": 68,
+    "faces": 132,
+    "grid_N": [
+     67,
+     57,
+     100
+    ],
+    "voxel_h": [
+     0.0005038799718022346,
+     0.0005038799718022346,
+     0.0005038799718022346
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.016744000000000002,
+     0.01432368,
+     0.025194
+    ],
+    "sha": "5fc7ab9333eb0740",
+    "file": "viewer/assets/shadow_kong/hand/rh_ffdistal.npz",
+    "records": {
+     "create_surface_data": {
+      "body": "rh_ffdistal",
+      "v": 68,
+      "e": 198,
+      "N": [
+       67,
+       57,
+       100
+      ],
+      "h_mm": 0.5039,
+      "sdf_error_h": 0.0793,
+      "bytes": 3258000,
+      "watertight": true,
+      "recommended_depth": 9
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 36,
+    "faces": 68,
+    "grid_N": [
+     74,
+     99,
+     100
+    ],
+    "voxel_h": [
+     0.0003266416024416685,
+     0.0003266416024416685,
+     0.0003266416024416685
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.01203798,
+     0.0161051,
+     0.01633208
+    ],
+    "sha": "6fe89ae454efafa8",
+    "file": "viewer/assets/shadow_kong/hand/rh_ffknuckle.npz",
+    "records": {
+     "create_surface_data": {
+      "body": "rh_ffknuckle",
+      "v": 36,
+      "e": 102,
+      "N": [
+       74,
+       99,
+       100
+      ],
+      "h_mm": 0.3266,
+      "sdf_error_h": 0.1092,
+      "bytes": 6166248,
+      "watertight": true,
+      "recommended_depth": 9
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 87,
+    "faces": 170,
+    "grid_N": [
+     45,
+     42,
+     100
+    ],
+    "voxel_h": [
+     0.0007915010210126638,
+     0.0007915010210126638,
+     0.0007915010210126638
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.01770578,
+     0.01660941,
+     0.03957505
+    ],
+    "sha": "f89eed6ac25d36cd",
+    "file": "viewer/assets/shadow_kong/hand/rh_ffmiddle.npz",
+    "records": {
+     "create_surface_data": {
+      "body": "rh_ffmiddle",
+      "v": 87,
+      "e": 255,
+      "N": [
+       45,
+       42,
+       100
+      ],
+      "h_mm": 0.7915,
+      "sdf_error_h": 0.068,
+      "bytes": 1645920,
+      "watertight": true,
+      "recommended_depth": 9
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 113,
+    "faces": 222,
+    "grid_N": [
+     36,
+     32,
+     100
+    ],
+    "voxel_h": [
+     0.0011277645826339722,
+     0.0011277645826339722,
+     0.0011277645826339722
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.01989126,
+     0.017985960000000002,
+     0.05638823
+    ],
+    "sha": "c0c8521ab0c5c034",
+    "file": "viewer/assets/shadow_kong/hand/rh_ffproximal.npz",
+    "records": {
+     "create_surface_data": {
+      "body": "rh_ffproximal",
+      "v": 113,
+      "e": 333,
+      "N": [
+       36,
+       32,
+       100
+      ],
+      "h_mm": 1.1278,
+      "sdf_error_h": 0.0825,
+      "bytes": 1023180,
+      "watertight": true,
+      "recommended_depth": 11
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 65,
+    "faces": 126,
+    "grid_N": [
+     66,
+     55,
+     100
+    ],
+    "voxel_h": [
+     0.000522698974236846,
+     0.000522698974236846,
+     0.000522698974236846
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.01705547,
+     0.01433279,
+     0.026134950000000004
+    ],
+    "sha": "1434843712b89fae",
+    "file": "viewer/assets/shadow_kong/hand/rh_lfdistal.npz",
+    "records": {
+     "create_surface_data": {
+      "body": "rh_lfdistal",
+      "v": 65,
+      "e": 189,
+      "N": [
+       66,
+       55,
+       100
+      ],
+      "h_mm": 0.5227,
+      "sdf_error_h": 0.0824,
+      "bytes": 3100824,
+      "watertight": true,
+      "recommended_depth": 9
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 36,
+    "faces": 68,
+    "grid_N": [
+     69,
+     82,
+     100
+    ],
+    "voxel_h": [
+     0.00035250760265626013,
+     0.00035250760265626013,
+     0.00035250760265626013
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.012037969999999999,
+     0.01430111,
+     0.01762538
+    ],
+    "sha": "0c217ec9e0e7f6a9",
+    "file": "viewer/assets/shadow_kong/hand/rh_lfknuckle.npz",
+    "records": {
+     "create_surface_data": {
+      "body": "rh_lfknuckle",
+      "v": 36,
+      "e": 102,
+      "N": [
+       69,
+       82,
+       100
+      ],
+      "h_mm": 0.3525,
+      "sdf_error_h": 0.1104,
+      "bytes": 4784640,
+      "watertight": true,
+      "recommended_depth": 9
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 241,
+    "faces": 478,
+    "grid_N": [
+     56,
+     35,
+     100
+    ],
+    "voxel_h": [
+     0.0013212432386353612,
+     0.0013212432386353612,
+     0.0013212432386353612
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.03638481,
+     0.0225866,
+     0.06606216000000001
+    ],
+    "sha": "10dd6c3d077b27c6",
+    "file": "viewer/assets/shadow_kong/hand/rh_lfmetacarpal.npz",
+    "records": {
+     "create_surface_data": {
+      "body": "rh_lfmetacarpal",
+      "v": 241,
+      "e": 717,
+      "N": [
+       56,
+       35,
+       100
+      ],
+      "h_mm": 1.3212,
+      "sdf_error_h": 0.0622,
+      "bytes": 1707704,
+      "watertight": true,
+      "recommended_depth": 11
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 91,
+    "faces": 178,
+    "grid_N": [
+     46,
+     43,
+     100
+    ],
+    "voxel_h": [
+     0.0007870987756177783,
+     0.0007870987756177783,
+     0.0007870987756177783
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.01783916,
+     0.01659137,
+     0.03935494
+    ],
+    "sha": "1b11900a1b388a92",
+    "file": "viewer/assets/shadow_kong/hand/rh_lfmiddle.npz",
+    "records": {
+     "create_surface_data": {
+      "body": "rh_lfmiddle",
+      "v": 91,
+      "e": 267,
+      "N": [
+       46,
+       43,
+       100
+      ],
+      "h_mm": 0.7871,
+      "sdf_error_h": 0.0662,
+      "bytes": 1719848,
+      "watertight": true,
+      "recommended_depth": 10
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 121,
+    "faces": 238,
+    "grid_N": [
+     37,
+     33,
+     100
+    ],
+    "voxel_h": [
+     0.0011010629823431373,
+     0.0011010629823431373,
+     0.0011010629823431373
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.01994595,
+     0.01786103,
+     0.05505315
+    ],
+    "sha": "f9e0cc032fa7cb29",
+    "file": "viewer/assets/shadow_kong/hand/rh_lfproximal.npz",
+    "records": {
+     "create_surface_data": {
+      "body": "rh_lfproximal",
+      "v": 121,
+      "e": 357,
+      "N": [
+       37,
+       33,
+       100
+      ],
+      "h_mm": 1.1011,
+      "sdf_error_h": 0.0826,
+      "bytes": 1081680,
+      "watertight": true,
+      "recommended_depth": 11
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 66,
+    "faces": 128,
+    "grid_N": [
+     64,
+     55,
+     100
+    ],
+    "voxel_h": [
+     0.0005249807727523148,
+     0.0005249807727523148,
+     0.0005249807727523148
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.01659579,
+     0.014209260000000001,
+     0.026249039999999998
+    ],
+    "sha": "7f37b2c035a1e6dd",
+    "file": "viewer/assets/shadow_kong/hand/rh_mfdistal.npz",
+    "records": {
+     "create_surface_data": {
+      "body": "rh_mfdistal",
+      "v": 66,
+      "e": 192,
+      "N": [
+       64,
+       55,
+       100
+      ],
+      "h_mm": 0.525,
+      "sdf_error_h": 0.0779,
+      "bytes": 3009032,
+      "watertight": true,
+      "recommended_depth": 9
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 33,
+    "faces": 62,
+    "grid_N": [
+     85,
+     97,
+     100
+    ],
+    "voxel_h": [
+     0.0002858598018065095,
+     0.0002858598018065095,
+     0.0002858598018065095
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.01204024,
+     0.013815899999999999,
+     0.014292989999999998
+    ],
+    "sha": "6ef7be0ab75d20a7",
+    "file": "viewer/assets/shadow_kong/hand/rh_mfknuckle.npz",
+    "records": {
+     "create_surface_data": {
+      "body": "rh_mfknuckle",
+      "v": 33,
+      "e": 93,
+      "N": [
+       85,
+       97,
+       100
+      ],
+      "h_mm": 0.2859,
+      "sdf_error_h": 0.1124,
+      "bytes": 6923600,
+      "watertight": true,
+      "recommended_depth": 9
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 88,
+    "faces": 172,
+    "grid_N": [
+     46,
+     43,
+     100
+    ],
+    "voxel_h": [
+     0.0007897239993326366,
+     0.0007897239993326366,
+     0.0007897239993326366
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.01779466,
+     0.01658842,
+     0.0394862
+    ],
+    "sha": "0977ca2d0018ff08",
+    "file": "viewer/assets/shadow_kong/hand/rh_mfmiddle.npz",
+    "records": {
+     "create_surface_data": {
+      "body": "rh_mfmiddle",
+      "v": 88,
+      "e": 258,
+      "N": [
+       46,
+       43,
+       100
+      ],
+      "h_mm": 0.7897,
+      "sdf_error_h": 0.0697,
+      "bytes": 1719848,
+      "watertight": true,
+      "recommended_depth": 9
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 130,
+    "faces": 256,
+    "grid_N": [
+     37,
+     33,
+     100
+    ],
+    "voxel_h": [
+     0.0011086277663707733,
+     0.0011086277663707733,
+     0.0011086277663707733
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.020120100000000002,
+     0.01783442,
+     0.05543139
+    ],
+    "sha": "65bb765fa3cb6b8a",
+    "file": "viewer/assets/shadow_kong/hand/rh_mfproximal.npz",
+    "records": {
+     "create_surface_data": {
+      "body": "rh_mfproximal",
+      "v": 130,
+      "e": 384,
+      "N": [
+       37,
+       33,
+       100
+      ],
+      "h_mm": 1.1086,
+      "sdf_error_h": 0.0785,
+      "bytes": 1081680,
+      "watertight": true,
+      "recommended_depth": 13
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 679,
+    "faces": 1354,
+    "grid_N": [
+     71,
+     36,
+     100
+    ],
+    "voxel_h": [
+     0.002391831949353218,
+     0.002391831949353218,
+     0.002391831949353218
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.0841054,
+     0.0430523,
+     0.11959159999999999
+    ],
+    "sha": "803eba21ab2bf035",
+    "file": "viewer/assets/shadow_kong/hand/rh_palm.npz",
+    "records": {
+     "create_surface_data": {
+      "body": "rh_palm",
+      "v": 679,
+      "e": 2031,
+      "N": [
+       71,
+       36,
+       100
+      ],
+      "h_mm": 2.3918,
+      "sdf_error_h": 0.0462,
+      "bytes": 2211432,
+      "watertight": true,
+      "recommended_depth": 12
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 67,
+    "faces": 130,
+    "grid_N": [
+     67,
+     56,
+     100
+    ],
+    "voxel_h": [
+     0.0005145493778400123,
+     0.0005145493778400123,
+     0.0005145493778400123
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.017004230000000002,
+     0.01431121,
+     0.025727470000000002
+    ],
+    "sha": "bea5d56e10e8242d",
+    "file": "viewer/assets/shadow_kong/hand/rh_rfdistal.npz",
+    "records": {
+     "create_surface_data": {
+      "body": "rh_rfdistal",
+      "v": 67,
+      "e": 195,
+      "N": [
+       67,
+       56,
+       100
+      ],
+      "h_mm": 0.5145,
+      "sdf_error_h": 0.0767,
+      "bytes": 3202360,
+      "watertight": true,
+      "recommended_depth": 9
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 39,
+    "faces": 74,
+    "grid_N": [
+     70,
+     96,
+     100
+    ],
+    "voxel_h": [
+     0.00034633438917808235,
+     0.00034633438917808235,
+     0.00034633438917808235
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.012037200000000001,
+     0.01654616,
+     0.01731672
+    ],
+    "sha": "8c8683ad0103c76a",
+    "file": "viewer/assets/shadow_kong/hand/rh_rfknuckle.npz",
+    "records": {
+     "create_surface_data": {
+      "body": "rh_rfknuckle",
+      "v": 39,
+      "e": 111,
+      "N": [
+       70,
+       96,
+       100
+      ],
+      "h_mm": 0.3463,
+      "sdf_error_h": 0.1036,
+      "bytes": 5665524,
+      "watertight": true,
+      "recommended_depth": 9
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 83,
+    "faces": 162,
+    "grid_N": [
+     46,
+     42,
+     100
+    ],
+    "voxel_h": [
+     0.000793189974501729,
+     0.000793189974501729,
+     0.000793189974501729
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.01787497,
+     0.016602810000000003,
+     0.0396595
+    ],
+    "sha": "00c1e132b52c2586",
+    "file": "viewer/assets/shadow_kong/hand/rh_rfmiddle.npz",
+    "records": {
+     "create_surface_data": {
+      "body": "rh_rfmiddle",
+      "v": 83,
+      "e": 243,
+      "N": [
+       46,
+       42,
+       100
+      ],
+      "h_mm": 0.7932,
+      "sdf_error_h": 0.0695,
+      "bytes": 1681260,
+      "watertight": true,
+      "recommended_depth": 9
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 119,
+    "faces": 234,
+    "grid_N": [
+     37,
+     33,
+     100
+    ],
+    "voxel_h": [
+     0.0011068073799833655,
+     0.0011068073799833655,
+     0.0011068073799833655
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.0200221,
+     0.01790766,
+     0.05534037
+    ],
+    "sha": "13f6e17d02ae28d6",
+    "file": "viewer/assets/shadow_kong/hand/rh_rfproximal.npz",
+    "records": {
+     "create_surface_data": {
+      "body": "rh_rfproximal",
+      "v": 119,
+      "e": 351,
+      "N": [
+       37,
+       33,
+       100
+      ],
+      "h_mm": 1.1068,
+      "sdf_error_h": 0.0762,
+      "bytes": 1081680,
+      "watertight": true,
+      "recommended_depth": 12
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 90,
+    "faces": 176,
+    "grid_N": [
+     72,
+     62,
+     100
+    ],
+    "voxel_h": [
+     0.0005858929944224656,
+     0.0005858929944224656,
+     0.0005858929944224656
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.0210078,
+     0.01792856,
+     0.02929465
+    ],
+    "sha": "74708e9a5c2e6b77",
+    "file": "viewer/assets/shadow_kong/hand/rh_thdistal.npz",
+    "records": {
+     "create_surface_data": {
+      "body": "rh_thdistal",
+      "v": 90,
+      "e": 264,
+      "N": [
+       72,
+       62,
+       100
+      ],
+      "h_mm": 0.5859,
+      "sdf_error_h": 0.0704,
+      "bytes": 3794100,
+      "watertight": true,
+      "recommended_depth": 10
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 109,
+    "faces": 214,
+    "grid_N": [
+     43,
+     44,
+     100
+    ],
+    "voxel_h": [
+     0.001016490045003593,
+     0.001016490045003593,
+     0.001016490045003593
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.0213491,
+     0.0218567,
+     0.0508245
+    ],
+    "sha": "31d03aea3675ff19",
+    "file": "viewer/assets/shadow_kong/hand/rh_thmiddle.npz",
+    "records": {
+     "create_surface_data": {
+      "body": "rh_thmiddle",
+      "v": 109,
+      "e": 321,
+      "N": [
+       43,
+       44,
+       100
+      ],
+      "h_mm": 1.0165,
+      "sdf_error_h": 0.0625,
+      "bytes": 1647544,
+      "watertight": true,
+      "recommended_depth": 10
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 141,
+    "faces": 278,
+    "grid_N": [
+     41,
+     42,
+     100
+    ],
+    "voxel_h": [
+     0.0012031239457428455,
+     0.0012031239457428455,
+     0.0012031239457428455
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.0245593,
+     0.0247445,
+     0.06015619999999999
+    ],
+    "sha": "b35d7b15c4cc2196",
+    "file": "viewer/assets/shadow_kong/hand/rh_thproximal.npz",
+    "records": {
+     "create_surface_data": {
+      "body": "rh_thproximal",
+      "v": 141,
+      "e": 417,
+      "N": [
+       41,
+       42,
+       100
+      ],
+      "h_mm": 1.2031,
+      "sdf_error_h": 0.0558,
+      "bytes": 1504560,
+      "watertight": true,
+      "recommended_depth": 10
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 1121,
+    "faces": 2238,
+    "grid_N": [
+     63,
+     63,
+     100
+    ],
+    "voxel_h": [
+     0.001516890013590455,
+     0.001516890013590455,
+     0.001516890013590455
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.047427,
+     0.0472636,
+     0.07584450000000001
+    ],
+    "sha": "6afd9357be12671d",
+    "file": "viewer/assets/shadow_kong/kong/kong.npz",
+    "records": {
+     "create_surface_data": {
+      "body": "kong",
+      "v": 1121,
+      "e": 3357,
+      "N": [
+       63,
+       63,
+       100
+      ],
+      "h_mm": 1.5169,
+      "sdf_error_h": 0.0313,
+      "bytes": 3382272,
+      "watertight": true,
+      "recommended_depth": 14
+     }
+    }
+   }
+  ],
+  "pairs": 205
+ },
+ "states": {
+  "path": "results/tuning/states/mj/shadow_grasp_sdf.states.npz",
+  "digest": "90430e3558f333d8",
+  "size": 1300,
+  "source": {
+   "kind": "explore",
+   "scene": "shadow_grasp_sdf",
+   "strategy": [
+    "initial",
+    "perturb",
+    "actuation"
+   ],
+   "starts": 32,
+   "horizon": 1000,
+   "stride": 50,
+   "seed": 0,
+   "jitter": 0.002,
+   "sigma": 0.3,
+   "max_depth": 0.01,
+   "dropped_nonfinite": 0,
+   "dropped_deep": 0
+  },
+  "horizon": 200,
+  "controls": {
+   "kind": "hold"
+  }
+ },
+ "safety": 1.5,
+ "created": "2026-11-01T12:01:53",
+ "commit": null,
+ "device": "NVIDIA GeForce RTX 4080",
+ "collision": {
+  "capacity_tile": 0.00887921715930125,
+  "capacity2": 0.005830597755553859
+ },
+ "runtime": {
+  "naconmax": 8192,
+  "nconmax": 1,
+  "njmax": 231
+ },
+ "sim": {},
+ "solver_kwargs": {
+  "mode": "mj"
+ },
+ "tiles": {
+  "groups": {
+   "803eba21ab2bf035|6afd9357be12671d": 1,
+   "10dd6c3d077b27c6|6afd9357be12671d": 1,
+   "10dd6c3d077b27c6|c0c8521ab0c5c034": 1,
+   "10dd6c3d077b27c6|00c1e132b52c2586": 1,
+   "10dd6c3d077b27c6|13f6e17d02ae28d6": 1,
+   "10dd6c3d077b27c6|31d03aea3675ff19": 1,
+   "rest|rest": 199
+  },
+  "trials": [
+   {
+    "sizes": {
+     "803eba21ab2bf035|6afd9357be12671d": 8,
+     "10dd6c3d077b27c6|6afd9357be12671d": 8,
+     "10dd6c3d077b27c6|c0c8521ab0c5c034": 8,
+     "10dd6c3d077b27c6|00c1e132b52c2586": 8,
+     "10dd6c3d077b27c6|13f6e17d02ae28d6": 8,
+     "10dd6c3d077b27c6|31d03aea3675ff19": 8,
+     "rest|rest": 8
+    },
+    "ms": 0.09993080020649359
+   },
+   {
+    "sizes": {
+     "803eba21ab2bf035|6afd9357be12671d": 4,
+     "10dd6c3d077b27c6|6afd9357be12671d": 8,
+     "10dd6c3d077b27c6|c0c8521ab0c5c034": 8,
+     "10dd6c3d077b27c6|00c1e132b52c2586": 8,
+     "10dd6c3d077b27c6|13f6e17d02ae28d6": 8,
+     "10dd6c3d077b27c6|31d03aea3675ff19": 8,
+     "rest|rest": 8
+    },
+    "ms": 0.12262294985703191,
+    "error": null
+   },
+   {
+    "sizes": {
+     "803eba21ab2bf035|6afd9357be12671d": 16,
+     "10dd6c3d077b27c6|6afd9357be12671d": 8,
+     "10dd6c3d077b27c6|c0c8521ab0c5c034": 8,
+     "10dd6c3d077b27c6|00c1e132b52c2586": 8,
+     "10dd6c3d077b27c6|13f6e17d02ae28d6": 8,
+     "10dd6c3d077b27c6|31d03aea3675ff19": 8,
+     "rest|rest": 8
+    },
+    "ms": 0.10863149982469622,
+    "error": null
+   },
+   {
+    "sizes": {
+     "803eba21ab2bf035|6afd9357be12671d": 32,
+     "10dd6c3d077b27c6|6afd9357be12671d": 8,
+     "10dd6c3d077b27c6|c0c8521ab0c5c034": 8,
+     "10dd6c3d077b27c6|00c1e132b52c2586": 8,
+     "10dd6c3d077b27c6|13f6e17d02ae28d6": 8,
+     "10dd6c3d077b27c6|31d03aea3675ff19": 8,
+     "rest|rest": 8
+    },
+    "ms": 0.1090073499653954,
+    "error": null
+   },
+   {
+    "sizes": {
+     "803eba21ab2bf035|6afd9357be12671d": 8,
+     "10dd6c3d077b27c6|6afd9357be12671d": 4,
+     "10dd6c3d077b27c6|c0c8521ab0c5c034": 8,
+     "10dd6c3d077b27c6|00c1e132b52c2586": 8,
+     "10dd6c3d077b27c6|13f6e17d02ae28d6": 8,
+     "10dd6c3d077b27c6|31d03aea3675ff19": 8,
+     "rest|rest": 8
+    },
+    "ms": 0.11303735009278171,
+    "error": null
+   },
+   {
+    "sizes": {
+     "803eba21ab2bf035|6afd9357be12671d": 8,
+     "10dd6c3d077b27c6|6afd9357be12671d": 16,
+     "10dd6c3d077b27c6|c0c8521ab0c5c034": 8,
+     "10dd6c3d077b27c6|00c1e132b52c2586": 8,
+     "10dd6c3d077b27c6|13f6e17d02ae28d6": 8,
+     "10dd6c3d077b27c6|31d03aea3675ff19": 8,
+     "rest|rest": 8
+    },
+    "ms": 0.11243439985264558,
+    "error": null
+   },
+   {
+    "sizes": {
+     "803eba21ab2bf035|6afd9357be12671d": 8,
+     "10dd6c3d077b27c6|6afd9357be12671d": 32,
+     "10dd6c3d077b27c6|c0c8521ab0c5c034": 8,
+     "10dd6c3d077b27c6|00c1e132b52c2586": 8,
+     "10dd6c3d077b27c6|13f6e17d02ae28d6": 8,
+     "10dd6c3d077b27c6|31d03aea3675ff19": 8,
+     "rest|rest": 8
+    },
+    "ms": 0.11321144993416965,
+    "error": null
+   },
+   {
+    "sizes": {
+     "803eba21ab2bf035|6afd9357be12671d": 8,
+     "10dd6c3d077b27c6|6afd9357be12671d": 8,
+     "10dd6c3d077b27c6|c0c8521ab0c5c034": 4,
+     "10dd6c3d077b27c6|00c1e132b52c2586": 8,
+     "10dd6c3d077b27c6|13f6e17d02ae28d6": 8,
+     "10dd6c3d077b27c6|31d03aea3675ff19": 8,
+     "rest|rest": 8
+    },
+    "ms": 0.1130872500652913,
+    "error": null
+   },
+   {
+    "sizes": {
+     "803eba21ab2bf035|6afd9357be12671d": 8,
+     "10dd6c3d077b27c6|6afd9357be12671d": 8,
+     "10dd6c3d077b27c6|c0c8521ab0c5c034": 16,
+     "10dd6c3d077b27c6|00c1e132b52c2586": 8,
+     "10dd6c3d077b27c6|13f6e17d02ae28d6": 8,
+     "10dd6c3d077b27c6|31d03aea3675ff19": 8,
+     "rest|rest": 8
+    },
+    "ms": 0.11218604995519854,
+    "error": null
+   },
+   {
+    "sizes": {
+     "803eba21ab2bf035|6afd9357be12671d": 8,
+     "10dd6c3d077b27c6|6afd9357be12671d": 8,
+     "10dd6c3d077b27c6|c0c8521ab0c5c034": 32,
+     "10dd6c3d077b27c6|00c1e132b52c2586": 8,
+     "10dd6c3d077b27c6|13f6e17d02ae28d6": 8,
+     "10dd6c3d077b27c6|31d03aea3675ff19": 8,
+     "rest|rest": 8
+    },
+    "ms": 0.12428824993548915,
+    "error": null
+   },
+   {
+    "sizes": {
+     "803eba21ab2bf035|6afd9357be12671d": 8,
+     "10dd6c3d077b27c6|6afd9357be12671d": 8,
+     "10dd6c3d077b27c6|c0c8521ab0c5c034": 8,
+     "10dd6c3d077b27c6|00c1e132b52c2586": 4,
+     "10dd6c3d077b27c6|13f6e17d02ae28d6": 8,
+     "10dd6c3d077b27c6|31d03aea3675ff19": 8,
+     "rest|rest": 8
+    },
+    "ms": 0.12467019987525418,
+    "error": null
+   },
+   {
+    "sizes": {
+     "803eba21ab2bf035|6afd9357be12671d": 8,
+     "10dd6c3d077b27c6|6afd9357be12671d": 8,
+     "10dd6c3d077b27c6|c0c8521ab0c5c034": 8,
+     "10dd6c3d077b27c6|00c1e132b52c2586": 16,
+     "10dd6c3d077b27c6|13f6e17d02ae28d6": 8,
+     "10dd6c3d077b27c6|31d03aea3675ff19": 8,
+     "rest|rest": 8
+    },
+    "ms": 0.12425134991644882,
+    "error": null
+   },
+   {
+    "sizes": {
+     "803eba21ab2bf035|6afd9357be12671d": 8,
+     "10dd6c3d077b27c6|6afd9357be12671d": 8,
+     "10dd6c3d077b27c6|c0c8521ab0c5c034": 8,
+     "10dd6c3d077b27c6|00c1e132b52c2586": 32,
+     "10dd6c3d077b27c6|13f6e17d02ae28d6": 8,
+     "10dd6c3d077b27c6|31d03aea3675ff19": 8,
+     "rest|rest": 8
+    },
+    "ms": 0.12395720004860779,
+    "error": null
+   },
+   {
+    "sizes": {
+     "803eba21ab2bf035|6afd9357be12671d": 8,
+     "10dd6c3d077b27c6|6afd9357be12671d": 8,
+     "10dd6c3d077b27c6|c0c8521ab0c5c034": 8,
+     "10dd6c3d077b27c6|00c1e132b52c2586": 8,
+     "10dd6c3d077b27c6|13f6e17d02ae28d6": 4,
+     "10dd6c3d077b27c6|31d03aea3675ff19": 8,
+     "rest|rest": 8
+    },
+    "ms": 0.12523599980340805,
+    "error": null
+   },
+   {
+    "sizes": {
+     "803eba21ab2bf035|6afd9357be12671d": 8,
+     "10dd6c3d077b27c6|6afd9357be12671d": 8,
+     "10dd6c3d077b27c6|c0c8521ab0c5c034": 8,
+     "10dd6c3d077b27c6|00c1e132b52c2586": 8,
+     "10dd6c3d077b27c6|13f6e17d02ae28d6": 16,
+     "10dd6c3d077b27c6|31d03aea3675ff19": 8,
+     "rest|rest": 8
+    },
+    "ms": 0.12468185013858601,
+    "error": null
+   },
+   {
+    "sizes": {
+     "803eba21ab2bf035|6afd9357be12671d": 8,
+     "10dd6c3d077b27c6|6afd9357be12671d": 8,
+     "10dd6c3d077b27c6|c0c8521ab0c5c034": 8,
+     "10dd6c3d077b27c6|00c1e132b52c2586": 8,
+     "10dd6c3d077b27c6|13f6e17d02ae28d6": 32,
+     "10dd6c3d077b27c6|31d03aea3675ff19": 8,
+     "rest|rest": 8
+    },
+    "ms": 0.126767099936842,
+    "error": null
+   },
+   {
+    "sizes": {
+     "803eba21ab2bf035|6afd9357be12671d": 8,
+     "10dd6c3d077b27c6|6afd9357be12671d": 8,
+     "10dd6c3d077b27c6|c0c8521ab0c5c034": 8,
+     "10dd6c3d077b27c6|00c1e132b52c2586": 8,
+     "10dd6c3d077b27c6|13f6e17d02ae28d6": 8,
+     "10dd6c3d077b27c6|31d03aea3675ff19": 4,
+     "rest|rest": 8
+    },
+    "ms": 0.12477600030251777,
+    "error": null
+   },
+   {
+    "sizes": {
+     "803eba21ab2bf035|6afd9357be12671d": 8,
+     "10dd6c3d077b27c6|6afd9357be12671d": 8,
+     "10dd6c3d077b27c6|c0c8521ab0c5c034": 8,
+     "10dd6c3d077b27c6|00c1e132b52c2586": 8,
+     "10dd6c3d077b27c6|13f6e17d02ae28d6": 8,
+     "10dd6c3d077b27c6|31d03aea3675ff19": 16,
+     "rest|rest": 8
+    },
+    "ms": 0.12423164989741053,
+    "error": null
+   },
+   {
+    "sizes": {
+     "803eba21ab2bf035|6afd9357be12671d": 8,
+     "10dd6c3d077b27c6|6afd9357be12671d": 8,
+     "10dd6c3d077b27c6|c0c8521ab0c5c034": 8,
+     "10dd6c3d077b27c6|00c1e132b52c2586": 8,
+     "10dd6c3d077b27c6|13f6e17d02ae28d6": 8,
+     "10dd6c3d077b27c6|31d03aea3675ff19": 32,
+     "rest|rest": 8
+    },
+    "ms": 0.124207800035947,
+    "error": null
+   },
+   {
+    "sizes": {
+     "803eba21ab2bf035|6afd9357be12671d": 8,
+     "10dd6c3d077b27c6|6afd9357be12671d": 8,
+     "10dd6c3d077b27c6|c0c8521ab0c5c034": 8,
+     "10dd6c3d077b27c6|00c1e132b52c2586": 8,
+     "10dd6c3d077b27c6|13f6e17d02ae28d6": 8,
+     "10dd6c3d077b27c6|31d03aea3675ff19": 8,
+     "rest|rest": 4
+    },
+    "ms": 0.15185535012278706,
+    "error": null
+   },
+   {
+    "sizes": {
+     "803eba21ab2bf035|6afd9357be12671d": 8,
+     "10dd6c3d077b27c6|6afd9357be12671d": 8,
+     "10dd6c3d077b27c6|c0c8521ab0c5c034": 8,
+     "10dd6c3d077b27c6|00c1e132b52c2586": 8,
+     "10dd6c3d077b27c6|13f6e17d02ae28d6": 8,
+     "10dd6c3d077b27c6|31d03aea3675ff19": 8,
+     "rest|rest": 16
+    },
+    "ms": 0.11982899995928165,
+    "error": null
+   },
+   {
+    "sizes": {
+     "803eba21ab2bf035|6afd9357be12671d": 8,
+     "10dd6c3d077b27c6|6afd9357be12671d": 8,
+     "10dd6c3d077b27c6|c0c8521ab0c5c034": 8,
+     "10dd6c3d077b27c6|00c1e132b52c2586": 8,
+     "10dd6c3d077b27c6|13f6e17d02ae28d6": 8,
+     "10dd6c3d077b27c6|31d03aea3675ff19": 8,
+     "rest|rest": 32
+    },
+    "ms": 0.11856339988298714,
+    "error": null
+   }
+  ],
+  "base_ms": 0.09993080020649359,
+  "best_ms": 0.09993080020649359,
+  "sizes": {
+   "803eba21ab2bf035|6afd9357be12671d": 8,
+   "10dd6c3d077b27c6|6afd9357be12671d": 8,
+   "10dd6c3d077b27c6|c0c8521ab0c5c034": 8,
+   "10dd6c3d077b27c6|00c1e132b52c2586": 8,
+   "10dd6c3d077b27c6|13f6e17d02ae28d6": 8,
+   "10dd6c3d077b27c6|31d03aea3675ff19": 8,
+   "rest|rest": 8
+  }
+ },
+ "baseline": {
+  "B": 1024,
+  "settings": {
+   "collision": {},
+   "runtime": {
+    "nconmax": 1024,
+    "njmax": 4096
+   },
+   "sim": {},
+   "solver_kwargs": {}
+  },
+  "throughput": {
+   "world_steps_per_s": 601215.2227199316,
+   "ms_per_step": 1.7032170199672692,
+   "B": 1024,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.04785499382459781,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 2602.732340812683
+  },
+  "artifacts": {
+   "nan": 0,
+   "escaped": 3,
+   "deep_mean": 2.7331110083791966e-05,
+   "deep_p99": 0.00047652909241151134,
+   "creep": 0.0,
+   "rest_speed": 0.000412038023966943,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "guard_B": 512
+ },
+ "peaks": {
+  "B": 8192,
+  "runtime": {
+   "nacon": 1702,
+   "ncollision": 0,
+   "naconmax": 8192,
+   "contacts_per_world": 43,
+   "overflow": false,
+   "nefc_per_world": 154,
+   "njmax": 248,
+   "efc_overflow": false
+  },
+  "lodos_col": {
+   "peak": {
+    "nCa1": 838336,
+    "nCa2": 4888,
+    "nCa3": 1702,
+    "nTa": 104792,
+    "nTb": 0
+   },
+   "allocated": {
+    "nCa1": 1748992,
+    "nCa2": 11264,
+    "nCa3": 11264,
+    "nTa": 218624,
+    "nTb": 17702912
+   },
+   "overflow": {
+    "nCa1": false,
+    "nCa2": false,
+    "nCa3": false,
+    "nTa": false,
+    "nTb": false
+   },
+   "tile_slots": 17702912,
+   "slots_per_world": 17288,
+   "uniform_K": 1,
+   "tile_K": 8,
+   "compacts": 0,
+   "contacts_per_world": 43
+  },
+  "overflowed": false,
+  "layout": "independent",
+  "horizon": 200,
+  "batches": 1,
+  "states": 1300,
+  "controls": {
+   "kind": "hold"
+  }
+ },
+ "throughput": {
+  "world_steps_per_s": 1958070.122546393,
+  "B": 8192
+ },
+ "artifacts": {
+  "tuned": {
+   "nan": 0,
+   "escaped": 3,
+   "deep_mean": 2.7331144669739614e-05,
+   "deep_p99": 0.0004765320359729237,
+   "creep": 0.0,
+   "rest_speed": 0.0004120378934544533,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "baseline": {
+   "nan": 0,
+   "escaped": 3,
+   "deep_mean": 2.7331110083791966e-05,
+   "deep_p99": 0.00047652909241151134,
+   "creep": 0.0,
+   "rest_speed": 0.000412038023966943,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "ok": true,
+  "why": ""
+ }
+}

@@ -1,0 +1,307 @@
+{
+ "format": "lodos-tuning/2",
+ "scene": "nist_nutbolt_m8_s0.25",
+ "B": 8192,
+ "layout": "independent",
+ "fingerprint": {
+  "model": {
+   "nq": 7,
+   "nv": 6,
+   "nu": 0,
+   "na": 0,
+   "structure": "d1661708b033b46a"
+  },
+  "geometry": "952d678d8f3156c6",
+  "timestep": 0.0020833333333333333,
+  "hulls": {
+   "hulls": 2,
+   "vertices": 2091,
+   "max_vertices": 1562,
+   "bodies": 2,
+   "hulls_per_body_max": 1,
+   "sha": "e4b45c9bf4c9a0b1"
+  },
+  "surfaces": [
+   {
+    "kind": "surface",
+    "vertices": 1562,
+    "faces": 3120,
+    "grid_N": [
+     190,
+     191,
+     321
+    ],
+    "voxel_h": [
+     9.999999747378752e-05,
+     9.999999747378752e-05,
+     9.999999747378752e-05
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.012983390000000001,
+     0.01300255,
+     0.02600083
+    ],
+    "sha": "5ec0c9ec1e0e4c12",
+    "file": "viewer/assets/nist/surfaces/bolt_m8/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 13378,
+    "faces": 26756,
+    "grid_N": [
+     96,
+     106,
+     63
+    ],
+    "voxel_h": [
+     0.00019999999494757503,
+     0.00019999999494757503,
+     0.00019999999494757503
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.01300341,
+     0.01501096,
+     0.006504250000000001
+    ],
+    "sha": "ece214a1ea8e58c0",
+    "file": "viewer/assets/nist/surfaces/nut_m8_s0.25/surface_data.npz"
+   },
+   {
+    "kind": "plane"
+   }
+  ],
+  "pairs": 2
+ },
+ "states": {
+  "path": "results/tuning/states/nist_nutbolt_m8_s0.25.states.npz",
+  "digest": "32a4ea174496a7c4",
+  "size": 960,
+  "source": {
+   "kind": "explore",
+   "scene": "nist_nutbolt_m8_s0.25",
+   "strategy": [
+    "scatter"
+   ],
+   "starts": 32,
+   "horizon": 3000,
+   "stride": 100,
+   "seed": 0,
+   "jitter": 0.01,
+   "sigma": 0.5,
+   "max_depth": 0.01,
+   "dropped_nonfinite": 0,
+   "dropped_deep": 0
+  },
+  "horizon": 200,
+  "controls": {
+   "kind": "hold"
+  }
+ },
+ "safety": 1.5,
+ "created": "2026-11-01T08:24:10",
+ "commit": null,
+ "device": "NVIDIA GeForce RTX 4080",
+ "collision": {
+  "capacity_tile": 0.3082131006384409,
+  "capacity2": 0.4802704436632115,
+  "tile_size": {
+   "default": 8,
+   "1,0": 16,
+   "1,2": 16
+  }
+ },
+ "runtime": {
+  "naconmax": 215442,
+  "nconmax": 27,
+  "njmax": 324
+ },
+ "sim": {},
+ "solver_kwargs": {
+  "prox_iters_per_qp": 3
+ },
+ "tiles": {
+  "groups": {
+   "ece214a1ea8e58c0|5ec0c9ec1e0e4c12": 1,
+   "ece214a1ea8e58c0|plane": 1
+  },
+  "trials": [
+   {
+    "sizes": {
+     "ece214a1ea8e58c0|5ec0c9ec1e0e4c12": 8,
+     "ece214a1ea8e58c0|plane": 8
+    },
+    "ms": 1.3967518501885934
+   },
+   {
+    "sizes": {
+     "ece214a1ea8e58c0|5ec0c9ec1e0e4c12": 4,
+     "ece214a1ea8e58c0|plane": 8
+    },
+    "ms": 1.880233650081209,
+    "error": null
+   },
+   {
+    "sizes": {
+     "ece214a1ea8e58c0|5ec0c9ec1e0e4c12": 16,
+     "ece214a1ea8e58c0|plane": 8
+    },
+    "ms": 1.2864572501712246,
+    "error": null
+   },
+   {
+    "sizes": {
+     "ece214a1ea8e58c0|5ec0c9ec1e0e4c12": 32,
+     "ece214a1ea8e58c0|plane": 8
+    },
+    "ms": null,
+    "error": "RuntimeError: the timing context overflowed"
+   },
+   {
+    "sizes": {
+     "ece214a1ea8e58c0|5ec0c9ec1e0e4c12": 16,
+     "ece214a1ea8e58c0|plane": 4
+    },
+    "ms": null,
+    "error": "RuntimeError: the timing context overflowed"
+   },
+   {
+    "sizes": {
+     "ece214a1ea8e58c0|5ec0c9ec1e0e4c12": 16,
+     "ece214a1ea8e58c0|plane": 16
+    },
+    "ms": 1.1952592500165338,
+    "error": null
+   },
+   {
+    "sizes": {
+     "ece214a1ea8e58c0|5ec0c9ec1e0e4c12": 16,
+     "ece214a1ea8e58c0|plane": 32
+    },
+    "ms": 1.1594137002248317,
+    "error": null
+   }
+  ],
+  "base_ms": 1.3967518501885934,
+  "best_ms": 1.1952592500165338,
+  "sizes": {
+   "ece214a1ea8e58c0|5ec0c9ec1e0e4c12": 16,
+   "ece214a1ea8e58c0|plane": 16
+  }
+ },
+ "baseline": {
+  "B": 1024,
+  "settings": {
+   "collision": {},
+   "runtime": {
+    "nconmax": 8192,
+    "njmax": 24576
+   },
+   "sim": {},
+   "solver_kwargs": {}
+  },
+  "throughput": {
+   "world_steps_per_s": 52711.10417083952,
+   "ms_per_step": 19.426646739957505,
+   "B": 1024,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.0014845217727804917,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 6539.567644119263
+  },
+  "artifacts": {
+   "nan": 0,
+   "escaped": 0,
+   "deep_mean": 1.1048310438181024e-05,
+   "deep_p99": 3.527415701682914e-05,
+   "creep": 0.0017222723308619064,
+   "rest_speed": 9.044714167714119,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "guard_B": 512
+ },
+ "peaks": {
+  "B": 8192,
+  "runtime": {
+   "nacon": 143628,
+   "ncollision": 0,
+   "naconmax": 262656,
+   "contacts_per_world": 72,
+   "overflow": false,
+   "nefc_per_world": 216,
+   "njmax": 402,
+   "efc_overflow": false
+  },
+  "lodos_col": {
+   "peak": {
+    "nCa1": 45084288,
+    "nCa2": 21652651,
+    "nCa3": 580258,
+    "nTa": 2817768,
+    "nTb": 0
+   },
+   "allocated": {
+    "nCa1": 89497600,
+    "nCa2": 42951936,
+    "nCa3": 42951936,
+    "nTa": 5593600,
+    "nTb": 13713408
+   },
+   "overflow": {
+    "nCa1": false,
+    "nCa2": false,
+    "nCa3": false,
+    "nTa": false,
+    "nTb": false
+   },
+   "tile_slots": 13713408,
+   "slots_per_world": 26784,
+   "uniform_K": 1,
+   "tile_K": 16,
+   "compacts": 0,
+   "contacts_per_world": 1474
+  },
+  "overflowed": false,
+  "layout": "independent",
+  "horizon": 200,
+  "batches": 1,
+  "states": 960,
+  "controls": {
+   "kind": "hold"
+  }
+ },
+ "throughput": {
+  "world_steps_per_s": 654694.4763518893,
+  "B": 8192
+ },
+ "artifacts": {
+  "tuned": {
+   "nan": 0,
+   "escaped": 0,
+   "deep_mean": 9.187847594561983e-06,
+   "deep_p99": 2.9947223592898814e-05,
+   "creep": 0.0024536740862126168,
+   "rest_speed": 14.976048484444618,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "baseline": {
+   "nan": 0,
+   "escaped": 0,
+   "deep_mean": 1.1048310438181024e-05,
+   "deep_p99": 3.527415701682914e-05,
+   "creep": 0.0017222723308619064,
+   "rest_speed": 9.044714167714119,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "ok": true,
+  "why": ""
+ }
+}

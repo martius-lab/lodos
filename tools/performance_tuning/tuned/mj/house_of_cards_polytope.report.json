@@ -1,0 +1,97 @@
+{
+ "scene": "house_of_cards_polytope",
+ "B": 2048,
+ "states": 933,
+ "baseline": {
+  "B": 1024,
+  "settings": {
+   "collision": {},
+   "runtime": {
+    "nconmax": 1024,
+    "njmax": 4096
+   },
+   "sim": {},
+   "solver_kwargs": {}
+  },
+  "error_at_B": null,
+  "throughput": {
+   "world_steps_per_s": 64955.47934940698,
+   "ms_per_step": 15.764643880029325,
+   "B": 1024,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.0007040279578754267,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 6518.1343631744385
+  },
+  "artifacts": {
+   "nan": 0,
+   "escaped": 0,
+   "deep_mean": 0.002216629525537428,
+   "deep_p99": 0.026109289526939534,
+   "creep": 0.014049954542516523,
+   "rest_speed": 0.013962498804175993,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "guard_B": 512
+ },
+ "capacities": {
+  "throughput": {
+   "world_steps_per_s": 79420.78569896691,
+   "ms_per_step": 25.786700320022646,
+   "B": 2048,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.001730826726083512,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 1830.9784183502197
+  },
+  "rounds": 1
+ },
+ "noise": {
+  "deep_mean": 2.3447781086360746e-05,
+  "deep_p99": 0.00014534413814530633,
+  "creep": 1.8858018643076735e-06,
+  "rest_speed": 3.7017853173892945e-05
+ },
+ "budgets": [],
+ "batch": [
+  {
+   "B": 2048,
+   "world_steps_per_s": 79420.78569896691
+  },
+  {
+   "B": 4096,
+   "world_steps_per_s": 86357.86146625988,
+   "error": null
+  },
+  {
+   "B": 8192,
+   "world_steps_per_s": null,
+   "error": "RuntimeError: Failed to allocate 2147483648 bytes on device 'cuda:0'"
+  }
+ ],
+ "tuned": {
+  "B": 4096,
+  "world_steps_per_s": 86357.86146625988,
+  "settings": {
+   "collision": {},
+   "runtime": {
+    "naconmax": 1103988,
+    "nconmax": 270,
+    "njmax": 855,
+    "nccdmax": 108
+   },
+   "sim": {},
+   "solver_kwargs": {},
+   "B": 4096
+  },
+  "artifacts_ok": true,
+  "why": ""
+ },
+ "speedup": 1.3294930979067325,
+ "seconds": 110.69901180267334
+}

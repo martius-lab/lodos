@@ -1,0 +1,15 @@
+[
+  {
+    "body": "kong",
+    "threshold": 0.05,
+    "max_hulls": -1,
+    "hulls": 13,
+    "hull_vertices": 802,
+    "fused_vertices": 1149,
+    "fused_watertight": true,
+    "fused_shells": 1,
+    "fused_volume_cm3": 80.393,
+    "source_volume_cm3": 79.764,
+    "stale": false
+  }
+]

@@ -1,0 +1,48 @@
+{
+ "scene": "sharpa_5_sdf",
+ "B": 4096,
+ "pre": 50,
+ "ms": {
+  "rbd": 5.326542634672175,
+  "lodos_bbox": 6.108969434474905,
+  "lodos_sdf": 1.6804754345988233,
+  "lodos_narrow": 0.5303676996845752,
+  "contact_dynamics": 108.98252313296932,
+  "integrate": 0.3846645005978644,
+  "whole_step": 123.13257256755605
+ },
+ "stages_sum_ms": 123.01354283699766,
+ "world_steps_per_s": 33264.959178472054,
+ "funnel": {
+  "lodos": {
+   "candidates": {
+    "n": 34611744,
+    "allocated": 54923753
+   },
+   "tiles": {
+    "n": 1249742,
+    "allocated": 1965461,
+    "of": 131297280
+   },
+   "voxel": {
+    "n": 447180,
+    "allocated": 702261
+   },
+   "contacts": {
+    "n": 190388,
+    "allocated": 702261
+   }
+  },
+  "runtime": {
+   "contacts": {
+    "n": 190388,
+    "allocated": 300891
+   },
+   "rows_per_world": {
+    "n": 476,
+    "allocated": 905
+   }
+  }
+ },
+ "mempool_mb": 4887.269284248352
+}

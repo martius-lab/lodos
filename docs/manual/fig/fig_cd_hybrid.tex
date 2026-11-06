@@ -1,0 +1,62 @@
+\documentclass[tikz,border=4pt]{standalone}
+\input{fig/common.tex}
+\begin{document}
+\begin{tikzpicture}[font=\small]
+  % (a) supports from cells of directions
+  \begin{scope}
+    \node[font=\sffamily\small, anchor=west] at (-2.1, 2.35) {(a) exact supports from cells};
+    \def\cols{{"ourblue","ourorange","ourgreen","ourred","ourviolet"}}
+    \coordinate (v1) at (1.25,0.15); \coordinate (v2) at (0.55,1.1); \coordinate (v3) at (-0.75,0.95);
+    \coordinate (v4) at (-1.15,-0.35); \coordinate (v5) at (0.15,-1.05);
+    % normal cones at the vertices
+    \foreach \v/\lo/\hi/\c in {v1/-42.5/36.4/ourblue, v2/36.4/96.6/ourorange, v3/96.6/162.9/ourgreen, v4/162.9/241.7/ourred, v5/241.7/317.5/ourviolet} {
+      \fill[\c!22] (\v) -- ++(\lo:0.75) arc (\lo:\hi:0.75) -- cycle;
+    }
+    \draw[thick, fill=white] (v1) -- (v2) -- (v3) -- (v4) -- (v5) -- cycle;
+    \foreach \v/\c/\k in {v1/ourblue/1, v2/ourorange/2, v3/ourgreen/3, v4/ourred/4, v5/ourviolet/5} {
+      \fill[\c] (\v) circle (0.055);
+    }
+    \node[font=\footnotesize] at (0.05,0.05) {hull};
+    % the circle of directions, its cells, the supports along it
+    \begin{scope}[shift={(3.55,0.1)}]
+      \foreach \lo/\hi/\c in {-42.5/36.4/ourblue, 36.4/96.6/ourorange, 96.6/162.9/ourgreen, 162.9/241.7/ourred, 241.7/317.5/ourviolet} {
+        \draw[\c, line width=4pt] (\lo:1.05) arc (\lo:\hi:1.05);
+      }
+      \foreach \k in {0,...,7} { \draw[ourgray, thick] (\k*45:0.8) -- (\k*45:1.3); }
+      \foreach \k/\lab in {0/{1,2}, 1/{2}, 2/{2,3}, 3/{3,4}, 4/{4}, 5/{4,5}, 6/{5}, 7/{5,1}} {
+        \node[font=\scriptsize] at ({\k*45+22.5}:1.55) {$\lab$};
+      }
+      \draw[-{Latex[length=1.6mm]}, thick] (0,0) -- (63:0.75) node[pos=0.5, left, font=\footnotesize] {$u$};
+      \node[font=\footnotesize, align=center, text=ourgray] at (-1.6,-2.35) {8 cells of directions (the code: 1\,536); each stores\\the vertices whose normal cones meet it};
+    \end{scope}
+  \end{scope}
+  % (b) the certificate
+  \begin{scope}[shift={(8.4,0)}]
+    \node[font=\sffamily\small, anchor=west] at (-1.9, 2.35) {(b) the ball certificate};
+    \coordinate (a1) at (-1.6,0.55); \coordinate (a2) at (1.5,0.75); \coordinate (a3) at (1.8,-0.9);
+    \coordinate (a4) at (-0.2,-1.65); \coordinate (a5) at (-1.7,-0.9);
+    \fill[ourblue!10, draw=ourblue, thick] (a1) -- (a2) -- (a3) -- (a4) -- (a5) -- cycle;
+    \node[font=\footnotesize, text=ourblue] at (-1.25,-0.35) {$\mathcal D$};
+    \fill (0,0) circle (0.04) node[below left=-1pt, font=\footnotesize] {$0$};
+    % facet F = a1 a2 (the closest), axis u, depth delta
+    \draw[ourred, very thick] (a1) -- (a2) node[pos=0.25, above, font=\footnotesize, text=ourred] {$F$};
+    \draw[-{Latex[length=1.6mm]}, thick] (0,0) -- (-0.0634,0.6236) node[pos=0.6, right=-1pt, font=\footnotesize] {$\delta\,u$};
+    \fill[ourviolet] (a4) circle (0.05) node[right=2pt, font=\footnotesize, text=ourviolet] {$z^- = s_{\mathcal D}(-u)$};
+    \draw[ourviolet, dashed] (a1) -- (a4) -- (a2);
+    \draw[ourgreen!60!black, thick] (0,0) circle (0.56);
+    \node[font=\footnotesize, text=ourgray, align=center] at (0.05,-2.35) {lateral lines $\geq \delta - \varepsilon$ from 0: the ball\\$B(0, \delta - \varepsilon) \subset \mathcal D$, so $\delta$ is the depth};
+  \end{scope}
+  % (c) the manifold
+  \begin{scope}[shift={(13.6,0)}]
+    \node[font=\sffamily\small, anchor=west] at (-1.5, 2.35) {(c) the quadrangle clip};
+    \fill[ourgreen!25] (1.0,-0.6) -- (1.0,1.0) -- (-0.464,1.0) -- (-0.87,0.784) -- (0.079,-1.0) -- (0.248,-1.0) -- cycle;
+    \draw[ourblue, thick] (-1,-1) rectangle (1,1);
+    \draw[ourorange, thick] (0.116,-1.07) -- (1.97,-0.084) -- (0.984,1.77) -- (-0.87,0.784) -- cycle;
+    \foreach \p in {(1.0,-0.6),(1.0,1.0),(-0.87,0.784),(0.079,-1.0)} { \fill[black] \p circle (0.06); }
+    \foreach \p in {(-0.464,1.0),(0.248,-1.0)} { \draw[black, fill=white] \p circle (0.05); }
+    \node[font=\footnotesize, text=ourblue, anchor=north] at (-0.55,-1.05) {reference face};
+    \node[font=\footnotesize, text=ourorange!80!black, anchor=west] at (1.4,1.35) {incident face};
+    \node[font=\footnotesize, align=center, text=ourgray] at (0.3,-2.35) {clipped to the reference's side planes,\\reduced by area to 4 points (filled)};
+  \end{scope}
+\end{tikzpicture}
+\end{document}

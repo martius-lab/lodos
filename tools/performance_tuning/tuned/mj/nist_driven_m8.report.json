@@ -1,0 +1,118 @@
+{
+ "scene": "nist_driven_m8",
+ "B": 1024,
+ "states": 1320,
+ "baseline": {
+  "B": 1024,
+  "settings": {
+   "collision": {},
+   "runtime": {
+    "nconmax": 8192,
+    "njmax": 24576
+   },
+   "sim": {},
+   "solver_kwargs": {}
+  },
+  "error_at_B": null,
+  "throughput": {
+   "world_steps_per_s": 335654.16884600476,
+   "ms_per_step": 3.0507590700290166,
+   "B": 1024,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.0918357377657901,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 4587.063359260559
+  },
+  "artifacts": {
+   "nan": 0,
+   "escaped": 0,
+   "deep_mean": 9.10568196744066e-05,
+   "deep_p99": 0.00011660465730528813,
+   "rest_speed": 5.694796800613403,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "guard_B": 512
+ },
+ "capacities": {
+  "throughput": {
+   "world_steps_per_s": 947004.5087062701,
+   "ms_per_step": 1.0813042499648873,
+   "B": 1024,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.0037495459567624435,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 360.5465898513794
+  },
+  "rounds": 1
+ },
+ "noise": {
+  "deep_mean": 6.593792534212244e-09,
+  "deep_p99": 2.4687324184707524e-10,
+  "rest_speed": 0.0014538168907165527
+ },
+ "compacted": {
+  "world_steps_per_s": 912799.9693404775,
+  "ms_per_step": 1.1218229999940377,
+  "B": 1024,
+  "steps": 100,
+  "reps": 3,
+  "spread": 0.011279720588668213,
+  "overflowed": false,
+  "overflow": [],
+  "mempool_mb": 353.4402160644531
+ },
+ "budgets": [],
+ "batch": [
+  {
+   "B": 1024,
+   "world_steps_per_s": 947004.5087062701
+  },
+  {
+   "B": 2048,
+   "world_steps_per_s": 1217479.0856789919,
+   "error": null
+  },
+  {
+   "B": 4096,
+   "world_steps_per_s": 1384593.8460097811,
+   "error": null
+  },
+  {
+   "B": 8192,
+   "world_steps_per_s": 1291806.0781569076,
+   "error": null
+  }
+ ],
+ "tuned": {
+  "B": 4096,
+  "world_steps_per_s": 1384593.8460097811,
+  "settings": {
+   "collision": {
+    "capacity_tile": 0.2333167226690995,
+    "capacity2": 0.42198981445745787,
+    "tile_size": {
+     "default": 8,
+     "1,0": 16,
+     "1,2": 8
+    }
+   },
+   "runtime": {
+    "naconmax": 360449,
+    "nconmax": 89,
+    "njmax": 356
+   },
+   "sim": {},
+   "solver_kwargs": {},
+   "B": 4096
+  },
+  "artifacts_ok": true,
+  "why": ""
+ },
+ "speedup": 4.125060775410839,
+ "seconds": 39.132526874542236
+}

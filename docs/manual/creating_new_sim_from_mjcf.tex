@@ -1,0 +1,659 @@
+\input{preamble.tex}
+\begin{document}
+
+\manualtitle{Lodos v2: Creating a Simulation from an MJCF}{From a MuJoCo model to a scene Lodos simulates: geometry, assets, physics, validation and shipping}{The code as of 2026-11-04. A how-to guide on top of the two manuals, \emph{Collision Detection} (\code{docs/collision_detection.pdf}) and \emph{Contact Dynamics} (\code{docs/contact_dynamics.pdf}), which hold the theory. Its sequel, \emph{Performance Tuning} (\code{docs/performance_tuning.pdf}), makes the scene fast. Built from \code{docs/manual/}.}
+
+\paragraph{About this document}
+You have a robot or an object as a MuJoCo model, an MJCF file, and want to simulate it in Lodos v2: thousands of worlds at once on one GPU, with its contacts found by either of Lodos's two collision pipelines and resolved by its contact solver, the NLSP solver: MJWarp's constraint solve over every contact. MuJoCo Warp's (MJWarp's) collision pipeline and constraint solve are Lodos's own code, adapted from MuJoCo Warp 3.14.0 (\code{lodos.col.prim}, \code{lodos.cd.solver}): MJWarp is not a dependency. This guide goes through every decision and step on the way.
+
+\begin{itemize}
+\item which representation each geometry should have;
+\item how a mesh becomes convex hulls or a Lodos surface, step by step through \code{tools/mesh_processing/};
+\item how the hulls and the surfaces go into the scene;
+\item which of the MJCF's physics carries over and which must change;
+\item how to check the result and how to ship it.
+\end{itemize}
+
+It ends with one example done end to end: the SHARPA hand holding an armadillo, ported from the in-hand reorientation task of Lodos-v1 (\code{papers/lodos_v1.pdf}). That scene is in the live viewer as \code{sharpa_armadillo_sdf} and \code{sharpa_armadillo_polytope}. Like the manuals, the guide is written for a person and for an agent alike. Every option is named as the code names it, and every number not cited from Lodos-v1 was measured in this repository.
+
+\setcounter{tocdepth}{2}
+\tableofcontents
+
+\section{The path in one page}\label{sec:path}
+
+\Cref{fig:flow} is the whole path, and \cref{tab:checklist} the same as a checklist. The geometry is most of the work and most of the decisions.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.86\linewidth]{fig/fig_mk_flow.pdf}
+\caption{From an MJCF to a shipped scene. Each geometry is decided once: a MuJoCo primitive stays, a mesh becomes convex hulls (``polytope'', collided by MJWarp's pipeline) or a Lodos surface (``sdf'', a vertex set with a baked signed distance field). The hulls fall out of step 2 of the mesh pipeline, and the surfaces out of step 5.}
+\label{fig:flow}
+\end{figure}
+
+\begin{table}[t]
+\centering
+\caption{The checklist. Each line is a section of this guide.}
+\label{tab:checklist}
+\small
+\begin{tabularx}{\linewidth}{@{}L{5mm}YL{24mm}@{}}
+\toprule
+ & what & where \\
+\midrule
+1 & Check that \code{lodos.rbd} takes the model's dynamics; change what it refuses & \cref{sec:physics} \\
+2 & Decide each geometry's representation: primitive, convex hulls, or Lodos surface & \cref{sec:decide} \\
+3 & Install the mesh tools the decision needs & \cref{sec:install} \\
+4 & Run the mesh pipeline: watertight solids, hulls, remesh, repair, bake & \cref{sec:pipeline} \\
+5 & Put the hulls into the MJCF & \cref{sec:polytopes} \\
+6 & Key the surfaces to MJCF geoms; declare the pairs and their parameters & \cref{sec:surfaces} \\
+7 & Set the timestep, friction, actuators and joint constraints for Lodos & \cref{sec:physics} \\
+8 & Validate: placement, rest, friction, capacities, the viewer & \cref{sec:validate} \\
+9 & Tune it (the companion guide) and ship it: assets, viewer & \cref{sec:ship} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+A scene in Lodos v2 is an MJCF model plus, optionally, a list of Lodos surfaces (\code{lodos.sim.Surfaces}), built by \code{lodos.sim.make_sim(mjm, B, surfaces=...)}. The collision manual's Section~3, \emph{Describing a scene}, is the reference for that call.
+
+\begin{itemize}
+\item Every MJCF geom that can collide, and is not keyed to a surface, collides through MJWarp's pipeline (\code{lodos.col.prim}): MuJoCo's primitives through MJWarp's narrowphases, convex meshes and boxes through the exact hull narrowphase (the \emph{hybrid}).
+\item Every surface collides through Lodos's vertex--SDF pipeline, in the directional pairs you declare.
+\item The two never collide with each other.
+\item Both pipelines' contacts go to one solver, MJWarp's constraint solve: Lodos's are exported into MJWarp's contact arrays after MJWarp's own. So \code{make_sim}'s MJWarp capacities, \code{nconmax} and \code{njmax}, must hold Lodos's contacts as well: sized for the MJCF alone, as MJWarp's defaults are, they can drop Lodos's contacts without a word (\cref{sec:checks}).
+\end{itemize}
+
+\section{Deciding each geometry's representation}\label{sec:decide}
+
+\subsection{The three choices}\label{sec:choices}
+
+\begin{table}[t]
+\centering
+\caption{What each representation is, collides with, costs and gets wrong.}
+\label{tab:reps}
+\small
+\begin{tabularx}{\linewidth}{@{}L{19mm}YYY@{}}
+\toprule
+ & MuJoCo primitive & convex hulls (``polytope'') & Lodos surface (``sdf'') \\
+\midrule
+what & sphere, capsule, ellipsoid, cylinder, box, plane & one MJCF mesh geom per convex piece; a box is one & surface vertices plus an SDF baked on a voxel grid, in the body's frame \\
+collided by & MJWarp's narrowphases & the hybrid: GJK, EPA and a manifold of up to 4 points, on exact supports & Lodos's cascade: box, tile, voxel SDF, spline SDF \\
+represents & its exact shape & a convex decomposition: concave regions only to the decomposition's tolerance & any closed surface; concavities, thin features to the voxel size \\
+contacts & MuJoCo's & up to 4 per hull pair & one per penetrating vertex \\
+cost grows with & pairs & hull pairs in contact (and broadphase pairs) & vertices of the vertex side, before the filters; contacts after \\
+cannot see & -- & -- & edge--edge contact between two coarse surfaces; a feature finer than the vertex spacing \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\Cref{tab:reps} compares the three.
+
+\begin{itemize}
+\item \textbf{Keep the primitives} the MJCF already uses for what they fit well: a floor plane, walls as boxes, a ball. They are the cheapest and they are exact.
+\item \textbf{Convex hulls} are MuJoCo's own way of colliding a mesh: a mesh geom collides as its convex hull, so a concave part needs a decomposition into several. The hybrid finds the true penetration depth of each hull pair, and reports a manifold of up to four points.
+\item \textbf{A Lodos surface} represents the concave shape itself, with no decomposition, and finds one contact per penetrating vertex. Its accuracy and its cost are both set by how many vertices it has and how they are spaced. How it works, and why a vertex--SDF pair cannot see edge--edge contact, is in the collision manual's Sections 4--5.
+\end{itemize}
+
+\subsection{How to decide}\label{sec:howdecide}
+
+\begin{itemize}
+\item \textbf{A concave part that touches others over a wide area} (a hand's palm and fingers on an object, a nut on a bolt): a Lodos surface. A convex decomposition of a thread is thousands of hulls. The nut-bolt ships only as surfaces.
+\item \textbf{Boxes, cards, stones, anything whose contacts are edges and corners against faces}: hulls or boxes. A vertex--SDF contact needs a vertex where the contact is, so two coarsely sampled boxes can pass edge through edge. The shipped box and card surfaces are lattice-sampled over their faces, so that a face resting on a face has vertices across it (\code{tools/mesh_processing/scene_surfaces.py}).
+\item \textbf{Fast, many objects, rough shapes}: hulls with a small hull count, or surfaces with a small vertex budget. Which is faster depends on the scene. The performance guide measures both on every built-in scene that ships in both representations, as most do.
+\item \textbf{Both pipelines in one scene} is allowed and common: the mixed scenes (\code{arm_box_6}, \code{arm_box_20}) hold armadillos as surfaces and cubes as MJCF boxes. Only pairs within one pipeline collide. A body that must touch both kinds carries both representations: its surface keyed to one geom, and its hulls as further geoms with \code{mass="0"}.
+\item \textbf{Floors.} One MJCF plane serves both pipelines when a \code{PlaneSurface} is keyed to it: it stays a plane in MJWarp's collision, and every surface you pair with it collides against it.
+\end{itemize}
+
+\begin{notebox}{Decide per geometry, not per scene}
+The built-in scenes each ship in both representations because they are comparisons. A model you build for use needs only the representation that serves it, and mixing is free. The SHARPA hand's surfaces were made because its links meet the object over curved areas. A fingertip is 97 vertices, and the whole hand 3\,479.
+\end{notebox}
+
+\section{Installing what the pipeline needs}\label{sec:install}
+
+Running a simulation needs none of what follows. Lodos's own environment (\code{uv sync}) already carries the \code{mesh} group: \code{trimesh}, \code{torch} (CPU, for the Hilbert ordering) and \code{pyvista}. That is enough for steps 3--5 of the pipeline. Steps 1 and 2 need more:
+
+\begin{table}[h]
+\centering
+\caption{What each step of \code{tools/mesh_processing/} needs beyond Lodos's environment.}
+\label{tab:install}
+\small
+\begin{tabularx}{\linewidth}{@{}L{8mm}L{30mm}Y@{}}
+\toprule
+step & needs & how \\
+\midrule
+1 & \code{scikit-image}; CGAL & \code{uv pip install scikit-image}. CGAL's newest wheel is for CPython 3.12, so on Lodos's 3.14 it cannot load, and step 1 wraps every body: run step 1 from a 3.12 environment with CGAL in \code{tools/mesh_processing/.pylibs} \\
+2 & PaMO; CoACD; \code{manifold3d} & PaMO runs from its container: \code{singularity pull tools/mesh_processing/.pamo.sif docker://sarahwei0210/pamo:0.0.2} (about 10\,GB; AGPL-3.0, so its output meshes are kept and none of its code is linked). \code{uv pip install coacd manifold3d}: CoACD 1.0.14 installs on 3.14; \code{manifold3d} is \code{trimesh}'s boolean engine for the union \\
+3, 4 & Instant Meshes & a pre-built binary from its README, saved as \code{tools/mesh_processing/.instant-meshes} \\
+5 & the GPU & Warp's mesh query signs the field; minutes for a hand on an RTX 4080 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{notebox}{There is no extra for steps 1 and 2}
+\code{pyproject.toml}'s extras are \code{vis}, \code{mesh}, \code{notebooks} and \code{test}, and none holds what steps 1 and 2 need: install the packages above by hand.
+\end{notebox}
+
+\section{The mesh pipeline}\label{sec:pipeline}
+
+\code{tools/mesh_processing/} turns a model's meshes into hulls and surfaces in five steps, one script each (\cref{tab:steps}).
+
+\begin{itemize}
+\item Each step takes its input positionally and names its output by appending a suffix, so a directory's name is the record of how it was made: \code{robot.xml} $\to$ \code{robot_wt/} $\to$ \code{robot_wt_cp/} and \code{robot_wt_cp_fused/} $\to$ \code{..._im/} $\to$ \code{..._im_man/} $\to$ \code{..._im_man_sdata/}.
+\item \code{run_pipeline.py robot.xml} runs all five, and \code{--from N}/\code{--to N} resumes the chain anywhere. \code{--replay DIR} runs it without a window, steps 2 and 3 from the choices a previous run recorded in \code{DIR} (\cref{sec:step2,sec:step3}).
+\item Steps 1--4 write each body in its body frame, the frame a collision geometry has to be authored in, and again in world frame at \code{qpos0} (\code{<dir>_world/}) for viewing the assembled model. Step 5 writes body frame only.
+\item Every step writes a record, a JSON list with one row per body. Step 5 copies the earlier steps' records beside the bakes (\cref{sec:records}).
+\end{itemize}
+
+Each script's docstring and \code{--help} document its options; this section is about the decisions.
+
+\begin{table}[t]
+\centering
+\caption{The five steps. ``Choose'' is the decision a step asks of you; steps 2 and 3 ask it in a window and wait.}
+\label{tab:steps}
+\small
+\begin{tabularx}{\linewidth}{@{}L{4mm}L{33mm}YL{34mm}@{}}
+\toprule
+ & script & does & choose \\
+\midrule
+1 & \code{fuse_meshes_by_body.py} & merges each body's meshes into its frame; makes each one watertight solid (winding number, then CGAL's alpha wrap) & \code{--geoms} (\code{visual}, \code{collision}, \code{all}), \code{--alpha}, \code{--voxel} \\
+2 & \code{calibrate_cp_decomp.py} & decimates (PaMO), decomposes with CoACD, writes the hulls (\code{_cp/}) and their dilated union (\code{_cp_fused/}) & a threshold and hull cap per body \\
+3 & \code{interactive_remesh.py} & isotropic remesh with Instant Meshes to a vertex target per body & the vertex target per body \\
+4 & \code{fix_nonmanifold_meshes.py} & removes duplicate-face flaps; re-remeshes at the nearest target that comes out a closed manifold & -- \\
+5 & \code{create_surface_data.py} & Hilbert-orders the vertices and bakes the SDF; copies the records beside the bakes & \code{--voxels}, \code{--dilation} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Step 1: watertight solids}\label{sec:step1}
+
+The input is the MJCF, because which mesh belongs to which body is stated there and nowhere else. MuJoCo's compiler recentres every mesh on its inertial frame and folds the correction into the geom's pose, so a body's meshes come back in its frame exactly. Merging is concatenation, not a boolean union.
+
+The solid comes from two passes that fail in opposite directions:
+
+\begin{itemize}
+\item the generalized winding number \cite{winding} decides which solid a soup of open sheets bounds;
+\item CGAL's alpha wrap \cite{alphawrap} closes the result into one manifold shell.
+\end{itemize}
+
+The wrap alone tunnels through holes larger than its alpha. Handed a solid that is already closed, it cannot.
+
+\begin{itemize}
+\item \textbf{Choose \code{--geoms}.} Use \code{visual} (the default) when the model's collision geoms are hand-fitted primitives, as MuJoCo models usually ship them. Use \code{collision} when its collision meshes are the shape you want.
+\item \textbf{Judge it} by the record \code{fuse_meshes_by_body.json}: per body, watertight, the number of shells, the genus and the volume, and whether the winding-number pass was needed. On the SHARPA hand, 11 of the 23 merged bodies were open.
+\end{itemize}
+
+\subsection{Step 2: convex hulls}\label{sec:step2}
+
+PaMO \cite{pamo} first decimates the watertight solids while keeping them intersection-free: the hand's 525\,241 vertices become 5\,175, since CoACD's cost grows with its input. The result is cached in \code{tools/mesh_processing/.tmp/}. CoACD \cite{coacd} then decomposes every body, and a window opens with a threshold slider and a hull cap per body.
+
+\begin{itemize}
+\item \textbf{The threshold is CoACD's concavity tolerance}: lower means more hulls and a closer fit. A threshold does not mean the same thing on every body. On the SHARPA hand the chosen ones run from 0.075 to 0.622, for 1 to 24 hulls per body and 87 in all.
+\item \textbf{A hull is a contact candidate at every step, for every pair it can meet}, so the hull count is this representation's cost. Choose the coarsest decomposition that keeps the surfaces that will touch something.
+\item The step writes the hulls, one directory of \code{hull_*.obj} per body (\code{_cp/}), which are the polytope representation. It also writes their boolean union, one solid per body (\code{_cp_fused/}), which is what the surface pipeline continues from. Each hull is first scaled by \code{--dilate} (1.0005) about its centroid. CoACD's hulls meet face to face with zero-thickness interfaces, so the union needs the overlap; it costs 0.1\,\% of volume.
+\item \textbf{CoACD is not reproducible at a fixed seed}: three runs of one input gave 74, 76 and 78 hulls. So the meshes are the record, not the settings.
+\end{itemize}
+
+\code{--choices FILE} starts each body from the threshold and cap a previous run chose (its \code{calibrate_cp_decomp.json}), and \code{--no-view} decomposes at those settings, writes and exits. That recovers a decomposition's settings and, within a few percent, its hull counts.
+
+\subsection{Step 3: the vertex budget}\label{sec:step3}
+
+\textbf{This is the step that sets a surface's cost and its resolution.} Each vertex is a contact candidate in every pair where the surface supplies vertices, and the spacing between vertices is the finest feature a contact can follow. Instant Meshes \cite{instantmeshes} remeshes each body to a target vertex count with triangles of nearly equal size: on the hand the edge length varies by a coefficient of 0.07--0.27, where quadric collapse gives 0.48.
+
+\begin{itemize}
+\item \textbf{Choose a target per body} with the slider, which is logarithmic because useful targets span two decades: the hand's run from 84 vertices (a phalanx) to 898 (the palm). The starting values come from \code{--spacing} (5.6\,mm between vertices), which is a good first guess. Lower a body's target while its shape holds, and keep the vertices dense where contacts are made: fingertips sample their surfaces about twice as finely as the palm.
+\item \textbf{Read the topology tag} on each row. Instant Meshes guarantees no topology, and the result is not monotone in the target: a body can be clean at 100 vertices, pinched at 105 and holed at 110.
+  \begin{itemize}
+  \item \code{open Ne} is a hole: the target is too low.
+  \item \code{nonman Ne} and \code{N dup f} are self-touching sheets and flaps. Step 4 repairs them.
+  \end{itemize}
+\item \textbf{Nothing is written on closing the window}; \code{Export} writes. The sliders start from \code{--spacing}, so writing on close would overwrite hand-chosen targets with the defaults.
+\end{itemize}
+
+\code{--targets FILE} starts from a previous run's targets (its \code{interactive_remesh.json}), and \code{--no-view} remeshes, writes and exits. Instant Meshes is deterministic: replaying the original SHARPA targets this way reproduces its 3\,481 vertices exactly (\cref{sec:example}).
+
+\subsection{Step 4: closed manifolds}\label{sec:step4}
+
+No choices, and no window needed (\code{--no-view}).
+
+\begin{enumerate}
+\item First it deletes every copy of a repeated face, which leaves the volume identical and moves no surviving vertex.
+\item Where a genuine bowtie remains, two sheets crossing at an edge, it remeshes again from step 3's input, at the nearest target that comes out a closed manifold: $+1, -1, +2, -2, \ldots$ vertices away.
+\end{enumerate}
+
+On the SHARPA hand, 18 bodies were already clean, 4 were fixed by surgery and 1 was re-remeshed: its first target, one vertex below its 105, came out a closed manifold of 101. A surface that only ever supplies vertices to an asymmetric pair does not need to be closed: no field is baked from it.
+
+\subsection{Step 5: the bake}\label{sec:step5}
+
+\code{notebooks/05_make_a_surface.ipynb} walks through this bake for one mesh, stage by stage: the curve order, the grid, the fit, checks of the field against the mesh, the file, and the surface in a scene.
+
+\begin{itemize}
+\item \textbf{The reorder.} \code{lodos.col.sdf.io.process_mesh} sorts each body's vertices along a Hilbert curve and renumbers the faces. It is a permutation, and it is what makes Lodos's tiles tight: a run of 8 consecutive vertices is a compact cluster (collision manual, \emph{Tiles}).
+\item \textbf{The grid.} The bake samples the SDF on a voxel grid over the mesh's box, dilated \code{--dilation} times (2) about its centre so that the field has an outside, with \code{--voxels} cells (100) along the longest edge.
+  \begin{itemize}
+  \item The voxel size $h$ is the field's resolution. On the hand it runs from 0.43\,mm on a phalanx to 2.15\,mm on the palm.
+  \item The grid is memory, 4 bytes per voxel and per spline coefficient: 1.7--4.8\,MB a surface on the hand, 67.8\,MB for all 23.
+  \item A shape thinner than about two voxels needs its own grid. A 4\,cm card under the default grid has no negative interior; \code{scene_surfaces.py} gives each such shape its own.
+  \end{itemize}
+\item \textbf{The fit.} A tricubic B-spline fitted to the knot samples, plus the voxel-centre distances that Lodos's prefilter reads. The record's \code{sdf_error_h} is the spline's mean $\lvert\mathrm{sdf}\rvert$ on the mesh's own vertices in voxels, the bake's error: 0.05--0.11 on the hand.
+\item \textbf{One bake, two fields.} \code{"cubic"} ($S_{\mathrm{c2}}$, the default) and \code{"linear"} ($S_{\mathrm{c0}}$) are evaluations of the same knot samples, chosen when a surface is loaded (\code{load_surface(..., spline_type=...)}), not when it is baked. \code{linear} is cheaper per contact, with C$^0$ normals; the nut-bolt ships both.
+\end{itemize}
+
+A bake already beside the input is reused, so a second run opens in seconds. \code{--rebake} is needed after changing \code{--voxels}, \code{--dilation}, \code{--depth} or \code{--encoding}.
+
+\subsection{Records, and what they are for}\label{sec:records}
+
+Each step's record is a list of rows, one per body. Step 5 copies the earlier steps' records beside the bakes:
+
+\begin{itemize}
+\item \code{fuse_meshes_by_body.json}: watertightness, shells, volume;
+\item \code{calibrate_cp_decomp.json}: threshold, hull cap, hulls;
+\item \code{interactive_remesh.json}: target, vertices, topology;
+\item \code{fix_nonmanifold_meshes.json}: the repair applied;
+\item \code{create_surface_data.json}: vertices, grid, voxel size, bake error and the bake settings.
+\end{itemize}
+
+A surface installed anywhere then carries how it was made. \code{lodos.utils.tuning.surface_fingerprint} reads each body's rows from them into a tuning file. The vertex budget is the largest single lever on what a surface costs to collide, so a tuning file records the budget its capacities were measured at, and a re-baked surface makes the file stale (performance guide, \emph{The tuning file}). The shipped SHARPA bakes carry the records of the run that made them in \code{viewer/assets/sharpa/final_sdata/}.
+
+\subsection{Other ways to make a surface}\label{sec:other}
+
+\begin{itemize}
+\item \textbf{Primitive shapes} (boxes, cards, spheres, the arch's stones): \code{tools/mesh_processing/scene_surfaces.py} samples their faces directly (a lattice on a box's faces, a subdivided icosphere), bakes them and installs them as \code{viewer/assets/surfaces/<name>/}.
+\item \textbf{The same shape at another size}: \code{lodos.col.sdf.scale_surface(surf, scale, shift)} rescales a loaded bake in place, with no re-bake: vertices, box, grid, spline coefficients, voxel distances and inner spheres. Everything in a bake is a length or a field of lengths, and $\mathrm{sdf}'(kx + c) = k\,\mathrm{sdf}(x)$ holds to $1.7\cdot10^{-8}$\,m. The keyed MJCF mesh then takes the same \code{scale} (\cref{sec:keyed}). The worked example's 70\,mm armadillo is the shipped 1.64\,m bake scaled.
+\item \textbf{CAD with thin threads} (the nut-bolt): \code{tools/mesh_processing/nutbolt/} repairs the tessellation's T-junctions, remeshes at a fixed edge length and reprojects onto the original, then bakes the remesh's vertices against the original's own SDF at $h$ = 0.2\,mm.
+\item \textbf{Inner spheres} for deep penetration: \code{tools/mesh_processing/pack_spheres.py} packs them from the bake's interior voxels into \code{spheres.npz} beside the bake. \code{lodos.col.sdf.load_surface_data} reads them; \code{load_surface_file}, and the scenes' \code{load_surface} through it, drops them: a sphere collides earlier than the mesh would, and every shipped timing is without them.
+\end{itemize}
+
+\section{Convex hulls in the MJCF}\label{sec:polytopes}
+
+The polytope representation is MJCF only. Each body gets one mesh geom per hull of its \code{_cp/<body>/}, and nothing else changes. The SHARPA scenes do it in code (\code{viewer.scenes.sharpa.scene_xml}): the menagerie's collision geoms are removed and the hull geoms added in their place.
+
+\needspace{9\baselineskip}
+\begin{lstlisting}[language=XML]
+<asset>
+  <mesh name="right_index_DP_cp0" file="right_cp/right_index_DP/hull_000.obj"/>
+</asset>
+<body name="right_index_DP" ...>
+  <geom name="right_index_DP_cp0" mesh="right_index_DP_cp0" class="elastomer_collision" friction="0.6"/>
+</body>
+\end{lstlisting}
+
+\begin{itemize}
+\item \textbf{Inertia.} By default MuJoCo computes a body's inertia from all its geoms, and a decomposition is not the shape's exact volume: each hull also fills its piece's concavities, and on the SHARPA hand the hulls hold 10\,\% more than the solids CoACD decomposed. Give the hull geoms \code{mass="0"}, or the body an explicit \code{<inertial>}, when the inertia should come from elsewhere. The worked example's armadillo takes its 49\,g from the pieces at the original's density in both representations, as an explicit \code{<inertial>} (\code{sharpa_armadillo.armadillo_inertial}).
+\item \textbf{Which pairs collide} is MuJoCo's rule: \code{contype}/\code{conaffinity} bits, no pairs within a welded body or between a parent and its child, and the \code{<exclude>}s. The worked example's floor has \code{contype="2" conaffinity="2"}, so it meets the armadillo's pieces (\code{conaffinity="2"}) and never the hand's.
+\item \textbf{Inline meshes.} A hull can be given by its vertices alone, \code{<mesh name="p0" vertex="x y z ..."/>}, and MuJoCo takes the convex hull. The armadillo's 34 pieces are written this way after scaling. Write vertices with enough decimals: at 70\,mm, five decimals of a metre is 0.01\,mm of noise per vertex.
+\item \textbf{What the hybrid refuses.} The exact hull narrowphase takes box--box, box--mesh, mesh--mesh and plane--mesh pairs, and \code{PrimCollision} (\code{lodos.col.prim.driver}) refuses a model it does not support:
+  \begin{itemize}
+  \item a nonzero \code{margin} or \code{gap} on a geom of those types;
+  \item any explicit \code{<pair>};
+  \item SDF geoms, flexes, or MuJoCo's native CCD switched off;
+  \item box sizes that differ between worlds.
+  \end{itemize}
+  Such a model runs with \code{make_sim(hybrid=())}, MJWarp's own narrowphases throughout.
+\item \textbf{Capacities.} The contacts and the broadphase's candidate pairs share MJWarp's \code{naconmax} arrays. A scene of many hulls has far more overlapping boxes than contacts. Size them with the tuning tools, not by contacts alone (performance guide, \emph{Capacities}).
+\end{itemize}
+
+\section{Lodos surfaces in the scene}\label{sec:surfaces}
+
+\subsection{The keyed geom}\label{sec:keyed}
+
+Each surface is keyed to one MJCF geom. That geom puts the surface on its body, gives MuJoCo the body's inertia, and is what the viewer draws, so its pose on the body is the surface's frame. \code{make_sim} switches every keyed geom off in MJWarp's collision (except a plane), so the geom itself never collides. Two ways to key:
+
+\begin{itemize}
+\item \textbf{The surface's own mesh}, placed with no offset: \code{viewer.scenes.assets.surface_obj(name)} writes a shipped surface's vertices and faces as an OBJ, cached (\code{lodos.col.sdf.write_surface_obj} writes any loaded surface's), and MuJoCo takes the inertia from it. This is what the drop scenes do:
+\begin{lstlisting}[language=XML]
+<asset><mesh name="arm" file="/path/to/.scratch/surface_obj/armadillo_surface.obj"/></asset>
+<body name="a0" pos="0 0 1.5"><freejoint/><geom name="a0" type="mesh" mesh="arm" density="100"/></body>
+\end{lstlisting}
+A scaled surface keeps the same OBJ with \code{scale="k k k"} on the \code{<mesh>}, and its shift as the geom's \code{pos}. MuJoCo's default mesh inertia, \code{inertia="legacy"}, overestimates a closed mesh that is not convex: the armadillo above weighs 48.8\,kg at density 100 under it, against 35.4\,kg with \code{<mesh inertia="exact">}, which notebook 05 uses. The built-in scenes that take an armadillo's inertia from its surface, the drops and the mixed piles, keep the default.
+\item \textbf{A placeholder}, when the inertia comes from elsewhere. The SHARPA links are keyed to a 1\,mm sphere, \code{contype="0" conaffinity="0" mass="0" group="5"}, and their inertia stays the menagerie's.
+\end{itemize}
+
+\begin{notebox}{Units}
+Everything is SI, as MuJoCo's is: metres, kilograms, seconds. A model authored in millimetres needs its meshes scaled (\code{<mesh scale="0.001 0.001 0.001">}) before step 1, and a surface baked at the wrong scale is rescaled with \code{scale_surface} (\cref{sec:other}), never by editing the grid.
+\end{notebox}
+
+\begin{notebox}{The surface must be in its body's frame}
+A surface's vertices and field are stored in its body's frame, and the simulator supplies the body's pose and nothing else. The pipeline writes body frame for exactly this reason. A surface baked in world frame collides where the world-frame mesh was at \code{qpos0}, carried along by the body: the error looks plausible.
+\end{notebox}
+
+\subsection{Pairs}\label{sec:pairs}
+
+A Lodos pair is directional: \code{[vertex surface, SDF surface]} finds the vertices of the first inside the field of the second.
+
+\begin{itemize}
+\item \textbf{Which side supplies the vertices.} The more densely sampled side, and the side with the finer features. A vertex can be no finer than the spacing, and a field no finer than its voxels. The SHARPA scenes give each hand pair to the link whose surface has more vertices per unit area (\code{sharpa._density}). The armadillo is always the SDF side against the hand's links: its 451 vertices span 70\,mm, coarser than a fingertip's.
+\item \textbf{Both directions} of an interface are two declared pairs, \code{(a, b)} and \code{(b, a)}, each finding its own contacts. The drop scenes declare every ordered pair of armadillos. The cost doubles, and the contacts the second direction adds are those where $a$'s field is the finer.
+\item \textbf{Within one articulated body}, pair what MuJoCo would collide: not two links welded together, not a parent and its child after welding, nothing an \code{<exclude>} names. \code{viewer.scenes.sharpa.collides(mjm, body_a, body_b)} is that test: 225 pairs on one hand.
+\item \textbf{Floors and walls}: every surface that can reach a \code{PlaneSurface} is paired with it, surface first. A plane has no vertices and can only be the SDF side.
+\item \textbf{Declare no pair that cannot touch.} Every pair costs its box test at every step, and a pair whose bodies overlap at rest (a knuckle's two links) collides at rest.
+\end{itemize}
+
+\subsection{Parameters}\label{sec:params}
+
+Every Lodos pair has a row of 13 parameters: friction $\mu$, a spring-damper force law (stiffness, sharpness, dissipation, stiction) by which contact groups weigh their members, MuJoCo's solref and solimp (read only under \code{mode="mj"}), and an unused $w$ (collision manual, \emph{Contact parameters}).
+
+\begin{itemize}
+\item \code{Surfaces(params=None, mu=...)} gives every pair the defaults with friction \code{mu}. Pass a \code{(len(pairs), 13)} array for per-pair values: \code{lodos.sim.default_pair_params(mu, n)} returns the default rows to edit.
+\item Under the exact mode, the default, the solver reads $\mu$ alone, and with contact groups the four spring-damper columns too.
+\item MJWarp's own contacts take their parameters from the MJCF.
+\end{itemize}
+
+\subsection{In Python, or in the MJCF file}\label{sec:twoways}
+
+\paragraph{In Python} This gives full control, and is what the built-in scenes do. A scene module in \code{viewer/scenes/} typically has three functions: \code{scene_xml(...)} returns the MJCF text, \code{surfaces(mjm, ...)} returns the \code{Surfaces}, and \code{build(...)} returns a \code{Sim}. \code{viewer/scenes/sharpa_armadillo.py} is the worked example's, 234 lines.
+
+\paragraph{In the MJCF file} This needs no code. The viewer and \code{viewer.scenes.catalog.from_mjcf} read custom text fields named after the keyed geom:
+
+\needspace{7\baselineskip}
+\begin{lstlisting}[language=XML]
+<custom>
+  <text name="lodos:arm0" data="armadillo"/>             <!-- a shipped surface -->
+  <text name="lodos:shell" data="bake/surface_data.npz"/>  <!-- a bake, relative to the file -->
+  <text name="lodos:floor" data="plane"/>                  <!-- a PlaneSurface on this plane -->
+  <numeric name="lodos:mu" data="0.8"/>
+</custom>
+\end{lstlisting}
+
+The pairs are then every ordered pair of surfaces on different bodies, plus every surface against every plane, all with the one set of parameters (\code{lodos:mu}, and \code{lodos:stiffness} and \code{lodos:dissipation} for contact groups). A file that names no friction cone is loaded with the elliptic one (\cref{sec:friction}). That suits piles of objects. It does not suit an articulated hand, whose pairs need the filter of \cref{sec:pairs} and a direction each.
+
+\section{Physics: what carries over from the MJCF}\label{sec:physics}
+
+\subsection{What \code{lodos.rbd} takes}\label{sec:rbdtakes}
+
+Lodos does its own rigid-body dynamics on the device (\code{lodos.rbd}), from the MJCF's model, and refuses what it does not implement rather than ignoring it.
+
+\begin{itemize}
+\item \textbf{It takes:}
+  \begin{itemize}
+  \item free, ball, slide and hinge joints;
+  \item joint springs, damping, armature and gravity compensation;
+  \item actuators with joint, joint-in-parent or site transmissions, with fixed or affine gain and bias and the simple activation dynamics;
+  \item semi-implicit Euler or MuJoCo's \code{implicitfast} integration (\code{make_sim(integrator=...)}, \code{"euler"} or \code{"implicitfast"}, overrides the MJCF's).
+  \end{itemize}
+\item \textbf{It refuses} (\code{NotImplementedError}, naming what it found):
+  \begin{itemize}
+  \item tendons, equality constraints, flexes and mocap bodies;
+  \item any integrator but \code{Euler} and \code{implicitfast};
+  \item fluid forces;
+  \item other actuator transmissions, gains, biases or dynamics;
+  \item \code{actearly};
+  \item kinematic trees more than 128 dofs wide.
+  \end{itemize}
+\end{itemize}
+
+Joint limits and dof friction loss are not \code{lodos.rbd}'s: they are constraints of the contact solve (\cref{sec:joints}). So the usual port of a MuJoCo model has these edits:
+
+\begin{enumerate}
+\item \code{<option integrator="Euler" cone="elliptic"/>} (or \code{"implicitfast"}) and a timestep the contacts can take (\cref{sec:timestep,sec:friction});
+\item mocap bodies (goal markers, targets) removed or turned into fixed bodies;
+\item equality constraints and tendons removed, or their effect rebuilt from joints and actuators;
+\item the \code{<keyframe>}s checked against the edited model's \code{nq} and \code{nu}.
+\end{enumerate}
+
+\subsection{The timestep}\label{sec:timestep}
+
+Lodos's contacts are resolved once per step. A timestep an MPC model ran at under MuJoCo's implicit integrator is usually too long.
+
+\begin{itemize}
+\item The worked example's original ran at 10\,ms with \code{implicitfast} on the pyramidal cone.
+\item Under Lodos-v1 (\code{papers/lodos_v1.pdf}), with its spring-damper contact model at the default stiffness, the 49\,g object's grasp went to NaN at 10\,ms and sank 22\,mm in 2\,s at 5\,ms.
+\item 2\,ms holds. The drops, the hand piles and the worked example step at 2\,ms, the nut-bolts at 1/480\,s and the NIST threading replay at 1/800\,s; the exactness scenes, ported from the FBF paper, at its 1/60\,s, and 1/240\,s for the cards and the arch.
+\end{itemize}
+
+Start at 2\,ms and lengthen it only after the rest and grasp checks of \cref{sec:validate} pass at the longer step.
+
+\subsection{Friction, impedance and the cone}\label{sec:friction}
+
+\begin{itemize}
+\item \textbf{The cone.} The exact mode solves on the elliptic cone whatever the MJCF says: \code{make_sim} sets it on its copy of the model. The mj mode at its defaults, with no proximal loop and no de Saxc\'e term, takes the model's cone: \code{make_sim} keeps a compiled model's, MuJoCo's default pyramidal unless the MJCF says \code{cone="elliptic"}. The viewer and the tuning tools load an MJCF file that names no cone, in it or in a file it includes, with the elliptic one (\code{viewer.scenes.catalog.from_mjcf}), as every built-in scene names it. Say \code{cone="elliptic"}, so that both modes solve on the same cone wherever the model is built.
+\item \textbf{\code{impratio}} is forced to 1 by \code{make_sim} under the exact mode, the default, and no solref or solimp reaches it (contact dynamics manual, \emph{The impedance rule}). An MJCF \code{impratio="10"} does nothing there and is harmless. Under \code{mode="mj"}, MuJoCo's soft rows, it is read.
+\item \textbf{Friction} of a Lodos pair is its row's $\mu$. Of an MJWarp contact it is MuJoCo's maximum over the two geoms. Set them to agree when a body is in both pipelines; the worked example uses $\mu$ = 0.6 on every pair of both representations.
+\end{itemize}
+
+\subsection{Actuators}\label{sec:actuators}
+
+Position servos are the common case. A \code{<position kp=... kv=...>} actuator, or the equivalent \code{<general>} with \code{biastype="affine"}, carries over as written.
+
+\begin{notebox}{A positive third bias parameter is a damping ratio}
+The menagerie writes its servos as \code{<general gainprm="kp" biasprm="0 -kp 0.9" .../>}. MuJoCo reads a positive \code{biasprm[2]} on a position-like actuator as a damping ratio and compiles it into the velocity gain from the stiffness and the joint's inertia. Scaling \code{kp} without recompiling therefore scales the damping too. \code{viewer.scenes.sharpa.scene_xml(kp_scale=...)} softens the dropped hands' servos by scaling \code{gainprm[0]} and \code{biasprm[1]} in the XML, so that MuJoCo recompiles the damping.
+\end{notebox}
+
+\begin{itemize}
+\item \textbf{A control held for the whole run} (a grasp): \code{lodos.rbd.io.set_state(sim.drbd, ctrl=...)} with a \code{(B, nu)} array. A scene in the viewer holds one through \code{SceneSource.ctrl}.
+\item \textbf{A control that changes}: write \code{sim.drbd.ctrl} between steps. It is a device array, so a captured step graph reads the new values. A scene in the viewer changes it through \code{SceneSource.controls}, and plays a recording through \code{RecordedControls}, which an MJCF file names by \code{lodos:controls}.
+\item Controls are clamped to \code{ctrlrange} unless the model disables clamping.
+\end{itemize}
+
+\subsection{Joint limits and friction loss}\label{sec:joints}
+
+Joint limits and dof friction loss are constraints, solved with the contacts: MJWarp builds them as MuJoCo's soft constraint rows, under either mode.
+
+\begin{itemize}
+\item \code{make_sim(joint_constraints=True)}, the default, keeps them.
+\item \code{joint_constraints=False} takes them out of the model: a limited joint turns freely, and a joint with friction loss slides without it.
+\item The SHARPA scene modules (\code{sharpa}, \code{sharpa_armadillo}) remove them from the MJCF unless \code{jlimit=True}. The viewer's SHARPA piles pass it; its \code{sharpa_armadillo} scenes do not.
+\end{itemize}
+
+A soft finger without limits bends backwards past its range under load: up to 0.74\,rad in the five-hand pile at a tenth of the servos' stiffness.
+
+\subsection{Choosing a mode, and resting contacts}\label{sec:solver}
+
+There is one solver, MJWarp's constraint solve over every contact; what you choose is its mode (\code{solver_kwargs=dict(mode=...)}), and the contact dynamics manual is the reference. In short:
+
+\begin{itemize}
+\item \code{"exact"}, the default, solves the exact contact problem, with no MuJoCo impedance, by MJWarp's Newton inside a proximal loop. It holds a grasp and brings a pile to rest.
+\item \code{"mj"} solves MuJoCo's soft problem by MJWarp's Newton, with no proximal loop: about three times the exact mode's throughput on the nut-bolt (contact dynamics manual, \emph{Newton's nut-bolt}). Its contacts are soft, and creep: 1\,mm/s down the contact dynamics manual's slope at the pairs' default solref and solimp, where the exact mode holds.
+\item Contact groups (\code{groups="ray"} or \code{"cone"}) solve each pair's contacts in a few groups rather than one by one: fewer rows and a faster solve on the piles, and another problem. Check a scene's own behaviour under them before relying on them (performance guide, \emph{The solver: budgets and accuracy}).
+\end{itemize}
+
+\code{baumgarte_slop} (the exact mode's, 0.2\,mm by default, \code{lodos.cd.driver.BAUMGARTE_SLOP}) leaves a resting penetration that small alone, which is what stops a resting contact from flickering in and out of existence.
+
+\section{Validating the scene}\label{sec:validate}
+
+\subsection{In the viewer}\label{sec:viewer}
+
+\begin{lstlisting}
+python -m viewer                                # then a built-in scene or a file, from the Scene panel
+python -m viewer path/to/scene.xml              # an MJCF with lodos: annotations
+python -m viewer path/to/scene.xml --sim mjwarp # the same scene under Newton's MuJoCo Warp
+\end{lstlisting}
+
+\begin{itemize}
+\item \textbf{Geometries} shows each representation (surfaces, hulls, keyed geoms) and draws each where MuJoCo puts it.
+\item \textbf{Overlays} shows contacts, normals and forces per pipeline.
+\item \textbf{State} edits any joint by gizmo or by value.
+\item \textbf{Sim} switches the sim from the frame on screen: Lodos, and, where \code{viewer/newton/}'s environment is installed, Newton's MuJoCo Warp (\code{mjwarp}) and Kamino (\code{kamino}), which collide each Lodos surface as its mesh with Newton's own SDF. Under Lodos it sets the solver's options, the mode among them, so one scene can be compared under both modes and against Newton's sims.
+\item \textbf{Performance} reads the state on screen against the viewer's capacities and runs the tuning tools in the background (performance guide, \emph{In the live viewer}).
+\end{itemize}
+
+The viewer runs one world. A scene that misbehaves there misbehaves batched. \emph{The Live Viewer} (\code{docs/visualizer.pdf}) is its manual.
+
+\subsection{The checks}\label{sec:checks}
+
+\begin{table}[t]
+\centering
+\caption{What to check before trusting a new scene, and how.}
+\label{tab:checks}
+\small
+\begin{tabularx}{\linewidth}{@{}L{25mm}YL{40mm}@{}}
+\toprule
+check & how & expect \\
+\midrule
+it builds & \code{make_sim} under each mode you will run; \code{lodos.rbd} names what it refuses & no exception \\
+the start & one forward pass (\code{lodos.step.forward}); the deepest penetration over the contacts & no deeper than the scene's own resting depth (a keyframe can start penetrating: the worked example's starts 2.65\,mm in, and backs out) \\
+mass and inertia & \code{mjm.body_mass}, \code{body_inertia} against the CAD or the original model & equal \\
+at rest & leave it 2\,s from a settled state; each free body's displacement & under the exact mode, under a millimetre; under the mj mode soft contacts can creep (1\,mm/s down the contact manual's slope) \\
+friction & a block on a slope just inside its friction cone & holds (the contact manual's slope test) \\
+the task & what the scene is for: a grasp holds, a pile settles, a nut threads & the original model's behaviour \\
+capacities & \code{lodos.utils.calibrate.Tracker} over a rollout (\code{tools/performance_tuning/calibrate.py}); MJWarp's must hold Lodos's contacts & no overflow anywhere \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\Cref{tab:checks} lists them. Write the scene's own test once it passes: for the worked example, one that builds it in both representations and checks that the armadillo is within 5\,mm of where the keyframe put it after 2\,s (\cref{sec:exvalidate}).
+
+\section{Tuning and shipping}\label{sec:ship}
+
+\subsection{A first tuning pass}\label{sec:firstpass}
+
+A new scene runs at slow defaults: every Lodos collision capacity at 1.0, which is safe, and MJWarp's capacities at whatever the scene asked for, which must hold Lodos's contacts too (\cref{sec:checks}). The performance guide is the full treatment. Its first pass is one command:
+
+\begin{lstlisting}
+python tools/performance_tuning/tune.py path/to/scene.xml --out-dir tuning
+\end{lstlisting}
+
+It explores a state set from the scene's starts and times the scene as it is. It then picks tile sizes, sizes every capacity, tries cheaper solver budgets against an artifact guard, and finds the fastest batch size. Everything goes into one tuning file (\code{tuning/scene.tuning.json} here) that \code{make_sim(..., tuning=...)} reads:
+
+\begin{lstlisting}
+sim = make_sim(mjm, B, surfaces=surf, tuning="tuning/scene.tuning.json")
+\end{lstlisting}
+
+On the worked example it made the step 2.7$\times$ faster on the surfaces and 2.9$\times$ on the hulls under the exact mode, and 3.2$\times$ and 1.6$\times$ under mj (\code{--mode mj}; \cref{sec:extuning}).
+
+\subsection{Assets}\label{sec:assets}
+
+\begin{itemize}
+\item \textbf{Where they go.} A shipped surface lives in \code{viewer/assets/surfaces/<name>/surface_data.npz}, loaded by \code{viewer.scenes.assets.load_surface(name)}. A robot's surfaces live in a directory of their own beside its model and hulls, loaded with \code{lodos.col.sdf.load_surface_file(path)} through its scene module; \code{viewer/assets/sharpa/} holds \code{menagerie/}, \code{right_cp/<link>/hull_*.obj} and \code{final_sdata/<link>.npz}.
+\item \textbf{Keep the records} beside the bakes (\cref{sec:records}).
+\item \textbf{Licences.} Derived meshes fall under the source model's licence: the SHARPA hand's are the menagerie's, Apache-2.0. PaMO is AGPL-3.0: only its output meshes are kept, and no code of it is linked.
+\item \textbf{Paths} can be moved: \code{$LODOS_ASSETS} moves all of \code{viewer/assets/}; \code{$LODOS_SHARPA_DIR}, \code{$LODOS_SHADOW_KONG_DIR}, \code{$LODOS_NUTBOLT_DIR}, \code{$LODOS_NIST_DIR} and \code{$LODOS_FRANKA_DIR} one robot's or part's directory each; \code{$LODOS_CACHE} the cache of derived files such as \code{surface_obj}'s OBJs (\code{.scratch/} in a clone).
+\end{itemize}
+
+\subsection{In the viewer}\label{sec:register}
+
+A scene ships in the live viewer as a built-in scene: a factory in \code{viewer/scenes/catalog.py} that returns a \code{SceneSource}, registered in \code{_builtin()}, in the panel's list or by name only, under a name with the representation as its suffix (\code{_sdf}, \code{_polytope}). \emph{The Live Viewer} (\code{docs/visualizer.pdf}) goes through it step by step in \emph{Adding a built-in scene}, with this guide's worked example as its example: a \code{SceneSource}'s fields, the registration, the capacities and the tuning file. A scene that needs the solver's options at values of its own sets them in its \code{SceneSource}: \code{solver_defaults}, a flat dict of the solver's options (\code{lodos.cd.driver.OPTIONS}) and MuJoCo's \code{iterations}, \code{tolerance}, \code{ls_iterations} and \code{ls_tolerance}, and \code{mode_defaults}, \code{{mode: options}}, laid over them under that mode. The NIST threading replay has both: \code{baumgarte_slop=0}, and 2 outer proximal iterations under the exact mode and MuJoCo's tolerance $10^{-5}$ under mj. The worked example sets neither. A scene described by \code{lodos:} annotations in its MJCF file (\cref{sec:twoways}) needs no registration: the viewer loads the file as it is.
+
+\section{Worked example: the SHARPA hand holding an armadillo}\label{sec:example}
+
+Lodos-v1's in-hand reorientation task (\code{papers/lodos_v1.pdf}, Sections V-B.2 and V-C.2) holds a 70\,mm armadillo in the SHARPA Wave right hand, palm up, under model-predictive control. It exists there in both representations: an MJCF for MuJoCo, with both the hand and the object as convex decompositions, and a simulation on Lodos surfaces. Here both are \code{viewer/scenes/sharpa_armadillo.py}, and the viewer's \code{sharpa_armadillo_sdf} and \code{sharpa_armadillo_polytope}.
+
+\subsection{The hand's geometry, step by step}\label{sec:exmesh}
+
+The source is MuJoCo Menagerie's \code{sharpa_wave/right_hand.xml}: 23 bodies, 28 visual meshes, and a collision set of 15 capsules, 5 cylinders, a 32-part decomposition of the palm and one mesh on the pinky's metacarpal. \Cref{tab:exmesh} follows its meshes through the pipeline, from the records of the original run, which ship beside the bakes, and from a re-run of steps 3--5 with the scripts of \code{tools/mesh_processing/}.
+
+\begin{table}[t]
+\centering
+\caption{The SHARPA hand through the pipeline. Steps 1--2 from the original run's records. Steps 3--5 re-run here headless from the original's step-2 output and vertex targets: \code{interactive_remesh.py --targets ... --no-view}, \code{fix_nonmanifold_meshes.py --no-view}, \code{create_surface_data.py --no-view}.}
+\label{tab:exmesh}
+\small
+\begin{tabularx}{\linewidth}{@{}L{48mm}R{18mm}Y@{}}
+\toprule
+stage & vertices & notes \\
+\midrule
+merged visual meshes & 113\,474 & 11 of 23 bodies open \\
+step 1: watertight solids & 525\,241 & alpha 0.5\,mm; winding number on the 11 open bodies \\
+step 2: PaMO decimation & 5\,175 & \\
+step 2: CoACD hulls & 4\,587 & 87 hulls, 1--24 per body; thresholds 0.075--0.622 \\
+step 2: their union & 6\,522 & 23 single genus-0 shells \\
+step 3: Instant Meshes & 3\,481 & targets 84--898; re-run: \textbf{3\,481}, identical \\
+step 4: manifold repair & 3\,469 & re-run: 18 clean, 4 by surgery, 1 re-remeshed \\
+step 5: the bake & 3\,479 & shipped (the original's step 4 projected, not repaired): 7.93\,M voxels, 67.8\,MB, error 0.05--0.11 of a voxel, 18 of 23 closed \\
+step 5, re-run & 3\,469 & 7.91\,M voxels, 67.7\,MB, error 0.045--0.087 of a voxel, all 23 closed \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Two things are worth seeing in it:
+
+\begin{itemize}
+\item \textbf{The vertex budget is a hundredfold reduction} from the watertight solids, chosen per body: 898 on the palm, 84--106 on a phalanx. That is the choice that sets this scene's cost (\cref{sec:step3}).
+\item \textbf{The re-run reproduces the original.} Instant Meshes is deterministic, so the recorded targets give the same 3\,481 vertices. Step 4 repairs the same five bodies the same way. The bake comes out the same size with a slightly smaller error. The shipped bakes are the original run's, whose step 4 projected instead of repairing: five of its 23 surfaces are not closed manifolds. All five supply vertices only, where that is harmless. The re-run's are all closed, and the grasp holds on them as on the shipped ones: under the exact mode the armadillo moves 1.10\,mm in 2\,s, against 1.26\,mm on the shipped bakes.
+\end{itemize}
+
+\subsection{The armadillo: a bake reused at another scale}\label{sec:exarm}
+
+The object needs no pipeline run. The shipped armadillo surface (451 vertices, 1.64\,m tall) and its 34-piece decomposition (\code{viewer/assets/armadillo_cp}) are the drop scenes' own. The original placed its pieces with a mesh scale of 0.0705458 and an offset in the object's frame. Here the same transform is composed with the drop scenes' convention for the pieces: \code{ARM_SCALE} = 0.0430 and \code{ARM_SHIFT}. Its results:
+
+\begin{itemize}
+\item \code{armadillo_surface()} is the bake scaled by \code{scale_surface}: 59 $\times$ 53 $\times$ 70\,mm.
+\item \code{armadillo_pieces()} are the 34 pieces scaled the same way, written as inline vertex meshes.
+\item The keyed geom is the surface's OBJ with \code{scale="k k k"} and the shift as its \code{pos}, \code{contype="0" conaffinity="0" mass="0"}.
+\item The body's inertia is computed once from the 34 pieces at the original's density, 1900\,kg/m$^3$, and written as an explicit \code{<inertial>}: 49.4\,g, the same in both representations.
+\end{itemize}
+
+\subsection{Assembling the scene}\label{sec:exscene}
+
+\code{sharpa_armadillo.scene_xml(rep)} edits the menagerie's \code{right_hand.xml} rather than copying it:
+
+\begin{enumerate}
+\item The option block becomes Lodos's: \code{timestep 0.002}, \code{integrator Euler}, \code{cone elliptic}. Joint limits and friction loss are removed unless \code{jlimit}. The menagerie's keyframes and sensors are dropped.
+\item The hand's collision geoms are removed. Under \code{"polytopes"} each link gets its hulls from \code{right_cp/<link>/}, the fingertips with the menagerie's \code{elastomer_collision} class. Under \code{"surfaces"} each link gets a 1\,mm placeholder sphere to key its surface to.
+\item The palm hangs palm up from a \code{wrist} body of three world-aligned hinges (range $\pm$0.6\,rad, damping 3, armature 0.02), each driven by a \code{<position kp="60" kv="3">} servo. These are the original's.
+\item The armadillo is a free body at the original's position, with its explicit inertial, its keyed surface mesh and, under \code{"polytopes"}, its 34 pieces with \code{conaffinity="2"}.
+\item A floor plane at $z$ = $-$0.30\,m, \code{contype="2" conaffinity="2"}: it meets the armadillo and never the hand.
+\item One keyframe, \code{home}: the original's 32 positions and 25 controls. The fingers are closed on the object, and the wrist targets are zero.
+\item The original's goal marker, a mocap body, is dropped: \code{lodos.rbd} refuses mocap bodies, and nothing in the scene used it.
+\end{enumerate}
+
+\code{sharpa_armadillo.surfaces(mjm)} declares the Lodos half:
+
+\begin{itemize}
+\item the hand's own pairs by \code{sharpa.collides}, the denser link supplying the vertices;
+\item all 23 links against the armadillo, armadillo on the SDF side;
+\item the armadillo against the floor.
+\end{itemize}
+
+Every pair has \code{default_pair_params(0.6)}. The servos keep the menagerie's stiffness, not the dropped hands' softened tenth, because a grasp needs it.
+
+\subsection{Validation}\label{sec:exvalidate}
+
+From the keyframe, the armadillo starts 2.65\,mm inside the hand. It backs out in the first steps and then holds: under the exact mode it moves 1.3\,mm (surfaces) and 2.2\,mm (polytopes) in 2\,s, and comes to rest.
+
+\subsection{Tuning}\label{sec:extuning}
+
+\code{tools/performance_tuning/tune.py} on both scenes under each mode, at their state sets (the keyframe rolled out, jittered by 2\,mm, and under random wrist and finger targets: about 1\,300 states), gave the settings in \code{tools/performance_tuning/tuned/sharpa_armadillo_*.tuning.json} and, under mj (\code{tune.py --mode mj}), in \code{tuned/mj/}. \Cref{tab:extune} shows the throughput before and after under both modes.
+\begin{itemize}
+\item \textbf{On the surfaces} the gain came from right-sizing the capacities (2.1$\times$ at the tuning's 1\,024 worlds) and from the batch size (1.3$\times$ more at 4\,096). The guard rejected both budgets: 5 proximal iterations doubled the creep at rest (0.70 against 0.33\,mm/s), and 3 more than doubled it. Contact reduction passed, but was slower.
+\item \textbf{On the hulls} the capacities gave 1.18$\times$, 3 proximal iterations 1.63$\times$, where the guard found no difference at rest, and the batch size 1.5$\times$.
+\item \textbf{Under mj}, which runs no proximal loop and so has no proximal budget to try, the capacities gave 2.2$\times$ on the surfaces and 1.08$\times$ on the hulls, and the batch size 1.45$\times$ and 1.5$\times$ more. Contact reduction, tried on the surfaces, passed but was slower. Tuned, the hulls run faster under the exact mode at 3 proximal iterations than under mj.
+\end{itemize}
+
+\begin{table}[t]
+\centering
+\caption{World-steps per second on an RTX 4080, before (the scene's own settings, at the batch it fits) and after tuning, both scenes tuned on 2026-11-01 under the exact mode and, ``(mj)'', under mj. From \code{tools/performance_tuning/tuned/} and \code{tuned/mj/}; ``prox'' $n$: \code{prox_iters_per_qp}; the performance guide has every scene.}
+\label{tab:extune}
+\small
+\input{tables/extune.tex}
+\end{table}
+
+\subsection{What went wrong on the way}\label{sec:extrouble}
+
+\begin{itemize}
+\item \textbf{The keyframe's quaternion was zeros.} The original's keyframe line was long enough to be cut off where it was read. The object's quaternion of all zeros normalized to garbage, and the armadillo started rotated inside the palm. Regenerate long arrays from the file, never from a display.
+\item \textbf{Inner spheres at the wrong scale.} Inner spheres are lengths too: the shipped bake's, left unscaled, would put a 70\,mm armadillo inside spheres of 33--260\,mm, and the grasp would throw it on the first step. \code{scale_surface} scales them.
+\item \textbf{Broadphase pairs.} Sized by contacts alone, MJWarp's \code{naconmax} is too small for the polytope scene: its 121 hulls have far more overlapping boxes than contacts, so the broadphase drops pairs, and in a tenth of the worlds the armadillo was thrown out of the hand. The artifact guard catches it, and the tuning tools size \code{naconmax} to the larger of the contacts' and the broadphase pairs' peaks.
+\end{itemize}
+
+\section{Troubleshooting}\label{sec:trouble}
+
+\begin{longtable}{@{}L{45mm}L{50mm}L{56mm}@{}}
+\caption{Symptoms, causes and fixes.}\label{tab:trouble}\\
+\toprule
+symptom & cause & fix \\
+\midrule
+\endfirsthead
+\toprule
+symptom & cause & fix \\
+\midrule
+\endhead
+\code{NotImplementedError} from \code{lodos.rbd} & a feature it does not implement & \cref{sec:rbdtakes}: change the model \\
+\code{ValueError} or \code{NotImplementedError} from \code{PrimCollision} & a margin, an explicit pair, SDF geoms, flexes & remove them, or \code{make_sim(hybrid=())} \\
+bodies fall through each other at the start & a surface not in its body's frame, or keyed to a geom with an offset & \cref{sec:keyed} \\
+bodies pass through after the first impacts & a capacity overflowed and dropped contacts or broadphase pairs, MJWarp's too small for Lodos's contacts; a sparse Jacobian's \code{njmax_nnz} too small & check every overflow flag (\code{lodos.utils.calibrate.Tracker}); size with the tuning tools \\
+an object is thrown on the first step & a start deep in penetration; inner spheres larger than the shape & check the start's deepest penetration; scale spheres with the surface \\
+NaN within seconds & the timestep too long for the contact stiffness & 2\,ms (\cref{sec:timestep}) \\
+resting contacts flicker & no slop: each resting contact is pushed to zero penetration and lost & \code{baumgarte_slop} (0.2\,mm by default) \\
+slow creep at rest & the mj mode's soft contacts; too few proximal iterations; ray groups & the exact mode at its 10 proximal iterations, per contact or with cone groups (\cref{sec:solver}) \\
+a finger bends backwards & joint limits absent: \code{joint_constraints=False}, or a SHARPA scene without \code{jlimit} & the limits in the MJCF and \code{joint_constraints=True}, the default; or stiffer servos \\
+two boxes pass edge through edge & vertex--SDF cannot see edge--edge contact & hulls or boxes for such geometry (\cref{sec:howdecide}) \\
+slow & capacities at their defaults & \code{tools/performance_tuning/tune.py} \\
+\bottomrule
+\end{longtable}
+
+\begin{thebibliography}{99}
+\bibitem{winding} A.~Jacobson, L.~Kavan, O.~Sorkine-Hornung. Robust inside-outside segmentation using generalized winding numbers. ACM Transactions on Graphics 32(4), 2013.
+\bibitem{alphawrap} C.~Portaneri, M.~Rouxel-Labb\'e, M.~Hemmer, D.~Cohen-Steiner, P.~Alliez. Alpha wrapping with an offset. ACM Transactions on Graphics 41(4), 2022.
+\bibitem{coacd} X.~Wei, M.~Liu, Z.~Ling, H.~Su. Approximate convex decomposition for 3D meshes with collision-aware concavity and tree search. ACM Transactions on Graphics 41(4), 2022.
+\bibitem{instantmeshes} W.~Jakob, M.~Tarini, D.~Panozzo, O.~Sorkine-Hornung. Instant field-aligned meshes. ACM Transactions on Graphics 34(6), 2015.
+\bibitem{pamo} PaMO: GPU remeshing and intersection-free simplification. \url{https://github.com/SarahWeiii/pamo}.
+\end{thebibliography}
+
+\end{document}

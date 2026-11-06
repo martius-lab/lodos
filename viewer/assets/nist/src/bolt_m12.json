@@ -1,0 +1,64 @@
+{
+ "source": "viewer/assets/nist/usd/bolt_m12.usd",
+ "body": "/factory_bolt_m12/factory_bolt_m12",
+ "meters_per_unit": 1.0,
+ "y_up_turned": false,
+ "authored_mass": 0.05000000074505806,
+ "meshes": {
+  "collision": {
+   "prims": [
+    "/factory_bolt_m12/factory_bolt_m12/collision"
+   ],
+   "approximation": [
+    "sdf"
+   ],
+   "prim_scale": [
+    [
+     1.0,
+     1.0,
+     1.0
+    ]
+   ],
+   "vertices": 1467,
+   "triangles": 2931,
+   "bbox_min": [
+    -0.009013881906867027,
+    -0.008896769024431705,
+    -1.4997957009654783e-07
+   ],
+   "bbox_max": [
+    0.00898040272295475,
+    0.00912428181618452,
+    0.0320005938410759
+   ]
+  },
+  "visual": {
+   "prims": [
+    "/factory_bolt_m12/factory_bolt_m12/visual"
+   ],
+   "approximation": [
+    null
+   ],
+   "prim_scale": [
+    [
+     1.0,
+     1.0,
+     1.0
+    ]
+   ],
+   "vertices": 9231,
+   "triangles": 18458,
+   "bbox_min": [
+    -0.009014000184834003,
+    -0.00888300035148859,
+    0.0
+   ],
+   "bbox_max": [
+    0.00898400042206049,
+    0.009115999564528465,
+    0.03200000151991844
+   ]
+  }
+ },
+ "visual_is_collision": false
+}

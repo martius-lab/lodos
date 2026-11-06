@@ -1,0 +1,694 @@
+\input{preamble.tex}
+\begin{document}
+
+\manualtitle{Lodos v2: Development Guide}{How the codebase is built, the rules it keeps, and how to change it}{As of 2026-11-04. For a new developer, or an AI agent, about to change the code. The theory is in the two manuals, \emph{Collision Detection} (\code{docs/collision_detection.pdf}) and \emph{Contact Dynamics} (\code{docs/contact_dynamics.pdf}); the workflows are in the guides (\cref{sec:docs}). Built from \code{docs/manual/}.}
+
+\paragraph{About this document}
+You are about to change Lodos v2. This guide is the map: what every part of the repository is, where it lives, how the parts connect, the conventions and invariants the code keeps, how to check and measure a change, and the pitfalls already found. It does not repeat the theory or the workflows; it says where they are.
+
+\begin{itemize}
+\item Read \cref{sec:what,sec:map,sec:step,sec:conventions} before changing anything, \cref{sec:add} when you add something, \cref{sec:checking} before you check a change or measure, and \cref{sec:pitfalls} before you debug.
+\item Every statement here was checked against the code on the date stamped above; a number with a date of its own was measured on that date.
+\end{itemize}
+
+\begin{notebox}{The rules}
+These hold for every change. Each is explained where the reference points.
+\begin{enumerate}
+\item \textbf{The exact mode takes no MuJoCo impedance}: whenever \code{mode="exact"} (the default), \code{impratio} is 1, and no solref, solimp or impratio may reach the contact solve (\cref{sec:impedance}).
+\item \textbf{The step stays capturable}: Lodos's code adds no host synchronization inside the step, allocates every array when the contexts are built and never rebinds one; its loops have fixed bounds, and a converged world is retired by data, not by a branch. The solve adapted from MJWarp (\code{lodos.cd.solver}) allocates scratch per call and uses graph conditional nodes (\cref{sec:graph}).
+\item \textbf{A new option is off by default.} Changing a default or removing a feature is the owner's decision: measure, then propose it (\cref{sec:defaults}).
+\item \textbf{Refuse what cannot work}: invalid combinations raise, and a rename keeps no alias (\cref{sec:refuse}).
+\item \textbf{Check what a change affects}: the notebooks and scenes it touches; for a broad change and before a merge, every notebook and both benchmarks' smoke runs (\cref{sec:check}).
+\item \textbf{One feature per commit}, its message saying what changed and why; leave the owner's uncommitted work out of your commits (\cref{sec:practice}).
+\item \textbf{Never push} without the owner (\cref{sec:practice}).
+\item \textbf{Never commit} \code{results/}, \code{.scratch/} or other local output (\cref{sec:practice}).
+\item \textbf{Measure honestly}: alone on the GPU, configurations interleaved, chaotic scenes jittered, overflowed runs discarded (\cref{sec:measure}).
+\item \textbf{Record it}: a measurement goes in its commit message, with the commands that reproduce it, and in a dated report wherever the owner keeps them, with the decisions it raises (\cref{sec:practice}).
+\item \textbf{Changes for upstream go from upstream}: a change meant for MuJoCo Warp goes from a clone of upstream MuJoCo Warp, without the AI co-author line (\cref{sec:mjwarp}).
+\end{enumerate}
+\end{notebox}
+
+\setcounter{tocdepth}{2}
+\tableofcontents
+
+\section{What Lodos v2 is}\label{sec:what}
+
+\subsection{Where the code comes from}\label{sec:fused}
+
+Lodos v2 is a research simulator for batched rigid-body contact on one GPU: thousands of worlds of one MJCF model, stepped together. Everything runs in NVIDIA Warp; MuJoCo parses the MJCF, supplies the model's constants and is the reference the dynamics follow. It is built from three parts:
+
+\begin{itemize}
+\item \textbf{Lodos-v1} (\code{papers/lodos_v1.pdf}): its collision detection, the vertex--SDF pipeline of \emph{Lodos surfaces} (\code{lodos.col.sdf}); its contact model, which scales a collision pair's spring-damper forces by one factor, and which Lodos v2 keeps as the ray parameterization of its contact groups (\code{lodos.cd.groups}; the spring-damper force law, which weighs every group's members, in \code{lodos.cd.params}); and its rigid-body dynamics \code{lodos.rbd}, a Warp port of MuJoCo's smooth dynamics.
+\item \textbf{MuJoCo Warp} (MJWarp) 3.14.0, whose collision pipeline, constraint solve, and model and data Lodos carries as its own code, adapted (\code{lodos.col.prim}, \code{lodos.cd.solver}, \code{lodos.mjcf}; \cref{sec:mjwarp}).
+\item \textbf{Lodos v2's own}: an exact contact solver, the \emph{prox} solver, a proximal loop around MJWarp's Newton solve (\code{lodos.cd.solver.nlsp}); the solver's contact groups, its contact reduction and its two other solves of the Newton system (\code{lodos.cd.groups}, \code{reduce}, \code{fused}, \code{rowspace}); the exact hull narrowphase, the \emph{hybrid} (\code{lodos.col.prim.hybrid}); and what joins the parts (\code{lodos.sim}, \code{lodos.step}, \code{lodos.col.prim.driver}, \code{lodos.cd.driver}): one scene with both collision pipelines, one contact solver seeing every contact, one step captured as one CUDA graph. \code{papers/lodos_v2.pdf} describes the solver.
+\end{itemize}
+
+Lodos's dynamics is the host: the contact solve takes its mass matrix from it. Measured on 2026-10-21, it was on par with MJWarp's on free bodies and hands and under 2\,\% of a contact-rich step, and MJWarp's was 1.1--2.1$\times$ faster on 27-dof humanoids.
+
+\subsection{A scene}\label{sec:scene}
+
+A scene is an MJCF model plus, optionally, a list of \textbf{Lodos surfaces} (\code{lodos.sim.Surfaces}): baked vertex-and-SDF geometries, each keyed to an MJCF geom.
+
+\begin{itemize}
+\item A surface keyed to a non-plane geom takes that geom out of MJWarp's collision (\code{contype = conaffinity = 0}, on \code{make_sim}'s copy of the model). The geom is still what MuJoCo computes the body's inertia from, typically a mesh of the same surface.
+\item A \code{PlaneSurface} keyed to an MJCF plane leaves the plane in MJWarp's collision: one floor for both pipelines.
+\item Every other MJCF geom collides through MJWarp's pipeline (\code{lodos.col.prim}): MuJoCo's primitives through MJWarp's narrowphases, and box--box, box--mesh, mesh--mesh and plane--mesh pairs through the hybrid.
+\item Lodos surfaces collide with each other through directional pairs \code{[vertex surface, SDF surface]}; MJCF geoms collide with each other. \textbf{Nothing collides across.} A polytope that supplements a surface (its convex decomposition, as massless MJCF meshes) exists to give the edge--edge contacts a vertex--SDF surface cannot see, against other polytopes.
+\item Lodos pairs take a 13-column parameter table (\code{lodos.cd.params}), \code{[mu, stiffness, sharpness, dissipation, stiction, solref(2), solimp(5), w]}. The solve reads \code{mu}, and under the mj mode \code{solref} and \code{solimp}; contact groups weigh their members by the spring-damper columns (stiffness, sharpness, dissipation, stiction); nothing reads \code{w}.
+\end{itemize}
+
+\code{docs/creating_new_sim_from_mjcf.pdf} goes from an MJCF to a scene; the collision manual's \emph{Describing a scene} is the reference.
+
+\subsection{The contact solver}\label{sec:solvers}
+
+Lodos has one contact solver, the \textbf{NLSP solver} (nonlinear least squares with proximal minimization; \code{lodos.cd.driver.SolverDriver}): MJWarp's constraint solve, its Newton solver, and around it, for the exact problem, the prox solver's proximal loop (\code{lodos.cd.solver.nlsp}), over MJWarp's contacts and Lodos's alike. It poses one of two problems, its \emph{modes} (\code{lodos.cd.driver.MODES}):
+
+\begin{itemize}
+\item \code{mode="exact"}, the default: the exact contact problem, with a Baumgarte target and a de Saxc\'e term in the normal target, reached by the proximal loop. No MuJoCo impedance reaches it (\cref{sec:impedance}).
+\item \code{mode="mj"}: MuJoCo's soft problem, from the pair table's solref and solimp for Lodos's contacts and from the MJCF for MJWarp's: MJWarp's Newton solver on MuJoCo's rows, or, given a proximal loop or the de Saxc\'e term, the prox solver on those rows (\code{opt.prox_soft}).
+\end{itemize}
+
+Joint limits and dof friction loss are MuJoCo's soft rows in the same solve, under either mode; \code{make_sim(joint_constraints=False)} removes them. MuJoCo's own iteration count and tolerance come from the model (\code{mjm.opt}). The friction cone is the elliptic one wherever the prox solver runs, whatever the model names; MuJoCo's problem as it stands (mj, without a loop or the term) keeps the model's, and every built-in scene names the elliptic cone. How Lodos's contacts reach the solve, and how it solves the Newton system, are options (\cref{tab:solvers}); the contact dynamics manual derives all of it and measures what to pick.
+
+\begin{table}[t]
+\centering
+\caption{How Lodos's contacts reach the solve, and how it solves the Newton system. The first row of each part is the default; the others are off by default, but for the shared Hessian, on by default where it can be built on a sparse model of 48 dofs or more (\cref{sec:defaults}).}
+\label{tab:solvers}
+\small
+\begin{tabularx}{\linewidth}{@{}YL{34mm}L{40mm}@{}}
+\toprule
+what & code & option \\
+\midrule
+every Lodos contact as one MJWarp contact & \code{lodos.cd.driver.export_lodos} & -- \\
+at most 240 contacts a pair segment, Newton's reduction & \code{lodos.cd.reduce} & \code{make_sim}'s \code{contact_reduction} \\
+a segment's contacts in one normal bin and moment sector as one MJWarp contact of type \code{GROUP}, its force acting through its members: a ray (one row) or a cone (a friction cone) & \code{lodos.cd.groups}, \code{lodos.cd.bins} & \code{groups} (\code{"ray"}, \code{"cone"}, or one per pair), \code{normal_bins}, \code{moment_bins} \\
+\midrule
+MJWarp's Newton system, its dense or sparse Hessian & \code{lodos.cd.solver.nlsp} & -- \\
+MJWarp's Newton solve and its prox rounds as one kernel per world, for small models ($n_v \le 16$) & \code{lodos.cd.fused} & \code{fused_newton} \\
+the Newton system solved through the rows (Woodbury, with Lodos's per-tree factor of $M$) & \code{lodos.cd.rowspace} & \code{row_space} \\
+MJWarp's sparse Hessian (more than 32 dofs) summed per world in shared memory and written once & \code{lodos.cd.solver.nlsp}, \code{opt.shared_hessian} & \code{shared_hessian} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{The repository}\label{sec:map}
+
+\subsection{Top level}\label{sec:toplevel}
+
+\begin{table}[t]
+\centering
+\caption{The repository's top level. The last rows are local and gitignored.}
+\label{tab:toplevel}
+\small
+\begin{tabularx}{\linewidth}{@{}L{36mm}Y@{}}
+\toprule
+path & what it is \\
+\midrule
+\code{lodos/} & the simulator: \cref{sec:package} \\
+\code{viewer/} & the live viewer and every scene's builder (\code{viewer/scenes/}): \cref{sec:package}; \code{viewer/assets/}, what the scenes load, about 770\,MB in git: \cref{sec:assets}; \code{viewer/newton/}, Newton's own sims, \code{SolverMuJoCo} and \code{SolverKamino}, for the viewer to compare with: a uv project of its own (Newton 1.7.0, upstream MuJoCo Warp) that imports no \code{lodos} \\
+\code{bench/} & benchmarks and experiment harnesses, among them the two comparisons, Lodos's mj mode against MuJoCo Warp and its exact mode against Kamino: \cref{sec:scripts} \\
+\code{tools/performance_tuning/} & state sets, calibration and the tuning tools; \code{tuned/}, every built-in scene's tuning file, and \code{tuned/mj/}, under the mj mode \\
+\code{tools/mesh_processing/} & the offline mesh-to-surface pipeline (five steps; \code{create_surface_data.py} is the bake); \code{nutbolt/}, which remakes the nut-bolt's surfaces, and \code{nist/}, which makes the NIST parts' surfaces \\
+\code{notebooks/} & five tutorial notebooks, \code{01_quickstart} to \code{05_make_a_surface}, stored with their outputs \\
+\code{docs/} & the manuals and guides as PDF and Markdown; \code{docs/manual/} their LaTeX sources, figures, data and build \\
+\code{papers/} & the papers: \code{lodos_v2.pdf}, the extended abstract on Lodos v2; \code{contact_tutorial.pdf}, the contact tutorial (coming soon); \code{lodos_v1.pdf}, Lodos-v1; \code{lodos_precursor.pdf}, its precursor (\cref{sec:docs}) \\
+\code{README.md} & the overview, install, quick start and layout \\
+\code{pyproject.toml}, \code{uv.lock}, \code{.python-version} & the package (hatchling: \code{lodos} and \code{viewer}), its extras and uv groups; Python 3.14 in development \\
+\midrule
+\code{results/} & local output: what the benchmarks and the tuning tools write by default (their records, state sets and reports), and experiments' scripts and logs \\
+\code{.scratch/} & the cache of derived files in a clone (the OBJs MuJoCo takes inertia from) and scratch work \\
+\code{.venv/}, \code{MUJOCO_LOG.TXT}, \code{imgui.ini}, \code{docs/manual/build/}, \code{tools/mesh_processing/.tmp/}, \code{.instant-meshes}, \code{.pylibs/}, \code{.pamo.sif} & environments (\code{viewer/newton/}'s too), logs, window state, the LaTeX build, the mesh pipeline's intermediates and the tools it runs \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\Cref{tab:toplevel} lists the top level.
+
+\subsection{The package}\label{sec:package}
+
+\Cref{tab:modules} is every module of \code{lodos/}, with its main entry points, and below the rule those of \code{viewer/}. \code{lodos/__init__.py} imports no submodule: each subpackage binds its own, so that importing one module does not pull the tree. \code{lodos.col.sdf.io} and \code{lodos.col.sdf.serialize} need the \code{mesh} extra and load on first use. The modules marked M are adapted from MuJoCo Warp 3.14.0 (\cref{sec:mjwarp}).
+
+\begingroup\small
+\begin{longtable}{@{}L{38mm}L{58mm}L{55mm}@{}}
+\caption{The modules of \code{lodos/}, and below the rule those of \code{viewer/}. M: adapted from MuJoCo Warp 3.14.0.}\label{tab:modules}\\
+\toprule
+module & role & entry points \\
+\midrule
+\endfirsthead
+\toprule
+module & role & entry points \\
+\midrule
+\endhead
+\code{sim.py} & one scene: both pipelines, the solver; enforces the impedance rule & \code{make_sim}, \code{Surfaces}, \code{Sim}, \code{exact_mode}, \code{default_pair_params}, \code{INTEGRATORS} \\
+\code{step/__init__.py} & the step, and its CUDA graph & \code{step_sim}, \code{forward}, \code{fwd_step}, \code{make_step_graph} \\
+\code{rbd/types.py} & the rigid-body model and state; refuses unsupported features & \code{make_rbd_context}, \code{RbdModel}, \code{RbdData}, \code{TILE_MIN} \\
+\code{rbd/forward.py}, \code{smooth.py}, \code{passive.py} & kinematics to \code{qacc_smooth}; the mass matrix per tree and its factor, tiled for trees of 13 dofs or more & \code{fwd_rbd}, \code{kinematics}, \code{factor_m}, \code{solve_m}, \code{solve_M_tree} \\
+\code{rbd/integrate.py} & semi-implicit Euler; the step's integration under either integrator & \code{integrate}, \code{symplectic_euler} \\
+\code{rbd/implicit.py} & implicitfast: $D$, the implicit matrix, MuJoCo's form's acceleration & \code{prepare}, \code{correct} \\
+\code{rbd/io.py} & states in and out without breaking a graph & \code{set_state}, \code{get_state}, \code{save_state}, \code{restore_state} \\
+\code{col/sdf/__init__.py} & Lodos surfaces: a bake loaded, its SDF representation, scaled, the OBJ MuJoCo takes its inertia from & \code{PlaneSurface}, \code{SurfaceData}, \code{load_surface_data}, \code{load_surface_file}, \code{scale_surface}, \code{write_surface_obj}, \code{SPLINE_TYPES} \\
+\code{col/sdf/types.py} & Lodos collision's model and data; every capacity and option & \code{make_collision_context}, \code{CollisionModel}, \code{CollisionData} \\
+\code{col/sdf/collide.py} & the pipeline's three stages, diagnostics, capacity tools & \code{collide}, \code{get_contacts}, \code{check_overflow}, \code{reset_overflow}, \code{suggest_capacity}, \code{calibrate_capacity}, \code{resize_context}, \code{Autosizer} \\
+\code{col/sdf/broadphase.py}, \code{compact.py}, \code{narrowphase.py} & OBB and tile filters, voxel prefilter; stream compaction; the spline SDF and contacts & kernels, chosen per context (\code{nsdf_kernel(mcol)}, \code{sdf_filter_kernel(mcol)}, \code{contact_kernel(mcol)}) \\
+\code{col/sdf/spline/c2.py}, \code{c0.py}, \code{implicit.py} & the SDF representations, tricubic (C2 field, C1 normals) and trilinear (C0 field, normals discontinuous across cell faces); the voxel grid, the bake and its evaluation & \code{eval_cs3}, \code{eval_cs1}, \code{create_implicit_surface_from_mesh} \\
+\code{col/sdf/io.py}, \code{serialize.py} & making surfaces: mesh processing, Hilbert and Morton vertex order (the \code{mesh} extra) & \code{load_and_process_mesh}, \code{hilbert_encode}, \code{morton_encode} \\
+\code{col/prim/driver.py} & MJWarp's collision on Lodos's poses, with the hybrid; writes \code{d.contact} & \code{PrimCollision}, \code{pairable_geoms}, \code{contact_out} \\
+\code{col/prim/collision_driver.py}, \code{collision_core.py}, \code{collision_primitive.py}, \code{collision_convex.py}, \code{collision_gjk.py}, \code{types.py} (M) & MJWarp's broadphases and narrowphases & \code{nxn_broadphase}, \code{sap_broadphase}, \code{primitive_narrowphase}, \code{convex_narrowphase}, \code{write_contact} \\
+\code{col/prim/hybrid/} & the exact hull narrowphase: cell supports, feature cache, GJK/EPA (\code{ccd.py}, adapted from MJWarp's), quadrangle manifold, floor kernel; float64 ground truth (\code{truth.py}) & \code{HybridNarrowphase}, \code{ALL_TYPES} \\
+\code{cd/__init__.py} & the contact dynamics package's map; imports no submodule & -- \\
+\code{cd/driver.py} & the solver: Lodos's contacts and state for MJWarp's solve; its options and modes, and the exact mode's Baumgarte slop with why it exists; the shared Hessian's default & \code{SolverDriver}, \code{resolve_options}, \code{overrides}, \code{OPTIONS}, \code{MODES}, \code{BAUMGARTE_SLOP}, \code{shared_hessian_default}, \code{bind_state}, \code{export_lodos}, \code{gather_M} \\
+\code{cd/params.py} & the pairs' 13-column parameters and the spring-damper force law contact groups weigh their members by & \code{make_default_contact_params}, \code{dissipation_fn} \\
+\code{cd/bins.py} & normal bins (1, 6, 12, 20 directions) and moment sectors (1, 2, 3, 4, 6) & \code{bin_normals}, \code{bin_tangents}, \code{NORMAL_BINS}, \code{MOMENT_BINS} \\
+\code{cd/groups.py} & contact groups: a segment's contacts per normal bin and moment sector as one MJWarp \code{GROUP} contact, ray or cone; weights, carried frames, members & \code{Groups}, \code{resolve_kinds}, \code{check_bins}, \code{KINDS} \\
+\code{cd/reduce.py} & Newton's contact reduction, at most 240 contacts per segment & \code{make_reduce_context}, \code{reduce} \\
+\code{cd/fused.py} & \code{fused_newton}: MJWarp's Newton solve and its prox rounds as one kernel per world, for small models & \code{FusedNewton}, \code{newton_kernel} \\
+\code{cd/rowspace.py} & \code{row_space}: MJWarp's Newton system solved through the rows (Woodbury, with Lodos's per-tree factor of M) in place of the dense $n_v\times n_v$ Hessian & \code{RowSpaceNewton} \\
+\code{cd/solver/} (M) & MJWarp's constraint solve: the rows, contact groups' among them (\code{constraint.py}); the CG and Newton solves, with the prox solver's proximal loop (\code{nlsp.py}); the blocked Cholesky (\code{block_cholesky.py}); the groups' arrays (\code{io.py}); its contexts (\code{types.py}) & \code{make_constraint}, \code{solve}, \code{shared_hessian_refusal}, \code{alloc_contact_groups}, \code{contact_force} \\
+\code{mjcf/types.py}, \code{io.py} (M) & MJWarp's model and data on the device, which the prim collision and the solve share: \code{Model}, \code{Data}, \code{Option} and the enums; both made from MuJoCo's, with the capacity estimates & \code{Model}, \code{Data}, \code{put_model}, \code{put_data}, \code{override_model} \\
+\code{utils/math.py} & quaternion and spatial-algebra helpers, with MJWarp's that its adapted code uses; MuJoCo's \code{mjMINVAL} & \code{quat_mul}, \code{quat_to_mat}, \code{make_frame}, \code{MINVAL} \\
+\code{utils/kernels.py} (M) & MJWarp's kernel cache and timed event scopes & \code{cache_kernel}, \code{event_scope} \\
+\code{utils/scan.py} & the exclusive scan whose length lives on the device & \code{scan}, \code{plan}, \code{workspace} \\
+\code{utils/states.py} & state sets: the starts every tuning tool runs from & \code{StateSet}, \code{from_qpos}, \code{from_keyframes}, \code{load}, \code{install}, \code{rollout} \\
+\code{utils/calibrate.py} & the demand on every capacity & \code{Tracker}, \code{measure}, \code{calibrate}, \code{settings}, \code{peaks}, \code{suggest} \\
+\code{utils/tuning.py} & tuning files (\code{lodos-tuning/2}): one scene's settings, fingerprints, staleness & \code{apply}, \code{merge_into_make_sim}, \code{stale}, \code{knobs_only}, \code{describe} \\
+\midrule
+\code{viewer/__main__.py} & the command line: \code{python -m viewer [SCENE]}, or \code{lodos-viewer} (\code{--sim}, the sim it starts under: \code{lodos}, \code{mjwarp} or \code{kamino}; \code{--tuned}; \code{--controls}) & \code{main} \\
+\code{viewer/app.py} & the window & \code{LiveViewer} \\
+\code{viewer/session.py} & sessions, runners and takes; the panel's options and how each applies; their speed arrows & \code{Session}, \code{Runner}, \code{Take}, \code{OPTIONS}, \code{default_config}, \code{FASTER} \\
+\code{viewer/collect.py}, \code{geometry.py}, \code{joints.py}, \code{pairs.py}, \code{performance.py} & a frame's contacts and forces, read off \code{d.contact}; both pipelines' geometry as one drawn scene; joint editing and gizmos; the collision pairs' contact parameters; the Performance panel & \code{Collector}, \code{make_live_scene}, \code{apply_gizmo}, \code{PairTable}, \code{Performance} \\
+\code{viewer/draw.py}, \code{trajectory.py} & recorded frames in Newton's OpenGL viewer, which the live viewer is built on; the frames & \code{TrajectoryViewer}, \code{Trajectory}, \code{save_recording}, \code{load_recording} \\
+\code{viewer/newton_link.py}, \code{viewer/newton/} & Newton's sims, its MuJoCo Warp and Kamino, in a process of their own in \code{viewer/newton/}'s environment & \code{NewtonRunner}, \code{scene_package}, \code{available} \\
+\code{viewer/scenes/catalog.py} & where a session's scene comes from: the built-in scenes, or an MJCF file and its \code{lodos:} annotations & \code{SceneSource}, \code{BUILTIN}, \code{PANEL}, \code{builtin}, \code{from_mjcf}, \code{export_mjcf} \\
+\code{viewer/scenes/assets.py} & where the assets and the cache are; a shipped surface by name & \code{ASSET_DIR}, \code{load_surface}, \code{surface_obj}, \code{CACHE_DIR} \\
+\code{viewer/scenes/} & the scene builders: \code{drop}, \code{armadillo}, \code{representations}, \code{mixed}, \code{fbf}, \code{sharpa}, \code{sharpa_armadillo}, \code{shadow}, \code{shadow_kong} (the Shadow hand lifting a Kong toy), \code{nutbolt}, \code{nist} (Isaac Lab's NIST pairs, board, driven nut, Franka and threading replay), \code{franka} (the arm); recorded controls in \code{data/} & \code{scene_xml}, \code{surfaces} and the starts; most a \code{build(...)} returning a \code{Sim} (\code{nist} has one per scene), but \code{drop}: \code{scene_and_q0}; \code{franka}: the arm's MJCF; \code{shadow} and \code{shadow_kong}, which the catalog builds \\
+\bottomrule
+\end{longtable}
+\endgroup
+
+\paragraph{A reading path} \code{lodos/sim.py} (\code{make_sim} and its docstring), \code{lodos/step/__init__.py}, \code{lodos/cd/driver.py} (its module docstring, \code{resolve_options}, whose docstring has every option, and \code{SolverDriver}), \code{lodos/cd/groups.py} with its design, the \emph{Contact-Group Reparameterization} section of \code{papers/lodos_v2.pdf}, the module docstrings of \code{lodos/cd/reduce.py}, \code{fused.py} and \code{rowspace.py}, and the docstring of \code{make_collision_context} in \code{lodos/col/sdf/types.py}. The reading guide (\code{docs/reading_guide.pdf}) lists every source file in order.
+
+\subsection{The MuJoCo Warp code}\label{sec:mjwarp}
+
+Lodos carries the parts of MuJoCo Warp it uses as its own code, adapted from MuJoCo Warp 3.14.0 under its Apache-2.0 licence: MuJoCo Warp is not a dependency, and nothing in Lodos imports \code{mujoco_warp}. They are the broadphases and narrowphases (\code{lodos.col.prim}'s \code{collision_*} modules and \code{types.py}), the constraint rows and the solve (\code{lodos.cd.solver}), the model and data (\code{lodos.mjcf}: \code{put_model}, \code{put_data}, \code{override_model}), the kernel cache (\code{lodos.utils.kernels}) and the helpers at the end of \code{lodos.utils.math}. Each module's header names the MuJoCo Warp files it was adapted from, and every function and class keeps its MuJoCo Warp name. Lodos's \code{pyproject.toml} pins MuJoCo's matching release, 3.14.0, and Warp 1.16. \Cref{tab:mjwarp} is what Lodos's copy has that MuJoCo Warp 3.14.0 does not, and what it leaves out.
+
+\begin{table}[t]
+\centering
+\caption{Lodos's copy of MuJoCo Warp against MuJoCo Warp 3.14.0.}
+\label{tab:mjwarp}
+\small
+\begin{tabularx}{\linewidth}{@{}L{30mm}Y@{}}
+\toprule
+where & what \\
+\midrule
+\code{cd/solver/nlsp.py} & the prox solver, an exact contact solver: a proximal loop around the Newton solve (\code{solve_prox}, under \code{opt.prox_enable}), its rounds (\code{opt.prox_outer_iterations}, \code{opt.prox_inner_iterations}) and its tolerances on the anchor and on the de Saxc\'e term (\code{opt.prox_tol_z}, \code{opt.prox_tol_sigma}); the Baumgarte reference (\code{opt.prox_baumgarte}, \code{opt.prox_baumgarte_alpha}, \code{opt.prox_baumgarte_slop}); the de Saxc\'e term (\code{opt.prox_desaxce}), shifted through the row's damping $b$ on MuJoCo's soft rows (\code{opt.prox_soft}); the anchor carried across steps (\code{opt.prox_z_carry}, \code{d.prox_zcache_*}); each world's rounds and convergence (\code{d.prox_rounds}, \code{d.prox_converged}) \\
+\code{mjcf/types.py} & \code{ContactType.NOCARRY}: the anchor cache neither stores nor matches such contacts \\
+\code{cd/solver/constraint.py}, \code{nlsp.py}, \code{io.py} & \code{ContactType.GROUP}, a contact standing for member contacts (\code{io.alloc_contact_groups}; without its arrays nothing changes): its rows the members' weighted, $\sum_i a_i d_i^\top J_i$, in the sparse and dense Jacobians; MuJoCo's rows the members' own restricted to the group's force; under the prox solver the Baumgarte bias and the de Saxc\'e term member by member, and no carried anchor \\
+\code{cd/solver/nlsp.py} & \code{solve(m, d, newton_solve=...)}: a caller's solve of the Newton system in place of the dense Hessian (none allocated, the incremental Hessian off) \\
+\code{cd/solver/nlsp.py} & \code{opt.shared_hessian}, off on MJWarp's model (Lodos decides it, \cref{sec:defaults}): the sparse path's Newton Hessian summed per world in shared memory, by 512 threads a world (a block size chosen on an RTX 4080), and written once (\code{_shared_hessian}, \code{shared_hessian_refusal}) \\
+\code{mjcf/io.py} & \code{put_data(..., contact_body_pairs=...)}: the estimate of a sparse Jacobian's nonzeros counts the pairs of bodies that collide outside the model's own geom pairs (Lodos's) \\
+left out & MuJoCo Warp's \code{collision()} entry point and its flex and SDF-geom collision (\code{PrimCollision} runs the broadphases and narrowphases itself); the rest of MuJoCo Warp, its step, smooth dynamics and integrators among it \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{itemize}
+\item \textbf{Upstream}: a change meant for MuJoCo Warp goes from a clone of upstream, without the AI co-author line, which upstream's \code{AGENTS.md} bars because of its CLA.
+\item The code keeps MuJoCo Warp's style: two-space indentation, lines up to 128 characters. \code{lodos.col.prim.hybrid}, which sits beside it, keeps the indentation too.
+\end{itemize}
+
+\subsection{Assets and the cache}\label{sec:assets}
+
+\code{viewer/assets/} holds what the built-in scenes load: \code{surfaces/} (the armadillo, cubes, boxes, cards, spheres and the arch's stones), \code{armadillo_cp/} (its 34 convex pieces), \code{arch/} (MIT), \code{nutbolt/} (IsaacGymEnvs' M20 nut and bolt, BSD-3), \code{sharpa/} (MuJoCo Menagerie's Sharpa Wave, Apache-2.0, with its hulls and surfaces), \code{shadow_kong/} (Menagerie's Shadow hand, Apache-2.0, and a Kong toy from Google Scanned Objects, with their surfaces and hulls), \code{nist/} (Isaac Lab's NIST parts as \code{tools/mesh_processing/nist} makes them, their surfaces, and Menagerie's Franka Panda, Apache-2.0) and \code{mjcf/}. Licences sit beside the assets that state one; Isaac Lab states none for its NIST parts. The viewer offers a scene only where its assets are.
+
+\begin{itemize}
+\item \code{viewer.scenes.assets.ASSET_DIR} is \code{\$LODOS_ASSETS}, else \code{viewer/assets/}, in a clone and in an installed package alike. Five variables override it per scene: \code{\$LODOS_NUTBOLT_DIR}, \code{\$LODOS_NIST_DIR}, \code{\$LODOS_FRANKA_DIR}, \code{\$LODOS_SHARPA_DIR} and \code{\$LODOS_SHADOW_KONG_DIR}.
+\item Derived files (the OBJ MuJoCo takes a surface's inertia from) are cached in \code{\$LODOS_CACHE}, else \code{.scratch/} in a clone, else \code{\$XDG_CACHE_HOME/lodos} (by default \code{~/.cache/lodos}).
+\item \code{lodos.col.sdf.load_surface_file}, which \code{viewer.scenes.assets.load_surface} calls with a shipped surface's name, drops any inner spheres beside a bake; pass them explicitly if a scene wants them. \code{scale_surface} scales everything in a bake that is a length, spheres included.
+\item The assets are in plain git (about 770\,MB; the largest bakes, the M8 and M12 bolts' and the M20 bolt's, are 95, 66 and 64\,MB). Whether to move them to LFS or a repository of their own is open.
+\end{itemize}
+
+\section{One step, end to end}\label{sec:step}
+
+\subsection{What make\_sim builds}\label{sec:makesim}
+
+\code{lodos.sim.make_sim(mjm, B, *, surfaces=None, qpos=None, solver_kwargs=None, ...)} builds every context of a scene, in this order:
+
+\begin{enumerate}
+\item \textbf{The tuning file}, if one is given: its settings fill what the call leaves out, the capacities, \code{contact_reduction}, the solver's budgets and the collision options \code{surfaces.col_kwargs} does not name (\code{lodos.utils.tuning.merge_into_make_sim}).
+\item \textbf{A copy of the model}, which it edits: the integrator, if \code{integrator} is given; joint limits and dof friction loss removed unless \code{joint_constraints}; \code{opt.impratio = 1} whenever the mode is exact (\cref{sec:impedance}); keyed non-plane geoms switched off for MJWarp. The caller's model is never changed.
+\item \textbf{The rigid-body context} \code{(mrbd, drbd)}, the initial \code{qpos}, and one \code{kinematics} pass. Lodos's \code{kinematics} renormalizes quaternions in \code{qpos} in place, and float32 renormalization is not idempotent, so this pass puts the state exactly where Lodos's own scene builders put it.
+\item \textbf{Lodos collision} \code{(mcol, dcol)}, if there are Lodos pairs, with \code{surfaces.col_kwargs}; and the 13-column pair table.
+\item \textbf{The solver's options}, checked and filled by \code{lodos.cd.driver.resolve_options} (\code{sim.options}), and \textbf{MJWarp's model and data} \code{(m, d)} (\code{lodos.mjcf.io}'s \code{put_model} and \code{put_data}): MuJoCo's warm start disabled under \code{warm_start=False}; the overrides the options come to (\code{lodos.cd.driver.overrides}) before the caller's, on the copy of MuJoCo's model and on MJWarp's; the shared Hessian's default, decided on MJWarp's model (\code{shared_hessian_default}) and recorded in \code{sim.options}; the capacities, a sparse Jacobian's nonzeros (over 32 dofs) estimated for Lodos's pairs as well as the model's own (\code{contact_body_pairs}). The contact and row capacities left out are MJWarp's own estimates, which count none of Lodos's contacts (\cref{sec:capacities}). Then \code{PrimCollision}.
+\item \textbf{The solver}, \code{SolverDriver}: it binds MJWarp's state arrays to Lodos's (\code{bind_state}), maps \code{M_blk} onto MuJoCo's sparse \code{M} (\code{csr_map}), builds what the options ask for: the reduction's context, the contact groups (which \code{make_sim} refuses in a scene without Lodos surfaces), \code{FusedNewton} or \code{RowSpaceNewton}; and it refuses a shared Hessian the model cannot take.
+\end{enumerate}
+
+\begin{table}[t]
+\centering
+\caption{What a \code{Sim} holds.}
+\label{tab:sim}
+\small
+\begin{tabularx}{\linewidth}{@{}L{34mm}Y@{}}
+\toprule
+attribute & what \\
+\midrule
+\code{mjm}, \code{B} & \code{make_sim}'s copy of the model; the batch size \\
+\code{mrbd}, \code{drbd} & \code{lodos.rbd}'s model and state \\
+\code{mcol}, \code{dcol}, \code{surfaces}, \code{params} & Lodos collision, or None; the \code{Surfaces}; the pair table, or None \\
+\code{m}, \code{d}, \code{prim}, \code{geom_bodyid} & MJWarp's model and data (\code{lodos.mjcf.types}); \code{PrimCollision} (\code{prim.active} says whether it has pairs); each geom's body \\
+\code{options} & the solver's resolved options (\code{resolve_options}) \\
+\code{solver} & the solver, \code{SolverDriver}: \code{lc}, what \code{export_lodos} reads; \code{rm}, \code{rd}, the reduction's; \code{groups}; \code{fused}; \code{rowspace}; each None where unused \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\Cref{tab:sim} lists what the result holds.
+
+\subsection{The step}\label{sec:stages}
+
+\code{lodos.step.step_sim(sim)} is \code{forward(sim)} and then \code{lodos.rbd.integrate.integrate}. \code{forward} is everything but the integrator, like MuJoCo's \code{mj_forward}: the poses, contacts, constraint forces and \code{qacc} of the current state. \code{fwd_step(sim)} calls \code{step_sim}; \code{make_step_graph(sim)} captures it. \Cref{tab:stages} is a step stage by stage.
+
+\begin{table}[t]
+\centering
+\caption{One step of a \code{Sim}, in order. ``Bounded by'' names the capacities a stage's output must fit (\cref{sec:capacities}).}
+\label{tab:stages}
+\small
+\begin{tabularx}{\linewidth}{@{}L{22mm}L{36mm}YL{27mm}@{}}
+\toprule
+stage & call & reads $\to$ writes & bounded by \\
+\midrule
+rigid-body pass & \code{lodos.rbd.forward.fwd_rbd} & \code{qpos}, \code{qvel}, \code{ctrl}, \code{act} $\to$ poses, \code{cdof}, \code{subtree_com}, \code{cinert}, \code{M_blk} and its factor \code{L_blk}, \code{qfrc_smooth}, \code{qacc_smooth} & -- \\
+geom poses & \code{sim.prim.poses}, if \code{prim.active} & \code{xpos}, \code{xmat} $\to$ \code{d.geom_xpos}, \code{d.geom_xmat} of the pairable geoms & -- \\
+MJWarp collision & \code{sim.prim.collide()} & geom poses $\to$ zeroes \code{d.nacon} and \code{d.ncollision}; broadphase pairs; \code{d.contact} from MJWarp's narrowphases, then the hybrid's & \code{naconmax}; \code{nccdmax} $\times B$ \\
+Lodos collision & \code{lodos.col.sdf.collide.collide}, if Lodos pairs & \code{xpos}, \code{xquat} $\to$ the stage lists and \code{dcol.ct}; the contacts \code{*_nCa3}, sorted by (world, segment) & \code{capacity_tile}, \code{capacity1}, \code{capacity2} \\
+contact solve & \code{sim.solver.contact_dynamics()}: \code{reduce}, the groups' \code{before_export}, \code{export_lodos}, the groups' \code{export}, \code{gather_M}, \code{make_constraint}, the solve (\code{lodos.cd.solver.nlsp.solve}, or \code{FusedNewton}'s) & \code{dcol}, \code{d.contact}, \code{M_blk} (and \code{L_blk} under \code{row_space}), the bound state $\to$ Lodos's contacts and groups appended to \code{d.contact}; \code{d.M}; the rows; \code{qacc}; \code{d.qacc_warmstart} & \code{naconmax}, \code{njmax}, \code{njmax_nnz}; the reduction's rows \\
+integration & \code{integrate} & \code{qacc} (under implicitfast in MuJoCo's form, \code{qacc_int}), \code{act_dot} $\to$ \code{act}, then \code{qvel}, then \code{qpos} from the new \code{qvel}, then \code{time} & -- \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{itemize}
+\item \textbf{When MJWarp's collision runs.} \code{PrimCollision.active} is true when MJWarp's precomputed candidate list (\code{m.nxn_geom_pair_filtered}) has a pair whose type combination has a collider, \code{naconmax} is positive and contacts are not disabled. A Lodos-only scene's floor has nothing to pair with. \code{collide()} zeroes the counters either way, which the solve relies on before it appends Lodos's contacts.
+\item \textbf{The hybrid} runs only for the pair types present, and builds hull tables only for meshes something can pair; every other mesh gets a placeholder. A surface's inertia mesh may have no convex hull at all: MuJoCo builds \code{mesh_graph} only for meshes of colliding geoms. The tables are built once per process for each set of meshes.
+\item \textbf{The rigid-body pass} keeps one dense block per kinematic tree, batch last (\code{M_blk[blk_beg[t] + r n + c, b]}), factored $M = LL^\top$. The solve takes $M$ from \code{M_blk} (\code{gather_M}), and the row-space solve reads the factor: $Z = L^{-1} J^\top$. Trees of at least \code{TILE_MIN} (13) dofs are built one dof per thread, factored with Warp's tile Cholesky and scattered back into \code{L_blk}; smaller trees -- a free body is $6\times 6$ -- keep the serial kernels.
+\item \textbf{Nothing in the step collects for display.} The live viewer captures \code{forward} and the integrator as two graphs (and the whole step as a third) and collects a frame between them, on the host, from MJWarp's \code{d.contact} (\code{viewer.collect}): the one point where the forces exist and \code{qvel} is still the velocity the contacts occurred at.
+\end{itemize}
+
+\subsection{The contexts share arrays}\label{sec:sharing}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{fig/fig_dev_contexts.pdf}
+\caption{The contexts \code{make_sim} builds, and the arrays they share. Solid: the same array object, bound when the contexts are built; dashed: copied by a kernel every step. The solver's parts exist only where their options ask for them. Also copied every step, not drawn: the geom poses (\code{PrimCollision.poses}, from \code{xpos} and \code{xmat}) and \code{M_blk} into MJWarp's \code{d.M} (\code{gather_M}).}
+\label{fig:contexts}
+\end{figure}
+
+No context copies the state. \Cref{fig:contexts} shows which arrays are bound across contexts: collision reads the poses \code{kinematics} wrote; \code{bind_state} points MJWarp's \code{d.qpos}, \code{qvel}, \code{cdof}, \code{subtree_com}, \code{xpos}, \code{xmat}, \code{qfrc_smooth}, \code{qacc_smooth} and \code{qacc} at Lodos's arrays, so MJWarp's solve writes the constrained \code{qacc} straight into Lodos's; the solver's export, reduction and contact groups read Lodos's contact list where collision wrote it, the groups also \code{qvel}, \code{cdof}, \code{subtree_com} and \code{xmat}, and the row-space solve reads \code{L_blk}. The layouts agree: batch first, quaternions $(w, x, y, z)$, \code{cdof} as [angular, linear]; \code{bind_state} checks shapes and element sizes. This is why a buffer must never be rebound (\cref{sec:graph}). The state is \code{sim.drbd}'s; \code{sim.d}'s state fields are the same arrays.
+
+\subsection{Lodos's contacts in MJWarp's solve}\label{sec:bridges}
+
+Lodos's collision leaves, in \code{CollisionData}, \code{ct[2]} contacts, each with a point \code{p}, a normal \code{n}, a gap \code{sdf}, a world \code{b}, a segment \code{seg} and a vertex \code{v}, sorted so that every (world, segment) is one contiguous run, in vertex order, with bounds in \code{idul_B_nSEG_to_nCa3}; \code{CollisionModel} holds per segment its pair and its vertex and SDF geometries, and per geometry its body (\code{g_bid}). A contact's force acts on the \emph{vertex} geometry along $+n$, its reaction on the SDF geometry; $n$ points out of the SDF geometry.
+
+\paragraph{One MJWarp contact each: lodos.cd.driver} \code{export_lodos} appends every Lodos contact to MJWarp's arrays as \code{collision_core.write_contact} would: position, frame from the normal, depth, the pair's friction, solref and solimp, \code{condim}, zero margin, and the geoms \code{(SDF side, vertex side)} the two surfaces are keyed to, so that MJWarp forms the Jacobian on the right bodies with the normal pointing from geom 1 to geom 2. Symmetric pairs export both directions. With \code{contact_reduction} it exports only what \code{lodos.cd.reduce} keeps, at most 240 per segment; a grouped pair is reduced alike, and its groups are made of the contacts kept. Only the mj mode reads the exported solref and solimp; the exact mode rewrites every contact row's weight and reference. MJWarp reads the mass matrix as MuJoCo's sparse \code{d.M} (each row's ancestor dofs, then the diagonal); \code{gather_M} copies it out of Lodos's per-tree blocks every step, through an entry map \code{csr_map} computes once. It fills \code{d.M} only, not MJWarp's factor \code{d.qLD}, which MJWarp's CG solver reads (\cref{sec:open}).
+
+\paragraph{Contact groups: lodos.cd.groups} With \code{groups}, the pairs chosen are not exported contact by contact. A segment's contacts in one normal bin and moment sector (\code{normal_bins} $\times$ \code{moment_bins}, \code{lodos.cd.bins}) become one MJWarp contact typed \code{GROUP}, exported after the per-contact ones, whose force acts through its members: their points, frames, depths and weights go to MJWarp's \code{d.group_member_*} arrays, and MJWarp builds the group's rows $\sum_i a_i d_i^\top J_i$, MuJoCo's weights and references from the members' own, and the prox solver's Baumgarte bias and de Saxc\'e term member by member. A cone group (condim 3) takes a force in the friction cone; a ray group (condim 1), one row, takes one magnitude along each member's normal and its smooth-stiction friction, $n_i - r_i t_{1,i}$. The weights $a_i$ are the members' spring-damper normal forces at the step's start (\code{lodos.cd.params}), normalized over the group; a group whose weights sum to zero carries no force and is not exported. A cone member's first tangent follows its own slip and is carried from step to step by the contact's identity, (world, segment, vertex). The design is the \emph{Contact-Group Reparameterization} section of \code{papers/lodos_v2.pdf}.
+
+\paragraph{No carried anchor} Lodos contacts are typed \code{CONSTRAINT | NOCARRY}, and groups \code{NOCARRY} too. The prox loop carries each contact's converged multipliers into the next step through a cache matched by (world, geom pair) and nearest position, within 0.3$\times$ the smaller bounding radius of the two geoms. A Lodos pair has dozens of vertex contacts under one geom pair, and that match hands one cached force to many of them: with Lodos's contacts carried through it, worlds on \code{mix20} needed 300--650 iterations instead of about 33, and large batches went NaN. The solve's cache (\code{lodos.cd.solver.nlsp}) therefore skips \code{NOCARRY} contacts, so Lodos's start each step cold while MJWarp's keep the carry. Carrying them properly would need a key with the vertex in it.
+
+\subsection{Capacities and overflow}\label{sec:capacities}
+
+Every array is allocated once, so every count that varies is bounded by a capacity chosen at construction, and \textbf{a capacity that is exceeded drops work rather than failing}. \Cref{tab:caps} lists them, whether each is a batch total or per world, and where its overflow shows. \code{docs/performance_tuning.pdf} covers how to size them; \code{lodos.utils.calibrate.Tracker} keeps every count's running maximum on the device and reports what overflowed.
+
+\begin{table}[t]
+\centering
+\caption{The capacities of a \code{Sim}. A run that overflowed simulated a different problem.}
+\label{tab:caps}
+\small
+\begin{tabularx}{\linewidth}{@{}L{30mm}L{17mm}YL{38mm}@{}}
+\toprule
+capacity & kind & when exceeded & where it shows \\
+\midrule
+\code{capacity_tile}, \code{capacity1}, \code{capacity2} & batch fractions & a Lodos stage keeps its first survivors & \code{dcol.overflow}, \code{dcol.ct_peak}; \code{collide.check_overflow} \\
+\code{naconmax} (\code{nconmax} $\times B$) & batch total & MJWarp drops contacts, Lodos's exported contacts and groups among them, \emph{and broadphase pairs}, which share it & \code{d.nacon}, \code{d.ncollision} against \code{d.naconmax} \\
+\code{nccdmax} $\times B$ & batch total & the hybrid drops EPA pairs and manifold contacts & the hybrid's counters (\code{Tracker}) \\
+\code{njmax}, \code{njmax_nnz} & per world & MJWarp drops rows, or a sparse Jacobian's nonzeros & \code{d.nefc} against \code{d.njmax}; none for the nonzeros \\
+the row-space system (\code{njmax} + 1 rows, rounded up to 16, at most 1024) & per world & a world past it takes $M^{-1} g$ as that iteration's direction, which the line search keeps safe & \code{sim.solver.rowspace.overflow}; the viewer reads it, \code{Tracker} does not \\
+the reduction's rows (\code{min(nSEG, 16)}) & per world & segments past them export unreduced; nothing is lost & -- \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{itemize}
+\item MJWarp's \code{nconmax} and \code{nccdmax} are named per world but are shares of batch totals: \code{naconmax = nconmax} $\times B$ unless given, \code{naccdmax = nccdmax} $\times B$, and \code{put_data} requires \code{naccdmax} $\le$ \code{naconmax}. Left out, \code{nccdmax} sizes the hybrid's EPA scratch to the whole contact capacity (out of memory on \code{arm20} at 1024 worlds).
+\item \textbf{MJWarp's default capacities count none of Lodos's contacts.} Left out, \code{nconmax} and \code{njmax} are MJWarp's estimates from the model: 48 contacts and 64 rows per world for a model without height fields, flexes or SDF geoms. Every exported Lodos contact and every group counts against \code{naconmax}, and its rows against \code{njmax}, so a bare \code{make_sim(mjm, B, surfaces=...)} drops contacts without a word. Pass capacities or a tuning file: the viewer's scenes and \code{viewer.scenes.mixed.build} and \code{fbf.build} pass their own, \code{drop.CAPS} lists the drops', and the other builders take them through their \code{**sim_kwargs}.
+\item \textbf{The fused and row-space solves want a tuned row capacity.} \code{FusedNewton} keeps a world's rows in shared memory and refuses an \code{njmax} whose rows do not fit in 48\,KB, so it does not build at a scene's generous capacity (the viewer's NIST threading scene reserves 600 rows a world, at which it fits). The row-space solve's memory grows with \code{njmax}: rows $\times$ $n_v$, and rows$^2$ up to 1024 rows.
+\item MJWarp's overflow bitmask (\code{d.overflow}) has a bit for every capacity, but Lodos's step sets only those its kernels set themselves: the CCD and EPA-horizon bits of MJWarp's convex narrowphase and the hybrid, and the solve's iteration and line-search limits. Nothing sets the contacts', the broadphase's, the rows' or the nonzeros' (MJWarp's own step does, which Lodos does not run). Read the counters instead, as the tools do.
+\item The flags are sticky and the counts are not: report a stage's \code{ct_peak}, not its latest \code{ct_raw}. \code{reset_overflow} clears both.
+\end{itemize}
+
+\subsection{State carried across steps}\label{sec:carried}
+
+A world's state is more than \code{qpos} and \code{qvel}. \Cref{tab:carried} is everything that carries from one step to the next, which is what a reset, a branch or a timing from a fresh state must think about.
+
+\begin{table}[t]
+\centering
+\caption{What carries across steps.}
+\label{tab:carried}
+\small
+\begin{tabularx}{\linewidth}{@{}L{34mm}YL{40mm}@{}}
+\toprule
+state & where, and when & reset by \\
+\midrule
+\code{qpos}, \code{qvel}, \code{ctrl}, \code{act} & \code{drbd} & \code{lodos.rbd.io.set_state}; \code{lodos.utils.states.install} (and \code{kinematics}) \\
+\code{time} & \code{drbd}, advanced by the integrator & \code{restore_state} of a \code{save_state} snapshot (\code{qpos}, \code{qvel}, \code{act}, \code{time}; not \code{ctrl}) \\
+\code{qfrc_applied} & \code{drbd}: an input that persists & nothing clears it \\
+\code{d.qacc_warmstart} & MuJoCo's warm start, copied from \code{qacc} after each solve; off with \code{warm_start=False} & \code{states.install} zeroes it \\
+the prox anchor cache, \code{d.prox_zcache_*} & with a proximal loop (always under the exact mode) and \code{warm_start}: MJWarp's own contacts only & the live viewer zeroes \code{prox_zcache_n} on a cold start; \code{states.install} does not \\
+the contact groups' carried frames (\code{gd.t1_body}, \code{n_body}, \code{vtx}, \code{idul_prev}) & with \code{groups}: each cone member's first tangent, found again by its vertex; two buffers whose roles swap every step & \code{Groups.forget}, which the live viewer calls on a cold start, and \code{bench.lodos_setting.start}; \code{states.install} does not \\
+the hybrid's feature cache & per broadphase pair: last step's minimizing facet, on the persistent collision context & -- (a cold cache can settle a borderline manifold point differently) \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\code{forward} alone, for display or inspection, is the first half of a step and moves this state: it renormalizes the quaternions in \code{qpos}, updates the hybrid's feature cache, overwrites \code{qacc_warmstart} and the anchor cache, and advances the groups' carried frames. An extra \code{forward} changes the step after it.
+
+\section{Conventions and invariants}\label{sec:conventions}
+
+\subsection{The exact mode takes no MuJoCo impedance}\label{sec:impedance}
+
+\begin{notebox}{The rule}
+Whenever the exact mode is selected (the default, unless \code{mode="mj"}), \code{impratio} is 1, and MuJoCo's impedance machinery (solref, solimp, impratio, its regularization $R$ and reference \code{aref}) must not reach its contact solve. Any new exact-mode code path must keep this: check that it never reads solref, solimp or impratio.
+\end{notebox}
+
+\begin{itemize}
+\item \textbf{Why.} The exact problem has no regularization. \code{impratio} reaches the prox solver through MJWarp's elliptic cone, which warps the friction coefficient to $\mu\sqrt{R_t/R_n} = \mu/\sqrt{\text{impratio}}$. That fits only MuJoCo's own weights; under the prox solver's equal weights at \code{impratio} 10 a sticking contact holds at most a tenth of $\mu f_n$, the cost jumps at the stick--slide boundary, a box creeps down a slope it should hold, and the SHARPA hands diverge.
+\item \textbf{Where it is enforced.} \code{lodos.sim.make_sim} sets \code{opt.impratio = 1} on its copy of the model whenever \code{exact_mode(solver_kwargs)}. The exact mode writes its own weight and its Baumgarte reference on every contact row, groups' included (\code{opt.prox_soft} off). \code{baumgarte}, \code{baumgarte_alpha} and \code{baumgarte_slop} are refused under mj, and \code{FusedNewton} refuses the proximal loop at an \code{impratio} other than 1.
+\item \textbf{The one exception.} The joint-limit and friction-loss rows stay MuJoCo's soft rows under either mode: the prox solver solves contacts only. \code{joint_constraints=False} removes them.
+\item \textbf{MJWarp's overrides cannot set \code{impratio}}: they go to MuJoCo's model and MJWarp's alike, and only the first has it (MJWarp keeps \code{impratio_invsqrt}), so an override of it raises. Set it on the MuJoCo model, as \code{make_sim} does.
+\end{itemize}
+
+\subsection{The step stays capturable}\label{sec:graph}
+
+\code{lodos.step.make_step_graph} captures the whole step into one CUDA graph, and replaying it is how a simulation runs: uncaptured, the Python-side launches cost more than a small scene's kernels. Everything in the step follows the discipline that makes that possible.
+
+\begin{itemize}
+\item \textbf{No host synchronization inside the step.} No \code{.numpy()}, no \code{wp.synchronize()}, no device count read on the host to size a launch. Every launch is sized when the context is built; threads past the live count return (\code{if i >= lc.ct[2]: return} in \code{export_lodos}). Diagnostics that read back (\code{check_overflow}, \code{get_contacts}, \code{Tracker.report}) say that they synchronize and stay off the hot path.
+\item \textbf{Allocate at construction.} The \code{make_*_context} functions and the solver's classes (\code{SolverDriver}, \code{Groups}, \code{FusedNewton}, \code{RowSpaceNewton}) allocate every array the step uses. What the step still allocates is temporary scratch from Warp's memory pool: the CUB scans (\code{wp.utils.array_scan}) and MJWarp's \code{solve} (\code{lodos.cd.solver.nlsp}), which builds its solver context on every call. Under capture these are stream-ordered allocations. \code{make_collision_context} raises the device's pool release threshold to at least 1\,GiB (\code{mempool_release_threshold}, a device-wide setting), so that the pool keeps that memory rather than returning it to the driver at every scan; a scene without Lodos surfaces builds no collision context and leaves Warp's default of 0.
+\item \textbf{Never rebind a buffer.} The contexts share arrays by reference (\cref{sec:sharing}), and a captured graph holds their addresses. Write into the existing arrays: \code{lodos.rbd.io.set_state}, \code{wp.copy}, \code{array.assign}; never \code{drbd.qpos = wp.array(...)}. The one sanctioned reallocation is \code{lodos.col.sdf.collide.resize_context} (and the \code{Autosizer}, which calls it): every graph must be recaptured after it, and with \code{contacts=True} the solver rebuilt too (\code{make_sim} again), since its export, reduction and groups hold the old contact arrays.
+\item \textbf{Host branches are settled at capture.} What the step launches is decided on the host when it is captured: which of the solver's parts run (\code{SolverDriver}'s reduction, groups, fused or row-space solve) and MJWarp's host-side options (\code{opt.iterations}, the prox rounds, and \code{opt.prox_baumgarte} and \code{opt.prox_desaxce}, which select compiled kernel variants), so a graph records one path. Kernel variants are chosen the same way, by functions of the context (\code{nsdf_kernel(mcol)}, \code{lodos.cd.fused.newton_kernel}), built once and cached in module-level dicts.
+\item \textbf{Loops have fixed bounds, and converged worlds retire by data.} The proximal loop's rounds are unrolled on the host, \code{prox_iters_per_qp} of them (\code{lodos.cd.driver.overrides}); a world whose anchor and de Saxc\'e term have converged freezes, and once every world has, the remaining rounds are skipped on the device by a graph conditional node (\code{wp.capture_if}). MJWarp's Newton iterations run under another (\code{wp.capture_while}, \code{opt.graph_conditional}), up to \code{opt.iterations}, each world marked done as it converges. Lodos's own kernels keep the rule: the fused solve iterates inside its kernel up to the same budgets, and the row-space solve's kernels return for a world MJWarp has marked done (\code{ctx.done}).
+\item \textbf{A graph holds kernel arguments by value.} A Warp struct (\code{lodos.cd.driver.LodosContacts}, the groups' \code{GroupModel}) or a scalar is frozen into the graph when it is captured: changing it afterwards needs a recapture (the viewer recaptures for MJWarp's iteration counts and \code{opt.prox_baumgarte}). An array is held by its address, so values written into it in place are seen (the viewer writes the pairs' friction, solref and solimp, Lodos's and MJWarp's, MJWarp's tolerances and the prox solver's \code{prox_tol_z}, \code{prox_tol_sigma}, \code{baumgarte_alpha} and \code{baumgarte_slop} in place). An option that changes what is allocated needs a new context.
+\item \textbf{Building a graph advances the state one step}: \code{make_step_graph} runs one eager step to load the kernels, then captures. Capture before installing the states you mean to run (\code{lodos.utils.states.rollout}). The live viewer's runners undo their warm-up step instead (\code{Runner.capture}).
+\item \textbf{Keep step state out of module-level caches.} Lodos's hold kernels and read-only tables only (the kernel variants above; MJWarp's kernel cache, \code{lodos.utils.kernels.cache_kernel}; the hybrid's hull tables, \code{lodos/col/prim/hybrid/meshdata.py}). A solve must not read what another \code{Sim} left: results that depend on what ran before in the same process are a bug.
+\item MJWarp's \code{opt.prox_host_convergence} stops the prox iterations on the host and breaks capture; it is for debugging only.
+\end{itemize}
+
+\subsection{Determinism}\label{sec:determinism}
+
+\begin{itemize}
+\item \textbf{Lodos's own passes are bit-reproducible}: reverse tree passes read children rather than accumulate into parents, so they need no atomics; compaction is ordered; the reduction picks its winners by an atomic max over packed (score, inverted index) words, independent of thread order; the contact groups sum their members in order.
+\item \textbf{The contact solve is not}, once contacts start. MJWarp numbers contacts and rows with atomic counters (Lodos's export and the groups take their slots in \code{d.contact} the same way) and accumulates sums such as $J^\top f$ with float \code{atomic_add}, so two runs of one configuration part in the last bits once contacts start, and the difference grows. Identical worlds part the same way: those of the nut-bolt under MJWarp's Newton spread 2--5\,mm in nut height by 5\,s (on the pyramidal cone; measured 2026-10-24). Do not expect bit-identity from a scene with contacts; a guard compares over the steps on which repeated runs agree (\cref{sec:guards}).
+\end{itemize}
+
+\subsection{Options are off by default}\label{sec:defaults}
+
+\begin{itemize}
+\item \textbf{A new option is off by default}, so that every existing configuration runs as it did, and a guard (\cref{sec:guards}) can show it. Turning it on is a measurement; making it a default, or removing one, is the owner's decision, proposed with the measurement behind it. Say ``off by default'', not ``opt-in''.
+\item \textbf{None means the mode's own default.} Options whose default depends on the mode take \code{None}: \code{prox_iters_per_qp}, \code{baumgarte}, \code{baumgarte_alpha}, \code{baumgarte_slop}, \code{de_saxce} and \code{refresh_de_saxce_per_prox}; so do the bins, \code{normal_bins} and \code{moment_bins}, which only groups take. \code{shared_hessian}'s \code{None} is the model's: \code{make_sim} decides it on MJWarp's model (\code{lodos.cd.driver.shared_hessian_default}), on from 64 padded dofs, a sparse model of 48 dofs or more, wherever it can be built, and records the answer in \code{sim.options}.
+\item \textbf{Where defaults live.} \code{lodos.cd.driver} holds them: \code{BAUMGARTE_SLOP}, with why it exists, and \code{resolve_options}'s signature and body the rest. Scenes set their own on top: a \code{SceneSource}'s \code{solver_defaults}, and per mode its \code{mode_defaults} (\code{viewer.scenes.nist}'s \code{OPTIONS}: no Baumgarte slop; \code{THREADING_OPTIONS}: 2 proximal iterations under exact, MuJoCo's tolerance $10^{-5}$ under mj), and the binning a scene's contacts take when grouped, \code{group_bins} (the nut-bolts' 6 normal $\times$ 4 moment bins, \code{viewer.scenes.nutbolt.GROUP_BINS}). The live viewer reads the mode's defaults from \code{resolve_options} (\code{mode_options}), but \code{default_config} in \code{viewer/session.py} restates the others: \code{warm_start} on, \code{fused_newton}, \code{row_space} and \code{groups} off, \code{shared_hessian} auto, the bins the scene's or 1 $\times$ 1. Change them together.
+\end{itemize}
+
+\begin{table}[t]
+\centering
+\caption{The solver's options (\code{lodos.cd.driver.OPTIONS}) and their defaults under each mode (\code{resolve_options}), with \code{make_sim}'s \code{contact_reduction}.}
+\label{tab:defaults}
+\small
+\begin{tabularx}{\linewidth}{@{}L{40mm}L{32mm}L{22mm}Y@{}}
+\toprule
+option & exact & mj & what it is \\
+\midrule
+\code{mode} & \code{"exact"}, the default & \code{"mj"} & the problem posed \\
+\code{prox_iters_per_qp} & 10 (0 refused) & 0 & the proximal loop's outer iterations \\
+\code{prox_rho}, \code{prox_tol_z}, \code{prox_tol_sigma} & 1.0, $10^{-3}$, $10^{-3}$ & 1.0, $10^{-3}$, $10^{-3}$ & its weight, relative to a contact's translational invweight; its relative tolerances on the anchor and on the de Saxc\'e term \\
+\code{baumgarte}, \code{baumgarte_alpha} & True, 0.1 & refused & the Baumgarte bias in the normal target, its gain \\
+\code{baumgarte_slop} & 0.2\,mm (\code{BAUMGARTE_SLOP}) & refused & the penetration the bias leaves alone \\
+\code{de_saxce} & on & off & the de Saxc\'e term in the normal target \\
+\code{refresh_de_saxce_per_prox} & on & off & the term re-taken after every outer iteration; on wherever there is a term and a loop \\
+\code{warm_start} & on & on & MuJoCo's warm start; with a loop, the anchor carried across steps \\
+\code{fused_newton} & off & off & the solve as one kernel per world (\code{lodos.cd.fused}; $n_v \le 16$; under mj without a loop or the term) \\
+\code{groups} & off & off & \code{"ray"}, \code{"cone"}, or one kind per pair: contact groups (\code{lodos.cd.groups}) \\
+\code{normal_bins}, \code{moment_bins} & 1, 1 & 1, 1 & a group's bins (\code{lodos.cd.bins}); only with \code{groups} \\
+\code{row_space} & off & off & the Newton system through the rows (\code{lodos.cd.rowspace}); not with \code{fused_newton} \\
+\code{shared_hessian} & from 64 padded dofs, where it builds & from 64 padded dofs, where it builds & MJWarp's sparse Hessian summed per world in shared memory (\code{opt.shared_hessian}); None, the default, decided on MJWarp's model (\code{shared_hessian_default}): on from 64 padded dofs (48 dofs) up to 144, where \code{shared_hessian_refusal} names nothing; not with \code{fused_newton} or \code{row_space} \\
+\code{contact_reduction} & off & off & at most 240 contacts a pair segment (\code{lodos.cd.reduce}), grouped pairs too \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\Cref{tab:defaults} gathers the defaults; the contact dynamics manual's \emph{The options in one place} explains each.
+
+\subsection{Refuse rather than ignore}\label{sec:refuse}
+
+\begin{itemize}
+\item \textbf{A combination that cannot work raises}, with a message saying why. \code{resolve_options} refuses an unknown mode or group kind, the mj mode with a Baumgarte option, a negative slop or iteration count, the exact mode without a proximal loop, \code{refresh_de_saxce_per_prox} without the term or a loop, bins without \code{groups} or not among \code{NORMAL_BINS} and \code{MOMENT_BINS}, \code{row_space} with \code{fused_newton}, \code{fused_newton} under mj with a loop or the term, and \code{shared_hessian=True} with \code{fused_newton} or \code{row_space}. What depends on the model is refused where it is built: \code{make_sim} refuses \code{groups} in a scene without Lodos surfaces; \code{FusedNewton} refuses CG, a sparse model or $n_v > 16$, sleeping, elliptic contacts above condim 3, a model without rows (\code{njmax} 0), rows beyond its shared memory, \code{prox_soft}, and the loop at an \code{impratio} other than 1; \code{RowSpaceNewton} refuses CG, sleeping, elliptic contacts above condim 3 and trees that do not cover the dofs; \code{SolverDriver} refuses Lodos's contacts above condim 3 under \code{fused_newton}, and a shared Hessian asked for on a model \code{lodos.cd.driver.shared_hessian_refusal} names (MJWarp's reasons, \code{lodos.cd.solver.nlsp.shared_hessian_refusal} -- CG, the dense path, elliptic contacts above condim 3, a Hessian beyond 48\,KB of shared memory, sleeping -- then Lodos's contacts above condim 3 under the elliptic cone, and \code{fused_newton} or \code{row_space}), as the solve does; by default \code{make_sim} turns it on only where that names nothing. Raise \code{ValueError} in new checks, not \code{assert}, which \code{python -O} removes. Accepted and ignored: \code{prox_rho}, \code{prox_tol_z} and \code{prox_tol_sigma} where no proximal loop runs, and \code{contact_reduction} in a scene without Lodos surfaces.
+\item \textbf{Model features are refused, not dropped.} \code{lodos.rbd} refuses tendons, equality constraints, flexes, mocap bodies, fluid forces, integrators other than Euler and implicitfast, and unsupported actuators, listing what is missing, because a port that ignored them would produce a plausible trajectory that is not the model's. The hybrid refuses non-zero margins and gaps on its geoms, explicit \code{<pair>}s, SDF geoms, flexes and MuJoCo's native CCD switched off.
+\item \textbf{Renames keep no aliases.} An old option name raises in \code{make_sim}, so nothing runs silently under an old meaning. One path does not raise: \code{SceneSource.make_sim} (\code{viewer/scenes/catalog.py}), through which the viewer, every tuning tool and the benchmarks' settings (\code{bench/lodos_setting.py}) build, keeps only the options the solver takes (\code{lodos.cd.driver.OPTIONS}, and MuJoCo's own \code{MODEL_OPTIONS}, which it writes on its copy of the model) and drops the rest without a word, so a misspelled knob in a sweep or a tuning file does nothing; a scene's own defaults (\code{solver_defaults}, \code{mode_defaults}) are checked when the scene source is made. After a mechanical rename, grep the whole repository for leftovers: benches, notebooks, the viewer, \code{README.md} and the manuals.
+\end{itemize}
+
+\subsection{Names}\label{sec:naming}
+
+\begin{table}[t]
+\centering
+\caption{Names you meet in the code.}
+\label{tab:names}
+\small
+\begin{tabularx}{\linewidth}{@{}L{42mm}Y@{}}
+\toprule
+name & meaning \\
+\midrule
+\code{m}, \code{d}; \code{mjm} & MJWarp's model and data; MuJoCo's \code{MjModel} \\
+\code{mrbd}/\code{drbd}, \code{mcol}/\code{dcol}, \code{rm}/\code{rd}, \code{gm}/\code{gd} & model/data pairs, \code{m*} static and \code{d*} batched state: the rigid bodies, Lodos collision, the reduction, the contact groups \\
+\code{lc} & \code{LodosContacts}: what \code{export_lodos} reads, Lodos's contact list and its pairs' parameters \\
+\code{B} & worlds in the batch \\
+\code{nB}, \code{g_*} & Lodos collision geometries (one per surface; \code{g_bid} its body, \code{g_geom} its MJCF geom) \\
+\code{nCPR}, \code{cprs}, \code{cpr_*} & declared directional pairs \code{[vertex geometry, SDF geometry]} \\
+\code{nSEG}, \code{seg_*} & segments: one direction of a pair (a symmetric pair has two) \\
+\code{nCa1}, \code{nCa2}, \code{nCa3}; \code{nTa}, \code{nTb} & survivors of stage 1 (tiles), 2 (voxel SDF), 3 (spline SDF: the contacts); surviving tiles, tiles of active segments \\
+\code{*_nCa3}, \code{idul_B_nSEG_to_nCa3} & per-contact arrays (\code{p}, \code{n}, \code{sdf}, \code{b}, \code{seg}, \code{v}); each (world, segment)'s run bounds \\
+\code{ct}, \code{ct_raw}, \code{ct_peak}, \code{overflow} & the five stage counts \code{[nCa1, nCa2, nCa3, nTa, nTb]}: clamped, raw, peak, sticky flag \\
+\code{key_nCa3}, \code{fbar_nCa3}, \code{t1_nCa3} & a grouped contact's bin $\times$ sector (-1 on a per-contact pair), its spring-damper weight, its first tangent \\
+\code{d.contact}, \code{d.nacon}, \code{d.ncollision}, \code{d.nefc} & MJWarp's contacts, their count, its broadphase pairs, its rows per world \\
+\code{d.efc.J}, \code{D}, \code{aref}, \code{force} & MJWarp's constraint rows: Jacobian, weight, reference acceleration, force \\
+\code{NOCARRY}, \code{GROUP} & MJWarp contact types: no carried anchor (Lodos's contacts and groups); a contact standing for its members \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\Cref{tab:names} lists the names the code uses for its index spaces and contexts; the code abbreviates \code{cpr} (collision pair), \code{sd} (surface data) and \code{bid} (body id). In prose and options:
+
+\begin{itemize}
+\item \textbf{Representations}: a \emph{Lodos surface} (``sdf'' in the viewer) and a \emph{polytope} or hull (``polytope''); built-in scenes carry the suffix \code{_sdf} or \code{_polytope}. The \emph{hybrid} is the exact hull narrowphase.
+\item \textbf{Solver vocabulary}: a \emph{mode} is the problem posed, exact or mj; a \emph{contact group} is a pair segment's contacts in one normal \emph{bin} and moment \emph{sector}, solved as one MJWarp contact, its contacts its \emph{members}; a \emph{ray} group has one row, a \emph{cone} group a friction cone; the \emph{anchor} is the proximal loop's $z$; the \emph{rows} are MJWarp's constraint rows.
+\item \textbf{Option names say what they count}: \code{prox_iters_per_qp} (the proximal loop's outer iterations), \code{refresh_de_saxce_per_prox}.
+\end{itemize}
+
+\subsection{Code style}\label{sec:style}
+
+Read a few modules before writing one; \code{lodos/cd/driver.py} and \code{lodos/cd/reduce.py} are short examples.
+
+\begin{itemize}
+\item \textbf{Docstrings explain why}, in plain prose: what a module is for, what each function assumes and guarantees, and what was measured, with the numbers, the scene and often the date. A design choice states the alternative and why it lost, so nobody runs it again (\code{lodos/col/sdf/broadphase.py} on the cheaper pair test, \code{lodos/cd/fused.py} on Warp's shared tiles).
+\item \textbf{Docstrings say where and what.} Lodos's functions name their callers (\texttt{Called by}) and their inputs and outputs with shapes and types (\texttt{In:} and \texttt{Out:}, or \texttt{Reads:} and \texttt{Writes:}); a kernel's docstring gives its launch grid and who launches it (\texttt{Launch: dim=(B, nSEG)}); struct fields and kernel arguments carry their shapes in comments (\texttt{\# (B, nSEG + 1)}); Warp annotations carry \texttt{\# type: ignore}. The solver's and the prim collision's modules of kernels set \code{wp.set_module_options({"enable_backward": False})} (\code{lodos.cd.driver}, \code{groups}, \code{reduce}, \code{fused}, \code{rowspace}, \code{lodos.col.prim.driver}, and the code adapted from MJWarp); those of \code{lodos.rbd}, \code{lodos.col.sdf} and \code{lodos.utils} do not.
+\item \textbf{Module aliases} name the package: a subpackage's module is imported as \code{<package>_<module>} (\code{sdf_types}, \code{sdf_collide}, \code{rbd_io}, \code{cd_driver}, \code{solver_nlsp}, \code{mjcf_io}); Lodos's top level and \code{lodos.utils} take \code{l<module>} (\code{lsim}, \code{lstep}, \code{lmath}, \code{lcalibrate}).
+\item \textbf{Layout}: sections under banners of 87 \texttt{\#} characters; four-space indentation, two in the code adapted from MJWarp and in the hybrid beside it (\cref{sec:mjwarp}); lines up to about 120 characters. Lodos has no linter configuration.
+\item \textbf{The voice} of comments, docs and commit messages: plain, short, precise sentences; numbers with their units and how they were measured; no marketing.
+\end{itemize}
+
+\subsection{Frames, layouts and signs}\label{sec:layouts}
+
+\begin{itemize}
+\item \textbf{Quaternions} are $(w, x, y, z)$, MuJoCo's order, stored as \code{wp.vec4}; Warp's \code{wp.quat} and \code{wp.transformf} read $(x, y, z, w)$. The collision pipeline converts at one place, \code{lodos.col.sdf.broadphase.compute_T_w}. Getting it wrong does not fail loudly: it rotates every vertex. The code adapted from MJWarp keeps MJWarp's convention, $(w, x, y, z)$ in the four slots of a \code{wp.quat}, so Warp's own quaternion functions do not apply to its quaternions; \code{lodos.utils.math}'s \code{quat_inv} and \code{quat_mul} take both kinds, as overloads.
+\item \textbf{Spatial vectors} are [angular, linear], as MuJoCo's \code{cdof}. Arrays are float32; the hybrid solves GJK's simplex projections in float64, where float32 cancellation reported penetrating pairs apart (\code{lodos/col/prim/hybrid/ccd.py}).
+\item \textbf{State arrays are batch first}, \code{(B, n)}, launched with the batch as the slowest index so neighbouring threads read neighbouring entries, and so are MJWarp's. \textbf{The mass matrix blocks are batch last}, \code{M_blk} and \code{L_blk} \code{(nblk, B)}, because the kernels that build and factor them vary the world fastest, so a warp's 32 threads read 32 adjacent floats; \code{gather_M} copies \code{M_blk} into MJWarp's batch-first \code{d.M}. Where a tile kernel needs one world's block contiguous, it is gathered into batch-first scratch: \code{lodos.rbd} gathers the large trees' blocks (\code{M_big}, \code{L_big}) for its tile Cholesky.
+\item \textbf{Frames}: a surface's vertices, SDF and box are in its body's frame; a contact's \code{sdf} is its gap, negative in penetration; a Lodos normal points out of the SDF geometry and the force acts on the vertex geometry along it; an MJWarp normal points from \code{geom[0]} to \code{geom[1]}.
+\end{itemize}
+
+\subsection{Commits, reports and decisions}\label{sec:practice}
+
+\begin{itemize}
+\item \textbf{One feature per commit}, with a subject in the imperative saying what changed (``Size nconmax in calibrate.suggest to hold the broadphase's pairs'') and a body saying why and what it measured. Work done on a branch is split by feature before it is merged.
+\item \textbf{Commit only your own work.} The owner may have uncommitted changes in the tree; check \code{git status} and \code{git diff} before committing, and stage files by name.
+\item \textbf{Never push} without the owner.
+\item \textbf{Never commit} \code{results/}, \code{.scratch/}, state sets or other local output; \code{.gitignore} keeps most of it out. The built documents (\code{docs/*.pdf}, \code{docs/*.md}, \code{docs/manual/fig/*}) and \code{tools/performance_tuning/tuned/} are committed deliberately.
+\item \textbf{Record what you measure.} A commit's message carries what it measured: the setup, the numbers and the commands that reproduce them. A piece of work ends in a dated report, kept wherever the owner keeps reports: what was asked, what was built, the measurements as tables, what the numbers say, the decisions it raises for the owner as a numbered list, the commands that reproduce it, and its commits. A finding that corrects an earlier report says so in both places, and the owner's answers are recorded in a later one.
+\end{itemize}
+
+\section{How to add things}\label{sec:add}
+
+\subsection{A solver option}\label{sec:addoption}
+
+\begin{enumerate}
+\item \textbf{The option.} Add it to \code{resolve_options} in \code{lodos/cd/driver.py}, off by default (or \code{None} for a default the mode decides), document it in the docstring (what it does and, once measured, what it measured), return it in the resolved dict, and add its name to \code{OPTIONS}: \code{SceneSource.make_sim} hands the solver only the options in that tuple, so one missing from it never arrives from the viewer or the tuning tools, and scenes' defaults are checked against it.
+\item \textbf{Its refusals.} Raise \code{ValueError} in \code{resolve_options} for every combination it cannot take, beside the existing checks; a refusal that needs the model (its size, its cone, a capacity) goes where the part that uses it is built (\code{FusedNewton}, \code{RowSpaceNewton}).
+\item \textbf{How it reaches the solve.} An option of MJWarp's solve maps to model overrides in \code{lodos.cd.driver.overrides} (\code{"opt.prox_*=..."}), which \code{make_sim} applies before the caller's, to MuJoCo's model and MJWarp's. An option of Lodos's side goes from \code{sim.options} to \code{SolverDriver} in \code{make_sim}; the solver builds what it needs at construction and branches on it in \code{contact_dynamics}. Arrays a path does not use are one-element placeholders (\code{lc.keep} without the reduction, \code{lc.key} without groups): \textbf{when a new code path uses one, extend the condition that sizes it}. A kernel that writes past a placeholder corrupts whatever array sits beside it, and nothing reports it.
+\item \textbf{The MJWarp code.} If MJWarp's solve has no such option, add it to Lodos's copy (\cref{sec:mjwarp}): a field and its docstring in \code{Option} (\code{lodos/mjcf/types.py}, in field order), its default in \code{put_model} and its name among \code{override_model}'s fields of MJWarp's model alone (\code{lodos/mjcf/io.py}), and its use in \code{lodos/cd/solver/nlsp.py}.
+\item \textbf{The viewer} (\code{viewer/session.py}): its entry in \code{OPTIONS["lodos"]}, what the panel offers, \code{(name, kind, lo, hi)} or \code{(name, "choice", values, None)}. Then how a change applies: in \code{REBUILD_OPTIONS} or \code{LODOS_REBUILD_OPTIONS}, part of a runner's key, if it changes what is allocated or the sequence of launches (a change builds a runner of its own); otherwise a branch in \code{Runner.apply}, which sets it on the built runner, a host-side field of MJWarp's model by recapture (as \code{iterations}, \code{ls_iterations} and \code{baumgarte}), an array field in place with \code{fill_} (as \code{tolerance}, \code{ls_tolerance}, \code{baumgarte_alpha}, \code{baumgarte_slop}, \code{prox_tol_z} and \code{prox_tol_sigma}). An option in neither is offered by the panel and ignored; \code{RECAPTURE_OPTIONS} is not read anywhere. Its default goes in \code{default_config}, or, if the mode decides it, in \code{mode_options} and \code{MODE_OPTIONS}, which start over when the mode changes; anything it implies in \code{edit_config}; its mention in a take's label, where it is not at its default, in \code{config_label}; in \code{EXACT_OPTIONS} (in \code{session.py} and \code{viewer/scenes/catalog.py}) if only the exact mode takes it; and, for a speed knob, the way it makes the sim faster in \code{FASTER}, the panel's speed arrows.
+\item \textbf{Scenes.} A scene that wants another value sets it in its \code{SceneSource}'s \code{solver_defaults} (\code{viewer/scenes/catalog.py}), or per mode in \code{mode_defaults}; a scene builder takes it in \code{solver_kwargs} (\code{viewer.scenes.nist}'s builders lay \code{OPTIONS} under the caller's).
+\item \textbf{Tuning.} If it is a budget the tuning should try, add it to \code{tools/performance_tuning/tune.py}'s \code{BUDGETS}; a tuning file's \code{solver_kwargs} then carries it. \code{BUDGETS} are the exact mode's proximal rounds: tuned under mj (\code{tune.py --mode mj}, a file in \code{tuned/mj/}), a scene tries contact reduction alone.
+\item \textbf{Checks}: run a guard with the option off (\cref{sec:guards}), and check the option on where it is meant to help (\cref{sec:check}).
+\item \textbf{Docs}: the contact dynamics manual's option tables (\emph{The options in one place}), the viewer guide's table of the Sim panel's options, and \cref{tab:defaults} here; \code{README.md} if users meet it. Measure it, and record what it measured (\cref{sec:practice}).
+\end{enumerate}
+
+\subsection{A collision feature}\label{sec:addcol}
+
+\begin{itemize}
+\item \textbf{Lodos's pipeline.} Options go to \code{make_collision_context} (\code{lodos/col/sdf/types.py}), and through a scene's \code{Surfaces.col_kwargs}. Specialize kernels at build time rather than branching per candidate, since a step evaluates millions of them (spline type, inner spheres and contact point are compiled choices). Keep each (world, segment)'s contacts one contiguous run, in vertex order: the reduction and the contact groups read the runs, and the groups find last step's contact of a vertex by bisection.
+\item \textbf{MJWarp's side.} \code{PrimCollision} (\code{lodos/col/prim/driver.py}) runs MJWarp's broadphase and narrowphases (\code{lodos.col.prim}'s \code{collision_*} modules) on a persistent collision context and calls the hybrid directly, in place of MJWarp's \code{collision()}. New hybrid pair types extend \code{ALL_TYPES}. Contacts go into \code{d.contact} through \code{write_contact}, whose conventions the export and the viewer's collect assume. \code{hybrid/truth.py} adjudicates penetration depths in float64.
+\item \textbf{A new capacity} must be visible: a sticky overflow flag or a raw count, a peak in \code{lodos.utils.calibrate.Tracker}, and its entry in \code{lodos.utils.tuning}'s \code{CAPACITIES} (and \code{BATCH_TOTALS} if it is one), so that the tuning tools size it and the guard checks it; and, for one of MJWarp's, \code{Runner.overflow} in \code{viewer/session.py}, which names what \code{Runner.grow} raises when a step overflows it.
+\end{itemize}
+
+\subsection{A scene}\label{sec:addscene}
+
+\code{docs/creating_new_sim_from_mjcf.pdf} is the workflow, from an MJCF to a shipped scene, and \code{docs/visualizer.pdf} covers the viewer side, including the \code{lodos:} MJCF annotations that make a geom a Lodos surface without any code. A built-in scene needs:
+
+\begin{enumerate}
+\item a module in \code{viewer/scenes/}: \code{scene_xml}, \code{surfaces}, the initial state, and \code{build(...)} returning a \code{Sim}; its constants with where they came from;
+\item its assets in \code{viewer/assets/}, with their licence, found through \code{viewer.scenes.assets};
+\item an entry in \code{viewer/scenes/catalog.py}'s \code{_builtin()}: a factory returning a \code{SceneSource} with its MJWarp capacities at one world, the solver's options where the scene wants its own (\code{solver_defaults}), per mode where they differ (\code{mode_defaults}), the binning its contacts take when grouped (\code{group_bins}), \code{sim_kwargs}, a \code{sampler} of starts for the tuning tools, and recorded controls if it replays some (\code{RecordedControls}, their data in \code{viewer/scenes/data/});
+\item a family in \code{tools/performance_tuning/tune.py}'s \code{FAMILIES} if the catch-all's exploration does not suit it; then its tuning file (\code{tune.py <scene>}) in \code{tools/performance_tuning/tuned/} and the guides' tables (\code{docs/manual/make_tables.py});
+\item a short run under both modes, in the viewer (\cref{sec:check}).
+\end{enumerate}
+
+\subsection{A document}\label{sec:adddoc}
+
+The manuals and guides are LaTeX in \code{docs/manual/}, sharing \code{preamble.tex}. \code{docs/manual/build.sh NAME} compiles the changed figures (\code{fig/*.tex}, standalone TikZ, to PDF and PNG), runs pdflatex three times, copies the PDF to \code{docs/}, and writes the Markdown twin with \code{tex2md.py}, which understands only the LaTeX the existing documents use: check the \code{.md} and change the \code{.tex} when it reads wrong. Keep math free of custom macros. Data figures come from \code{make_data.py} (GPU) and \code{make_figures.py}; the guides' tables from \code{make_tables.py}. Stamp a document with the date it was checked against the code.
+
+\section{Checking and measuring}\label{sec:checking}
+
+\subsection{Checking a change}\label{sec:check}
+
+\begin{itemize}
+\item \textbf{A change to comments, docstrings or documents needs no run}; neither does a mechanical rename, whose check is a repository-wide grep for leftovers (\cref{sec:refuse}). Check any other change where it shows, and say in your summary what ran.
+\item \textbf{The notebooks} (\code{notebooks/}) are tutorials of the API, stored with their outputs: re-execute the ones a change touches, and read their outputs against their text (\code{notebooks/README.md}).
+\item \textbf{The viewer}: open the scenes a change touches, under both modes (\code{python -m viewer SCENE}; \code{docs/visualizer.pdf}).
+\item \textbf{The benchmarks' smoke runs}: each comparison's driver (\cref{tab:bench}) through every phase on one small scene, about a minute each, into a scratch directory. They need \code{viewer/newton/}'s environment, and each timed run waits for a GPU without other compute processes. A smoke run shows that the driver runs; it is no measurement to compare.
+\item \textbf{For a broad change} (\code{make_sim}, the step, the solver, the contexts) \textbf{and before a merge}, run every notebook and both smoke runs; they are not a per-commit gate.
+\end{itemize}
+
+\begin{lstlisting}[language=bash]
+S=<a scratch directory>
+LODOS_MJWARP_OUT=$S/m .venv/bin/python -m bench.lodos_mjwarp.run \
+    --only cube_walled_5_polytope --max-B 128
+LODOS_KAMINO_OUT=$S/k .venv/bin/python -m bench.lodos_kamino.run \
+    --only cube_walled_5_polytope --max-B 128
+\end{lstlisting}
+
+\subsection{Guards for refactors}\label{sec:guards}
+
+A change that must not change results (a refactor, a rename that is not mechanical, a new option left off) is checked against a capture taken before it. Where the step is bit-reproducible, bit for bit; once contacts start it is not (\cref{sec:determinism}), so the old code is run several times and the new code compared, bit for bit, over the prefix of steps on which those runs agree: on the five-armadillo drop at 8 worlds, three runs of one configuration agreed through steps 176--306, contacts starting at step 86 (2026-10-25).
+
+Write the same for a new refactor: capture at the commit before, compare after, and report it. A golden holds only until a change that alters results on purpose.
+
+\subsection{Measuring}\label{sec:measure}
+
+\begin{itemize}
+\item \textbf{Alone on the GPU.} Another process's kernels (another agent's run, the live viewer stepping) slow a timing by an unpredictable amount. Check \code{nvidia-smi} first; pause the viewer for its own panel's timings.
+\item \textbf{Interleave what you compare}, configuration by configuration: A, B, C, then A, B, C again, never all of A first. The GPU's clock drifts over minutes. Run each configuration in its own process (the two comparisons do), and stream results experiment by experiment so partial results already compare.
+\item \textbf{Chaotic scenes need jittered starts and many worlds.} Where a nut wedges at its seat, or how a pile settles, is chaotic: a batch of identical worlds replicates one outcome $B$ times, which can move a throughput either way and hide the failures other starts meet, and a single world's result is noise. Several scene builders start every world alike by default (\code{nutbolt} and \code{nist} with \code{jitter=0}, \code{sharpa}, \code{sharpa_armadillo}, \code{fbf}); the drops draw a stack per world from a seed. The nut-bolt benchmarks take \code{--jitter} and \code{--worlds}.
+\item \textbf{Count failures over thousands of worlds.} A failure census (4096 jittered worlds, 12\,s, counting the non-finite, the nuts off their seat and those tilted past 10$^\circ$) finds what one start in a few thousand meets.
+\item \textbf{Windows.} A step's cost depends on the state, so state what was timed: time an impact window and a settled window of the same rollout apart; the tuning tools time from a state set. A window that is mostly a settled pile favours a configuration that is fast at rest.
+\item \textbf{A run that overflowed timed a different problem}: check every overflow flag and counter (\cref{sec:capacities}) and discard such runs.
+\item \textbf{Noise.} The same configuration varies by 2--3\,\% from run to run (the NIST threading replay under the mj mode at 2048 worlds, on the pyramidal cone, 2026-10-29); \code{tune.py} keeps a budget only if it is 3\,\% faster. Throughput is in world-steps (or world-seconds) per second at a stated batch size, on the RTX 4080 (16\,GiB), Warp 1.16, the step captured and replayed.
+\end{itemize}
+
+\subsection{The scripts}\label{sec:scripts}
+
+\begin{table}[t]
+\centering
+\caption{\code{bench/}. Each script's docstring has its usage, and each comparison's \code{README.md} the commands that reproduce its report.}
+\label{tab:bench}
+\small
+\begin{tabularx}{\linewidth}{@{}L{42mm}Y@{}}
+\toprule
+script & measures \\
+\midrule
+\code{lodos_mjwarp/} & Lodos's mj mode against MuJoCo Warp (Newton's \code{SolverMuJoCo}, on Newton's collision pipeline), every scene's throughput against the batch size: \code{run.py} drives its phases, each measurement a process of its own (\code{lodos_point.py}, and \code{newton_point.py} in \code{viewer/newton/}'s environment), and \code{report.py} writes \code{report/} \\
+\code{lodos_kamino/} & Lodos's exact mode against Kamino (Newton's \code{SolverKamino}, on the scenes without Lodos surfaces), the same way \\
+\code{lodos_setting.py} & how the two comparisons set Lodos up: a scene's setting at the viewer's defaults, its build, the capacities a world needs from its peaks, worlds started from states \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\Cref{tab:bench} lists the benchmarks. \code{tools/performance_tuning/} holds the tuning tools (\code{explore.py}, \code{calibrate.py}, \code{tile_tuner.py}, \code{sweep.py}, \code{profile_scene.py}, \code{tune.py}, \code{tune_all.py}, \code{summarize.py}, \code{time_variant.py}, sharing \code{common.py}; and \code{migrate_formats.py}, which renames old stored formats' sections), described in \code{docs/performance_tuning.pdf}; their artifact guard (\code{common.no_worse}) is the check that a cheaper budget is no worse.
+
+Write each experiment's script and its log under \code{results/<topic>/}, which stays local, and put the numbers, the setup and the commands that reproduce them in the commit message and the report (\cref{sec:practice}).
+
+\section{Pitfalls and open problems}\label{sec:pitfalls}
+
+\subsection{Pitfalls already found}\label{sec:found}
+
+Each was found the hard way.
+
+\begin{itemize}
+\item \textbf{MJWarp's broadphase pairs share \code{naconmax} with its contacts.} Stacked hulls have 3--3.5 times as many overlapping boxes as contacts. Sized by contacts alone, the broadphase dropped pairs: bodies fell through the floor, and the SHARPA grasp threw its armadillo in a tenth of the worlds. Track \code{d.ncollision} too, as \code{Tracker}, \code{calibrate.peaks} and \code{suggest} do.
+\item \textbf{\code{nconmax} and \code{nccdmax} are shares of batch totals}, and \code{naccdmax} must not exceed \code{naconmax} (\cref{sec:capacities}).
+\item \textbf{MJWarp's default capacities ignore Lodos's contacts}: a bare \code{make_sim} with Lodos surfaces drops contacts past MJWarp's estimate (\cref{sec:capacities}).
+\item \textbf{A sparse Jacobian's nonzeros} (\code{njmax_nnz}, models over 32 dofs) bound its rows without a word: past them a row is dropped. MJWarp's estimate counts the geom pairs the model collides, which leave out Lodos's surfaces, and without room for their rows twenty armadillo surfaces fell through the floor; \code{make_sim} hands \code{put_data} Lodos's pairs (\code{contact_body_pairs}). Pass \code{njmax_nnz} explicitly only if you know better.
+\item \textbf{A tuning file must keep its batch size.} Settings measured at 8192 worlds and applied whole at 2048 overflowed; \code{lodos.utils.tuning.apply} leaves the batch totals out below the measured size.
+\item \textbf{A misspelled or renamed option through a viewer scene does nothing}: \code{SceneSource.make_sim} drops what the solver does not take (\cref{sec:refuse}).
+\item \textbf{Quaternion renormalization is not idempotent in float32.} Install a state the way \code{make_sim} and \code{lodos.utils.states.install} do: write it, then run \code{kinematics} once.
+\item \textbf{Identical worlds} replicate one outcome, and a single world's result on a chaotic scene is noise (\cref{sec:measure}).
+\item \textbf{Contact flicker.} A contact exists only while it penetrates; a Baumgarte target that pushes a resting contact out to zero depth makes it vanish, its body fall a step and the contact return, so a pile vibrates. \code{baumgarte_slop} (0.2\,mm by default) stops it. The NIST scenes run without it (\code{viewer.scenes.nist.OPTIONS}): at 0.2\,mm a self-locked M8 nut sank 0.26\,mm into its thread in 4\,s, tilting to 1.9$^\circ$, where at 0 it settles 0.044\,mm and holds.
+\item \textbf{Contacts without identity cannot be carried}: the prox cache's nearest-position match hands one force to many Lodos contacts (\cref{sec:bridges}). Any new carry needs a key that identifies a contact: (world, segment, vertex) for Lodos's, as the contact groups' carried frames use.
+\item \textbf{Carried state copied every step costs}: copied over the whole contact capacity, the groups' carried frames moved 238\,MB a step at $B$ 8192 (0.76\,ms; measured 2026-10-29). They take two buffers instead, whose roles a counter on the device swaps (\code{lodos.cd.groups.flip}).
+\item \textbf{A group too coarse cannot hold a thread.} One group holds its body only through its members' spring-damper shares, which no solve adjusts: on the NIST threading the thread's radial reactions cancel inside the group, and cone groups at 1 $\times$ 1 bins kept the nut on its bolt in 70--76 of 256 jittered worlds. 1 $\times$ 3 is the coarsest binning that held all 256, and it still lost one nut in 20\,000--50\,000 world-runs, where per-contact runs lost none in 131\,072 (under the mj mode, on the pyramidal cone; measured 2026-10-29).
+\item \textbf{The ray's de Saxc\'e term follows each member's friction direction}, $r_i\, t_{1,i} \cdot \sigma_i$. In the norm form, $r_i |\sigma_{i,t}|$, a group sank wherever a slip turned within the step: on \code{arm_walled_20_sdf} its deepest contact reached 64\,mm, against 20\,mm and then 1--4\,mm in the linear form (measured 2026-10-29).
+\item \textbf{Mixed scenes count both representations}: where a surface and its pieces both touch, both pipelines contribute contacts, by design.
+\item \textbf{The artifact guard's blind spots}: its depth statistics are a mean and a 99th percentile over every world and sample, so one bad world in 64 moves neither, and it has no orientation check. Watch a candidate in the viewer before trusting it.
+\item \textbf{Stale tuning files}: a re-baked surface invalidates calibrated capacities. \code{lodos.utils.tuning.stale} lists what changed and \code{make_sim} warns.
+\end{itemize}
+
+\subsection{Open problems}\label{sec:open}
+
+\begin{itemize}
+\item \textbf{The solver creeps on Lodos surfaces}: 0.2--0.7\,mm/s on the walled five-hand SHARPA piles, because Lodos's contacts start each step cold; 20 proximal iterations cut the drift 3--5$\times$ at about 1.8$\times$ the step (measured 2026-10-26).
+\item \textbf{Under review, not run}: the solver fills MJWarp's \code{d.M} but not its factor, so an MJCF selecting MJWarp's CG solver under plain mj would read an unfilled preconditioner.
+\item \textbf{In the hybrid and the prox solver}: the hybrid's EPA can settle on the wrong face for nearly parallel box faces (about one pair in 12\,000 on resting cubes, measured 2026-10-21; a certify-or-improve pass is planned); the prox solver's ``straggler NaN'' pattern at large batches.
+\item \textbf{Known bugs}: the viewer's \emph{Export as MJCF} names each surface by its vertex count (\code{viewer.scenes.catalog._shipped_name}), which confuses surfaces of equal count.
+\item \textbf{Decisions waiting}: the proximal budget with contact groups, cone groups on the piles, and the form of the ray's de Saxc\'e term; the threading's binning, 1 $\times$ 3 or 1 $\times$ 4; colliding less often, with contacts carried across steps; the assets' storage, their licences (the armadillo has no credit line yet, and Isaac Lab states none for its NIST parts) and the size of a wheel that carries them.
+\end{itemize}
+
+\section{Where the theory and the workflows live}\label{sec:docs}
+
+\begin{table}[h]
+\centering
+\caption{The documents, and what to read each for.}
+\label{tab:docs}
+\small
+\begin{tabularx}{\linewidth}{@{}L{55mm}Y@{}}
+\toprule
+document & read it for \\
+\midrule
+\code{docs/collision_detection.pdf} & both collision pipelines: describing a scene, the SDF representations and the bake, the vertex--SDF contact model, the stages, capacities, the hybrid, how contacts reach the solver, measurements, every option of \code{make_collision_context} \\
+\code{docs/contact_dynamics.pdf} & the rigid-body pass, the exact problem and MuJoCo's, the NLSP solver, contact groups, the reduction, the fused and row-space Newton solves, every option, measured behaviour, what to pick \\
+\code{docs/creating_new_sim_from_mjcf.pdf} & a MuJoCo model to a shipped scene: representations, the mesh pipeline, physics, validation, the SHARPA example \\
+\code{docs/performance_tuning.pdf} & every throughput knob, state sets, calibration, the tuning file and tools, the built-in scenes tuned \\
+\code{docs/installation_guide.pdf} & installing, with pip or uv \\
+\code{docs/visualizer.pdf} & the live viewer, its built-in scenes and the \code{lodos:} MJCF annotations \\
+\code{docs/reading_guide.pdf} & every source file, and every kernel one step launches, in order \\
+\code{docs/development_guide.pdf} & this guide \\
+\code{papers/lodos_v2.pdf} & the extended abstract, \emph{LODOS-v2: An Efficient Primal Formulation of the Exact Frictional Contact Problem}: the solver and its two modes, the design of contact groups (its \emph{Contact-Group Reparameterization}), and the two comparisons' results, in short \\
+\code{papers/contact_tutorial.pdf} (coming soon) & the contact tutorial, \emph{Cone Complementarity Based Models of Contact Dynamics: A Self-Contained Tutorial for Roboticists}: the exact contact problem and its convex relaxation, their transcriptions and solution methods, MuJoCo's Newton and the proximal minimization the exact mode builds on among them \\
+\code{papers/lodos_v1.pdf} & Lodos-v1, \emph{LODOS: A Lightweight Simulator Designed for Contact-Rich Interactions with Detailed Meshes}: the vertex--SDF collision detection, and the contact model that scales a collision pair's spring-damper forces by one factor \\
+\code{papers/lodos_precursor.pdf} & the precursor to Lodos, \emph{Novel Algorithms for Smoothly Differentiable and Efficiently Vectorizable Contact Manifold Construction} (ICRA 2026 workshop): contact-manifold construction, among it an efficient edge--SDF collision, which Lodos leaves out \\
+\code{README.md} & the overview and the quick start \\
+\code{bench/lodos_mjwarp/README.md}, \code{bench/lodos_kamino/README.md} & the two comparisons: what is compared, how it is measured and how to reproduce their reports (\code{report/report.pdf}) \\
+\code{tools/performance_tuning/README.md}, \code{tools/performance_tuning/tuned/README.md} & the tools in short; every built-in scene's tuning, before and after \\
+\code{tools/mesh_processing/README.md} & the steps and how to run them \\
+\code{viewer/newton/README.md}, \code{notebooks/README.md} & Newton's sims, for the viewer's comparison; the notebooks \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\Cref{tab:docs} lists them. The manuals share one notation: $\dot q$ and $\ddot q$ generalized, $v$ a contact velocity, $G$ the Delassus matrix, $R$ the regularization, $\gamma_n$ the stabilization and $\Gamma$ the de Saxc\'e correction.
+
+\end{document}

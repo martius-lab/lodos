@@ -1,0 +1,30 @@
+\documentclass[tikz,border=4pt]{standalone}
+\input{fig/common.tex}
+\begin{document}
+\begin{tikzpicture}[font=\small\sffamily]
+  \tikzset{snote/.style={font=\footnotesize\sffamily, text=ourgray, align=center}}
+  \node[box, fill=ourlightgray2!35, minimum width=30mm, minimum height=14mm] (rbd) at (0, 0)
+    {\texttt{lodos.rbd}\\[-1pt]{\footnotesize kinematics, $M = LL^\top$,}\\[-2pt]{\footnotesize $\ddot q_s = M^{-1}(\tau - b)$}};
+  \node[box, minimum width=27mm, minimum height=14mm] (col) at (3.65, 0)
+    {collision\\[-1pt]{\footnotesize \texttt{dcol}: Lodos's}\\[-2pt]{\footnotesize \texttt{d.contact}: MJWarp's}};
+  \node[box, minimum width=31mm, minimum height=14mm] (exp) at (7.45, 0)
+    {export\\[-1pt]{\footnotesize Lodos's contacts into \texttt{d.contact}:}\\[-2pt]{\footnotesize each, reduced, or as groups}};
+  \node[box, minimum width=25mm, minimum height=14mm] (rows) at (11.15, 0)
+    {rows\\[-1pt]{\footnotesize $M$ gathered into \texttt{d.M},}\\[-2pt]{\footnotesize \texttt{make\_constraint}}};
+  \node[solver, minimum width=36mm, minimum height=14mm] (solve) at (15.0, 0)
+    {\textbf{MJWarp's Newton solve}\\[-1pt]{\footnotesize its own, fused, or in the rows;}\\[-2pt]{\footnotesize exact mode: in a proximal loop}};
+  \node[box, fill=ourlightgray2!35, minimum width=27mm, minimum height=14mm] (int) at (19.85, 0)
+    {semi-implicit Euler\\[-1pt]{\footnotesize $\dot q^+ = \dot q + \Delta t\,\ddot q$,}\\[-2pt]{\footnotesize $q^+ = q \oplus \Delta t\,\dot q^+$}};
+  \draw[flow] (rbd) -- (col);
+  \draw[flow] (col) -- (exp);
+  \draw[flow] (exp) -- (rows);
+  \draw[flow] (rows) -- (solve);
+  \draw[flow] (solve) -- (int) node[midway, below=2pt, snote] {$\ddot q$, written\\[-1pt]in place};
+  \node[snote, anchor=north] at (19.85, -0.85) {or implicitfast};
+  \draw[decorate, decoration={brace, amplitude=5pt, mirror}, ourgray] (5.85, -0.95) -- (16.9, -0.95)
+    node[midway, below=6pt, snote]
+    {contact dynamics: \texttt{SolverDriver.contact\_dynamics} (\texttt{lodos.cd.driver}), the NLSP solver};
+  \draw[decorate, decoration={brace, amplitude=6pt}, ourgray] (-1.5, 0.95) -- (21.2, 0.95)
+    node[midway, above=7pt, snote] {one step, no host round trip: captured as one CUDA graph by \texttt{lodos.step.make\_step\_graph}};
+\end{tikzpicture}
+\end{document}

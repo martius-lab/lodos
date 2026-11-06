@@ -1,0 +1,11 @@
+\begin{tabularx}{\linewidth}{@{}L{50mm}R{8mm}R{13mm}R{8mm}R{13mm}R{9mm}Y@{}}
+\toprule
+scene & \multicolumn{2}{c}{before} & \multicolumn{2}{c}{after} & ratio & kept \\
+ & $B$ & steps/s & $B$ & steps/s & & \\
+\midrule
+\code{sharpa_armadillo_sdf} & 1024 & 63.3k & 4096 & 173k & 2.74 & -- \\
+\code{sharpa_armadillo_sdf (mj)} & 1024 & 287k & 4096 & 916k & 3.19 & -- \\
+\code{sharpa_armadillo_polytope} & 1024 & 170k & 4096 & 491k & 2.88 & prox 3 \\
+\code{sharpa_armadillo_polytope (mj)} & 1024 & 278k & 4096 & 452k & 1.63 & -- \\
+\bottomrule
+\end{tabularx}

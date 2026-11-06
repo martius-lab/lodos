@@ -1,0 +1,8 @@
+label,world_s_per_s,round1,round2,contacts_per_world,rows_max,nut_z_end_mm,family
+exact,322.3,325.1,319.5,40.1,237,29.55,lodos
+mj,1087.6,1088.7,1086.4,78.3,279,0.45,lodos
+"exact, ray groups 6x4",558.9,554.1,563.7,15.8,22,0.60,lodos
+"exact, cone groups 6x4",487.0,480.9,493.2,15.4,66,0.57,lodos
+"mj, ray groups 6x4",1218.2,1222.0,1214.3,16.8,19,0.24,lodos
+"mj, cone groups 6x4",1081.4,1084.4,1078.4,16.9,57,0.27,lodos
+Newton's own SDF example,386.4,384.5,388.3,,,,newton

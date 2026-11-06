@@ -1,0 +1,3652 @@
+{
+ "format": "lodos-tuning/2",
+ "scene": "sharpa_armadillo_sdf",
+ "B": 4096,
+ "layout": "independent",
+ "fingerprint": {
+  "model": {
+   "nq": 32,
+   "nv": 31,
+   "nu": 25,
+   "na": 0,
+   "structure": "ba5a4a11733d1c28"
+  },
+  "geometry": "d690b1bb8a64dc88",
+  "timestep": 0.002,
+  "hulls": {
+   "hulls": 0
+  },
+  "surfaces": [
+   {
+    "kind": "surface",
+    "vertices": 874,
+    "faces": 1746,
+    "grid_N": [
+     47,
+     78,
+     100
+    ],
+    "voxel_h": [
+     0.0021503448951989412,
+     0.0021503448951989412,
+     0.0021503448951989412
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04978641,
+     0.08368508,
+     0.10751725
+    ],
+    "sha": "61501e8691981d3e",
+    "file": "viewer/assets/sharpa/final_sdata/right_hand_C_MC.npz",
+    "records": {
+     "assemble": {
+      "body": "right_hand_C_MC",
+      "geoms": [
+       "right_hand_C_MC_visual"
+      ],
+      "meshes": [
+       "right_hand_C_MC_visual"
+      ],
+      "v_in": 6900,
+      "f_in": 13786,
+      "trimmed": false,
+      "v_out": 6900,
+      "f_out": 13786,
+      "area_cm2": 362.68,
+      "watertight": false,
+      "components": 4
+     },
+     "create_surface_data": {
+      "body": "right_hand_C_MC",
+      "v": 874,
+      "e": 2611,
+      "N": [
+       47,
+       78,
+       100
+      ],
+      "h_mm": 2.1503,
+      "sdf_error_h": 0.0529,
+      "bytes": 3135000,
+      "watertight": false,
+      "recommended_depth": 0
+     },
+     "decompose": {
+      "body": "right_hand_C_MC",
+      "hulls": 24,
+      "hull_vertices": 829,
+      "threshold": 0.103,
+      "max_hulls": -1,
+      "sum_hull_volume_cm3": 236.48,
+      "source_volume_cm3": 219.591,
+      "stale": false,
+      "source": "right_decimated/pamo/body"
+     },
+     "fuse": {
+      "body": "right_hand_C_MC",
+      "hulls": 24,
+      "v": 1428,
+      "f": 2852,
+      "shells": 1,
+      "watertight": true,
+      "genus": 0,
+      "volume_cm3": 236.318,
+      "vs_hull_sum": -0.0007,
+      "vs_source": 0.0762
+     },
+     "instant_meshes": {
+      "body": "right_hand_C_MC",
+      "target": 898,
+      "v": 874,
+      "f": 1746,
+      "shells": 8,
+      "watertight": false,
+      "volume_cm3": 232.64,
+      "volume_change": -0.0156,
+      "stale": false,
+      "source": "right_cp_fused"
+     },
+     "project": {
+      "body": "right_hand_C_MC",
+      "v": 874,
+      "target_shells": 4,
+      "mean_um": 750.5,
+      "p95_um": 2440.2,
+      "max_um": 4964.7,
+      "off_main_component": 0,
+      "degenerate_faces": 0,
+      "area_change": 0.0288
+     },
+     "remesh_report": {
+      "body": "right_hand_C_MC",
+      "v_in": 1428,
+      "v_ref": 1428,
+      "target": 898,
+      "v_out": 874,
+      "f_out": 1746,
+      "shells": 8,
+      "watertight": false,
+      "genus": null,
+      "volume_cm3": 232.64,
+      "volume_change": -0.0156,
+      "dev_p95_um": 2376.4,
+      "added_p95_um": 1216.4,
+      "edge_mean_mm": 5.857,
+      "edge_cv": 0.1312,
+      "centroid_drift_um": 110.3
+     },
+     "watertight": {
+      "body": "right_hand_C_MC",
+      "V": 164715,
+      "F": 329454,
+      "shells": 1,
+      "watertight": true,
+      "volume_cm3": 221.121,
+      "dev_mean_um": 1121.9,
+      "dev_p95_um": 10424.6,
+      "added_p95_um": 150.7,
+      "seconds": 29.24,
+      "alpha_mm": 0.5,
+      "wn_used": true
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 114,
+    "faces": 224,
+    "grid_N": [
+     100,
+     100,
+     57
+    ],
+    "voxel_h": [
+     0.0004398341989144683,
+     0.0004398341989144683,
+     0.0004398341989144683
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.021985249999999998,
+     0.021991709999999998,
+     0.0125
+    ],
+    "sha": "7a192f1d669c0d8a",
+    "file": "viewer/assets/sharpa/final_sdata/right_thumb_CMC_VL.npz",
+    "records": {
+     "assemble": {
+      "body": "right_thumb_CMC_VL",
+      "geoms": [
+       "geom33"
+      ],
+      "meshes": [
+       "right_thumb_CMC_VL"
+      ],
+      "v_in": 3175,
+      "f_in": 6358,
+      "trimmed": false,
+      "v_out": 3175,
+      "f_out": 6358,
+      "area_cm2": 21.64,
+      "watertight": true,
+      "components": 2
+     },
+     "create_surface_data": {
+      "body": "right_thumb_CMC_VL",
+      "v": 114,
+      "e": 336,
+      "N": [
+       100,
+       100,
+       57
+      ],
+      "h_mm": 0.4398,
+      "sdf_error_h": 0.0972,
+      "bytes": 4826160,
+      "watertight": true,
+      "recommended_depth": 0
+     },
+     "decompose": {
+      "body": "right_thumb_CMC_VL",
+      "hulls": 4,
+      "hull_vertices": 249,
+      "threshold": 0.548,
+      "max_hulls": -1,
+      "sum_hull_volume_cm3": 3.179,
+      "source_volume_cm3": 1.016,
+      "stale": false,
+      "source": "right_decimated/pamo/body"
+     },
+     "fuse": {
+      "body": "right_thumb_CMC_VL",
+      "hulls": 4,
+      "v": 368,
+      "f": 732,
+      "shells": 1,
+      "watertight": true,
+      "genus": 0,
+      "volume_cm3": 3.183,
+      "vs_hull_sum": 0.0013,
+      "vs_source": 2.1321
+     },
+     "instant_meshes": {
+      "body": "right_thumb_CMC_VL",
+      "target": 115,
+      "v": 114,
+      "f": 224,
+      "shells": 1,
+      "watertight": true,
+      "volume_cm3": 2.568,
+      "volume_change": -0.1934,
+      "stale": false,
+      "source": "right_cp_fused"
+     },
+     "project": {
+      "body": "right_thumb_CMC_VL",
+      "v": 114,
+      "target_shells": 2,
+      "mean_um": 828.7,
+      "p95_um": 3595.8,
+      "max_um": 5784.9,
+      "off_main_component": 54,
+      "degenerate_faces": 0,
+      "area_change": 0.0827
+     },
+     "remesh_report": {
+      "body": "right_thumb_CMC_VL",
+      "v_in": 368,
+      "v_ref": 368,
+      "target": 53,
+      "v_out": 55,
+      "f_out": 106,
+      "shells": 1,
+      "watertight": true,
+      "genus": 0,
+      "volume_cm3": 2.208,
+      "volume_change": -0.3062,
+      "dev_p95_um": 2935.1,
+      "added_p95_um": 1892.9,
+      "edge_mean_mm": 5.338,
+      "edge_cv": 0.1674,
+      "centroid_drift_um": 812.0
+     },
+     "watertight": {
+      "body": "right_thumb_CMC_VL",
+      "V": 11088,
+      "F": 22184,
+      "shells": 1,
+      "watertight": true,
+      "volume_cm3": 1.031,
+      "dev_mean_um": 33.6,
+      "dev_p95_um": 110.4,
+      "added_p95_um": 64.7,
+      "seconds": 0.79,
+      "alpha_mm": 0.5,
+      "wn_used": false
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 261,
+    "faces": 522,
+    "grid_N": [
+     100,
+     63,
+     57
+    ],
+    "voxel_h": [
+     0.0012947932118549943,
+     0.0012947932118549943,
+     0.0012947932118549943
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.06473966,
+     0.04019966,
+     0.03652929
+    ],
+    "sha": "15349d52aadb34e0",
+    "file": "viewer/assets/sharpa/final_sdata/right_thumb_MC.npz",
+    "records": {
+     "assemble": {
+      "body": "right_thumb_MC",
+      "geoms": [
+       "geom35"
+      ],
+      "meshes": [
+       "right_thumb_MC_visual"
+      ],
+      "v_in": 6725,
+      "f_in": 11600,
+      "trimmed": false,
+      "v_out": 6725,
+      "f_out": 11600,
+      "area_cm2": 98.34,
+      "watertight": false,
+      "components": 6
+     },
+     "create_surface_data": {
+      "body": "right_thumb_MC",
+      "v": 261,
+      "e": 778,
+      "N": [
+       100,
+       63,
+       57
+      ],
+      "h_mm": 1.2948,
+      "sdf_error_h": 0.0617,
+      "bytes": 3067920,
+      "watertight": false,
+      "recommended_depth": 0
+     },
+     "decompose": {
+      "body": "right_thumb_MC",
+      "hulls": 8,
+      "hull_vertices": 536,
+      "threshold": 0.18,
+      "max_hulls": -1,
+      "sum_hull_volume_cm3": 43.647,
+      "source_volume_cm3": 38.84,
+      "stale": false,
+      "source": "right_decimated/pamo/body"
+     },
+     "fuse": {
+      "body": "right_thumb_MC",
+      "hulls": 8,
+      "v": 769,
+      "f": 1534,
+      "shells": 1,
+      "watertight": true,
+      "genus": 0,
+      "volume_cm3": 43.69,
+      "vs_hull_sum": 0.001,
+      "vs_source": 0.1249
+     },
+     "instant_meshes": {
+      "body": "right_thumb_MC",
+      "target": 257,
+      "v": 263,
+      "f": 522,
+      "shells": 2,
+      "watertight": false,
+      "volume_cm3": 42.211,
+      "volume_change": -0.0338,
+      "stale": false,
+      "source": "right_cp_fused"
+     },
+     "project": {
+      "body": "right_thumb_MC",
+      "v": 263,
+      "target_shells": 6,
+      "mean_um": 628.6,
+      "p95_um": 3647.6,
+      "max_um": 6529.5,
+      "off_main_component": 92,
+      "degenerate_faces": 0,
+      "area_change": 0.0314
+     },
+     "remesh_report": {
+      "body": "right_thumb_MC",
+      "v_in": 769,
+      "v_ref": 769,
+      "target": 257,
+      "v_out": 263,
+      "f_out": 522,
+      "shells": 2,
+      "watertight": false,
+      "genus": null,
+      "volume_cm3": 42.211,
+      "volume_change": -0.0338,
+      "dev_p95_um": 2288.5,
+      "added_p95_um": 904.8,
+      "edge_mean_mm": 5.703,
+      "edge_cv": 0.1466,
+      "centroid_drift_um": 244.1
+     },
+     "watertight": {
+      "body": "right_thumb_MC",
+      "V": 56646,
+      "F": 113296,
+      "shells": 1,
+      "watertight": true,
+      "volume_cm3": 38.2,
+      "dev_mean_um": 254.0,
+      "dev_p95_um": 772.4,
+      "added_p95_um": 3181.7,
+      "seconds": 10.66,
+      "alpha_mm": 0.5,
+      "wn_used": true
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 116,
+    "faces": 228,
+    "grid_N": [
+     81,
+     100,
+     52
+    ],
+    "voxel_h": [
+     0.000439259601989761,
+     0.000439259601989761,
+     0.000439259601989761
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.01764446,
+     0.02196298,
+     0.0114
+    ],
+    "sha": "8fb02dc85ba0bebe",
+    "file": "viewer/assets/sharpa/final_sdata/right_thumb_MCP_VL.npz",
+    "records": {
+     "assemble": {
+      "body": "right_thumb_MCP_VL",
+      "geoms": [
+       "geom37"
+      ],
+      "meshes": [
+       "right_thumb_MCP_VL_visual"
+      ],
+      "v_in": 3007,
+      "f_in": 6014,
+      "trimmed": false,
+      "v_out": 3007,
+      "f_out": 6014,
+      "area_cm2": 15.82,
+      "watertight": true,
+      "components": 2
+     },
+     "create_surface_data": {
+      "body": "right_thumb_MCP_VL",
+      "v": 116,
+      "e": 342,
+      "N": [
+       81,
+       100,
+       52
+      ],
+      "h_mm": 0.4393,
+      "sdf_error_h": 0.0946,
+      "bytes": 3588240,
+      "watertight": true,
+      "recommended_depth": 0
+     },
+     "decompose": {
+      "body": "right_thumb_MCP_VL",
+      "hulls": 2,
+      "hull_vertices": 132,
+      "threshold": 0.622,
+      "max_hulls": -1,
+      "sum_hull_volume_cm3": 2.901,
+      "source_volume_cm3": 0.713,
+      "stale": false,
+      "source": "right_decimated/pamo/body"
+     },
+     "fuse": {
+      "body": "right_thumb_MCP_VL",
+      "hulls": 2,
+      "v": 160,
+      "f": 316,
+      "shells": 1,
+      "watertight": true,
+      "genus": 0,
+      "volume_cm3": 2.905,
+      "vs_hull_sum": 0.0014,
+      "vs_source": 3.076
+     },
+     "instant_meshes": {
+      "body": "right_thumb_MCP_VL",
+      "target": 115,
+      "v": 116,
+      "f": 228,
+      "shells": 1,
+      "watertight": true,
+      "volume_cm3": 2.539,
+      "volume_change": -0.1262,
+      "stale": false,
+      "source": "right_cp_fused"
+     },
+     "project": {
+      "body": "right_thumb_MCP_VL",
+      "v": 116,
+      "target_shells": 2,
+      "mean_um": 1285.8,
+      "p95_um": 5039.5,
+      "max_um": 6476.5,
+      "off_main_component": 58,
+      "degenerate_faces": 0,
+      "area_change": 0.0496
+     },
+     "remesh_report": {
+      "body": "right_thumb_MCP_VL",
+      "v_in": 160,
+      "v_ref": 160,
+      "target": 44,
+      "v_out": 47,
+      "f_out": 90,
+      "shells": 1,
+      "watertight": true,
+      "genus": 0,
+      "volume_cm3": 1.472,
+      "volume_change": -0.4934,
+      "dev_p95_um": 4296.4,
+      "added_p95_um": 2620.9,
+      "edge_mean_mm": 4.725,
+      "edge_cv": 0.1859,
+      "centroid_drift_um": 976.8
+     },
+     "watertight": {
+      "body": "right_thumb_MCP_VL",
+      "V": 8364,
+      "F": 16736,
+      "shells": 1,
+      "watertight": true,
+      "volume_cm3": 0.724,
+      "dev_mean_um": 42.9,
+      "dev_p95_um": 146.2,
+      "added_p95_um": 69.6,
+      "seconds": 0.58,
+      "alpha_mm": 0.5,
+      "wn_used": false
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 92,
+    "faces": 180,
+    "grid_N": [
+     100,
+     53,
+     61
+    ],
+    "voxel_h": [
+     0.0007429491961374879,
+     0.0007429491961374879,
+     0.0007429491961374879
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.03714746,
+     0.01960539,
+     0.022523130000000002
+    ],
+    "sha": "84259d5fef3e20e2",
+    "file": "viewer/assets/sharpa/final_sdata/right_thumb_PP.npz",
+    "records": {
+     "assemble": {
+      "body": "right_thumb_PP",
+      "geoms": [
+       "geom38"
+      ],
+      "meshes": [
+       "right_thumb_PP_visual"
+      ],
+      "v_in": 9301,
+      "f_in": 15442,
+      "trimmed": false,
+      "v_out": 9301,
+      "f_out": 15442,
+      "area_cm2": 59.3,
+      "watertight": false,
+      "components": 6
+     },
+     "create_surface_data": {
+      "body": "right_thumb_PP",
+      "v": 92,
+      "e": 270,
+      "N": [
+       100,
+       53,
+       61
+      ],
+      "h_mm": 0.7429,
+      "sdf_error_h": 0.0743,
+      "bytes": 2769808,
+      "watertight": true,
+      "recommended_depth": 0
+     },
+     "decompose": {
+      "body": "right_thumb_PP",
+      "hulls": 2,
+      "hull_vertices": 142,
+      "threshold": 0.253,
+      "max_hulls": -1,
+      "sum_hull_volume_cm3": 11.687,
+      "source_volume_cm3": 10.747,
+      "stale": false,
+      "source": "right_decimated/pamo/body"
+     },
+     "fuse": {
+      "body": "right_thumb_PP",
+      "hulls": 2,
+      "v": 182,
+      "f": 360,
+      "shells": 1,
+      "watertight": true,
+      "genus": 0,
+      "volume_cm3": 11.703,
+      "vs_hull_sum": 0.0013,
+      "vs_source": 0.0889
+     },
+     "instant_meshes": {
+      "body": "right_thumb_PP",
+      "target": 94,
+      "v": 92,
+      "f": 180,
+      "shells": 1,
+      "watertight": true,
+      "volume_cm3": 10.508,
+      "volume_change": -0.1021,
+      "stale": false,
+      "source": "right_cp_fused"
+     },
+     "project": {
+      "body": "right_thumb_PP",
+      "v": 92,
+      "target_shells": 6,
+      "mean_um": 296.2,
+      "p95_um": 1644.3,
+      "max_um": 2824.7,
+      "off_main_component": 63,
+      "degenerate_faces": 0,
+      "area_change": -0.0013
+     },
+     "remesh_report": {
+      "body": "right_thumb_PP",
+      "v_in": 182,
+      "v_ref": 182,
+      "target": 88,
+      "v_out": 85,
+      "f_out": 166,
+      "shells": 1,
+      "watertight": true,
+      "genus": 0,
+      "volume_cm3": 10.527,
+      "volume_change": -0.1005,
+      "dev_p95_um": 1847.9,
+      "added_p95_um": 1283.5,
+      "edge_mean_mm": 6.0,
+      "edge_cv": 0.0925,
+      "centroid_drift_um": 105.8
+     },
+     "watertight": {
+      "body": "right_thumb_PP",
+      "V": 19153,
+      "F": 38306,
+      "shells": 1,
+      "watertight": true,
+      "volume_cm3": 10.961,
+      "dev_mean_um": 659.4,
+      "dev_p95_um": 2275.9,
+      "added_p95_um": 1633.7,
+      "seconds": 2.88,
+      "alpha_mm": 0.5,
+      "wn_used": true
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 105,
+    "faces": 208,
+    "grid_N": [
+     100,
+     62,
+     62
+    ],
+    "voxel_h": [
+     0.0005758616025559604,
+     0.0005758616025559604,
+     0.0005758616025559604
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.02879308,
+     0.01765119,
+     0.01765951
+    ],
+    "sha": "e579113470d62624",
+    "file": "viewer/assets/sharpa/final_sdata/right_thumb_DP.npz",
+    "records": {
+     "assemble": {
+      "body": "right_thumb_DP",
+      "geoms": [
+       "geom40",
+       "geom41"
+      ],
+      "meshes": [
+       "DP_Visual_HB1_TH",
+       "elastomer_HB1_TH"
+      ],
+      "v_in": 5478,
+      "f_in": 10948,
+      "trimmed": false,
+      "v_out": 5478,
+      "f_out": 10948,
+      "area_cm2": 29.86,
+      "watertight": true,
+      "components": 2
+     },
+     "create_surface_data": {
+      "body": "right_thumb_DP",
+      "v": 105,
+      "e": 311,
+      "N": [
+       100,
+       62,
+       62
+      ],
+      "h_mm": 0.5759,
+      "sdf_error_h": 0.081,
+      "bytes": 3278300,
+      "watertight": false,
+      "recommended_depth": 0
+     },
+     "decompose": {
+      "body": "right_thumb_DP",
+      "hulls": 5,
+      "hull_vertices": 189,
+      "threshold": 0.271,
+      "max_hulls": -1,
+      "sum_hull_volume_cm3": 5.52,
+      "source_volume_cm3": 4.922,
+      "stale": false,
+      "source": "right_decimated/pamo/body"
+     },
+     "fuse": {
+      "body": "right_thumb_DP",
+      "hulls": 5,
+      "v": 290,
+      "f": 576,
+      "shells": 1,
+      "watertight": true,
+      "genus": 0,
+      "volume_cm3": 5.527,
+      "vs_hull_sum": 0.0012,
+      "vs_source": 0.1228
+     },
+     "instant_meshes": {
+      "body": "right_thumb_DP",
+      "target": 106,
+      "v": 105,
+      "f": 208,
+      "shells": 1,
+      "watertight": false,
+      "volume_cm3": 4.955,
+      "volume_change": -0.1034,
+      "stale": false,
+      "source": "right_cp_fused"
+     },
+     "project": {
+      "body": "right_thumb_DP",
+      "v": 105,
+      "target_shells": 2,
+      "mean_um": 376.7,
+      "p95_um": 1967.7,
+      "max_um": 3361.2,
+      "off_main_component": 28,
+      "degenerate_faces": 0,
+      "area_change": 0.0229
+     },
+     "remesh_report": {
+      "body": "right_thumb_DP",
+      "v_in": 290,
+      "v_ref": 290,
+      "target": 60,
+      "v_out": 67,
+      "f_out": 130,
+      "shells": 2,
+      "watertight": false,
+      "genus": null,
+      "volume_cm3": 4.533,
+      "volume_change": -0.1799,
+      "dev_p95_um": 4326.8,
+      "added_p95_um": 1191.0,
+      "edge_mean_mm": 5.107,
+      "edge_cv": 0.1877,
+      "centroid_drift_um": 957.0
+     },
+     "watertight": {
+      "body": "right_thumb_DP",
+      "V": 11253,
+      "F": 22502,
+      "shells": 1,
+      "watertight": true,
+      "volume_cm3": 5.025,
+      "dev_mean_um": 759.1,
+      "dev_p95_um": 4435.9,
+      "added_p95_um": 74.1,
+      "seconds": 0.86,
+      "alpha_mm": 0.5,
+      "wn_used": false
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 122,
+    "faces": 240,
+    "grid_N": [
+     96,
+     100,
+     53
+    ],
+    "voxel_h": [
+     0.00043358359835110605,
+     0.00043358359835110605,
+     0.00043358359835110605
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.02066292,
+     0.02167918,
+     0.0114
+    ],
+    "sha": "a5ea45bd4e6701ad",
+    "file": "viewer/assets/sharpa/final_sdata/right_index_MCP_VL.npz",
+    "records": {
+     "assemble": {
+      "body": "right_index_MCP_VL",
+      "geoms": [
+       "geom43"
+      ],
+      "meshes": [
+       "right_MCP_VL_visual"
+      ],
+      "v_in": 3223,
+      "f_in": 6450,
+      "trimmed": false,
+      "v_out": 3223,
+      "f_out": 6450,
+      "area_cm2": 19.55,
+      "watertight": true,
+      "components": 2
+     },
+     "create_surface_data": {
+      "body": "right_index_MCP_VL",
+      "v": 122,
+      "e": 359,
+      "N": [
+       96,
+       100,
+       53
+      ],
+      "h_mm": 0.4336,
+      "sdf_error_h": 0.1048,
+      "bytes": 4319328,
+      "watertight": false,
+      "recommended_depth": 0
+     },
+     "decompose": {
+      "body": "right_index_MCP_VL",
+      "hulls": 4,
+      "hull_vertices": 232,
+      "threshold": 0.515,
+      "max_hulls": -1,
+      "sum_hull_volume_cm3": 2.785,
+      "source_volume_cm3": 0.836,
+      "stale": false,
+      "source": "right_decimated/pamo/body"
+     },
+     "fuse": {
+      "body": "right_index_MCP_VL",
+      "hulls": 4,
+      "v": 334,
+      "f": 664,
+      "shells": 1,
+      "watertight": true,
+      "genus": 0,
+      "volume_cm3": 2.789,
+      "vs_hull_sum": 0.0013,
+      "vs_source": 2.3373
+     },
+     "instant_meshes": {
+      "body": "right_index_MCP_VL",
+      "target": 124,
+      "v": 122,
+      "f": 240,
+      "shells": 2,
+      "watertight": false,
+      "volume_cm3": 2.402,
+      "volume_change": -0.1386,
+      "stale": false,
+      "source": "right_cp_fused"
+     },
+     "project": {
+      "body": "right_index_MCP_VL",
+      "v": 122,
+      "target_shells": 2,
+      "mean_um": 810.8,
+      "p95_um": 3477.0,
+      "max_um": 4824.4,
+      "off_main_component": 60,
+      "degenerate_faces": 0,
+      "area_change": 0.0543
+     },
+     "remesh_report": {
+      "body": "right_index_MCP_VL",
+      "v_in": 334,
+      "v_ref": 334,
+      "target": 49,
+      "v_out": 48,
+      "f_out": 92,
+      "shells": 1,
+      "watertight": true,
+      "genus": 0,
+      "volume_cm3": 0.889,
+      "volume_change": -0.6813,
+      "dev_p95_um": 4661.0,
+      "added_p95_um": 2450.2,
+      "edge_mean_mm": 4.777,
+      "edge_cv": 0.2681,
+      "centroid_drift_um": 991.3
+     },
+     "watertight": {
+      "body": "right_index_MCP_VL",
+      "V": 10498,
+      "F": 21032,
+      "shells": 1,
+      "watertight": true,
+      "volume_cm3": 0.833,
+      "dev_mean_um": 40.9,
+      "dev_p95_um": 131.2,
+      "added_p95_um": 77.0,
+      "seconds": 0.72,
+      "alpha_mm": 0.5,
+      "wn_used": false
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 99,
+    "faces": 194,
+    "grid_N": [
+     100,
+     41,
+     48
+    ],
+    "voxel_h": [
+     0.0009138805908150971,
+     0.0009138805908150971,
+     0.0009138805908150971
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04569403,
+     0.018377320000000003,
+     0.02183535
+    ],
+    "sha": "c301183da42ed10d",
+    "file": "viewer/assets/sharpa/final_sdata/right_index_PP.npz",
+    "records": {
+     "assemble": {
+      "body": "right_index_PP",
+      "geoms": [
+       "geom45"
+      ],
+      "meshes": [
+       "right_PP_visual"
+      ],
+      "v_in": 6544,
+      "f_in": 11197,
+      "trimmed": false,
+      "v_out": 6544,
+      "f_out": 11197,
+      "area_cm2": 52.69,
+      "watertight": false,
+      "components": 12
+     },
+     "create_surface_data": {
+      "body": "right_index_PP",
+      "v": 99,
+      "e": 291,
+      "N": [
+       100,
+       41,
+       48
+      ],
+      "h_mm": 0.9139,
+      "sdf_error_h": 0.0689,
+      "bytes": 1711728,
+      "watertight": true,
+      "recommended_depth": 0
+     },
+     "decompose": {
+      "body": "right_index_PP",
+      "hulls": 2,
+      "hull_vertices": 135,
+      "threshold": 0.123,
+      "max_hulls": -1,
+      "sum_hull_volume_cm3": 13.428,
+      "source_volume_cm3": 12.971,
+      "stale": false,
+      "source": "right_decimated/pamo/body"
+     },
+     "fuse": {
+      "body": "right_index_PP",
+      "hulls": 2,
+      "v": 192,
+      "f": 380,
+      "shells": 1,
+      "watertight": true,
+      "genus": 0,
+      "volume_cm3": 13.445,
+      "vs_hull_sum": 0.0013,
+      "vs_source": 0.0366
+     },
+     "instant_meshes": {
+      "body": "right_index_PP",
+      "target": 102,
+      "v": 99,
+      "f": 194,
+      "shells": 1,
+      "watertight": true,
+      "volume_cm3": 12.237,
+      "volume_change": -0.0899,
+      "stale": false,
+      "source": "right_cp_fused"
+     },
+     "project": {
+      "body": "right_index_PP",
+      "v": 99,
+      "target_shells": 12,
+      "mean_um": 250.0,
+      "p95_um": 1030.8,
+      "max_um": 2724.9,
+      "off_main_component": 46,
+      "degenerate_faces": 0,
+      "area_change": -0.0092
+     },
+     "remesh_report": {
+      "body": "right_index_PP",
+      "v_in": 192,
+      "v_ref": 192,
+      "target": 102,
+      "v_out": 99,
+      "f_out": 194,
+      "shells": 1,
+      "watertight": true,
+      "genus": 0,
+      "volume_cm3": 12.237,
+      "volume_change": -0.0899,
+      "dev_p95_um": 1591.7,
+      "added_p95_um": 1173.6,
+      "edge_mean_mm": 6.018,
+      "edge_cv": 0.0758,
+      "centroid_drift_um": 96.2
+     },
+     "watertight": {
+      "body": "right_index_PP",
+      "V": 21462,
+      "F": 42928,
+      "shells": 1,
+      "watertight": true,
+      "volume_cm3": 13.101,
+      "dev_mean_um": 369.3,
+      "dev_p95_um": 1118.5,
+      "added_p95_um": 296.7,
+      "seconds": 3.39,
+      "alpha_mm": 0.5,
+      "wn_used": true
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 93,
+    "faces": 182,
+    "grid_N": [
+     100,
+     53,
+     48
+    ],
+    "voxel_h": [
+     0.0007032619905658066,
+     0.0007032619905658066,
+     0.0007032619905658066
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.035163099999999996,
+     0.01852537,
+     0.01680457
+    ],
+    "sha": "ed5b62c22445dccb",
+    "file": "viewer/assets/sharpa/final_sdata/right_index_MP.npz",
+    "records": {
+     "assemble": {
+      "body": "right_index_MP",
+      "geoms": [
+       "geom47"
+      ],
+      "meshes": [
+       "right_MP_visual"
+      ],
+      "v_in": 3985,
+      "f_in": 7386,
+      "trimmed": false,
+      "v_out": 3985,
+      "f_out": 7386,
+      "area_cm2": 38.16,
+      "watertight": false,
+      "components": 3
+     },
+     "create_surface_data": {
+      "body": "right_index_MP",
+      "v": 93,
+      "e": 273,
+      "N": [
+       100,
+       53,
+       48
+      ],
+      "h_mm": 0.7033,
+      "sdf_error_h": 0.0794,
+      "bytes": 2194272,
+      "watertight": true,
+      "recommended_depth": 0
+     },
+     "decompose": {
+      "body": "right_index_MP",
+      "hulls": 2,
+      "hull_vertices": 81,
+      "threshold": 0.14,
+      "max_hulls": -1,
+      "sum_hull_volume_cm3": 7.674,
+      "source_volume_cm3": 7.138,
+      "stale": false,
+      "source": "right_decimated/pamo/body"
+     },
+     "fuse": {
+      "body": "right_index_MP",
+      "hulls": 2,
+      "v": 110,
+      "f": 216,
+      "shells": 1,
+      "watertight": true,
+      "genus": 0,
+      "volume_cm3": 7.684,
+      "vs_hull_sum": 0.0013,
+      "vs_source": 0.0764
+     },
+     "instant_meshes": {
+      "body": "right_index_MP",
+      "target": 87,
+      "v": 93,
+      "f": 182,
+      "shells": 1,
+      "watertight": true,
+      "volume_cm3": 6.979,
+      "volume_change": -0.0917,
+      "stale": false,
+      "source": "right_cp_fused"
+     },
+     "project": {
+      "body": "right_index_MP",
+      "v": 93,
+      "target_shells": 3,
+      "mean_um": 366.2,
+      "p95_um": 1346.3,
+      "max_um": 1813.3,
+      "off_main_component": 65,
+      "degenerate_faces": 0,
+      "area_change": -0.029
+     },
+     "remesh_report": {
+      "body": "right_index_MP",
+      "v_in": 110,
+      "v_ref": 110,
+      "target": 71,
+      "v_out": 73,
+      "f_out": 142,
+      "shells": 1,
+      "watertight": true,
+      "genus": 0,
+      "volume_cm3": 6.664,
+      "volume_change": -0.1327,
+      "dev_p95_um": 2257.0,
+      "added_p95_um": 1283.6,
+      "edge_mean_mm": 5.688,
+      "edge_cv": 0.1276,
+      "centroid_drift_um": 66.9
+     },
+     "watertight": {
+      "body": "right_index_MP",
+      "V": 12545,
+      "F": 25086,
+      "shells": 1,
+      "watertight": true,
+      "volume_cm3": 7.313,
+      "dev_mean_um": 531.9,
+      "dev_p95_um": 2346.3,
+      "added_p95_um": 147.7,
+      "seconds": 1.83,
+      "alpha_mm": 0.5,
+      "wn_used": true
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 97,
+    "faces": 190,
+    "grid_N": [
+     100,
+     61,
+     58
+    ],
+    "voxel_h": [
+     0.000520368805155158,
+     0.000520368805155158,
+     0.000520368805155158
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.02601844,
+     0.01561761,
+     0.01505837
+    ],
+    "sha": "e133eac398ad27cb",
+    "file": "viewer/assets/sharpa/final_sdata/right_index_DP.npz",
+    "records": {
+     "assemble": {
+      "body": "right_index_DP",
+      "geoms": [
+       "geom49",
+       "geom50"
+      ],
+      "meshes": [
+       "DP_visual_HB1_4F",
+       "elastomer_HB1_4F"
+      ],
+      "v_in": 5485,
+      "f_in": 10970,
+      "trimmed": false,
+      "v_out": 5485,
+      "f_out": 10970,
+      "area_cm2": 22.49,
+      "watertight": true,
+      "components": 2
+     },
+     "create_surface_data": {
+      "body": "right_index_DP",
+      "v": 97,
+      "e": 285,
+      "N": [
+       100,
+       61,
+       58
+      ],
+      "h_mm": 0.5204,
+      "sdf_error_h": 0.0699,
+      "bytes": 3023648,
+      "watertight": true,
+      "recommended_depth": 0
+     },
+     "decompose": {
+      "body": "right_index_DP",
+      "hulls": 1,
+      "hull_vertices": 97,
+      "threshold": 0.441,
+      "max_hulls": -1,
+      "sum_hull_volume_cm3": 3.954,
+      "source_volume_cm3": 3.354,
+      "stale": false,
+      "source": "right_decimated/pamo/body"
+     },
+     "fuse": {
+      "body": "right_index_DP",
+      "hulls": 1,
+      "v": 97,
+      "f": 190,
+      "shells": 1,
+      "watertight": true,
+      "genus": 0,
+      "volume_cm3": 3.96,
+      "vs_hull_sum": 0.0015,
+      "vs_source": 0.1805
+     },
+     "instant_meshes": {
+      "body": "right_index_DP",
+      "target": 98,
+      "v": 97,
+      "f": 190,
+      "shells": 1,
+      "watertight": true,
+      "volume_cm3": 3.656,
+      "volume_change": -0.0768,
+      "stale": false,
+      "source": "right_cp_fused"
+     },
+     "project": {
+      "body": "right_index_DP",
+      "v": 97,
+      "target_shells": 2,
+      "mean_um": 366.4,
+      "p95_um": 1927.5,
+      "max_um": 4580.5,
+      "off_main_component": 28,
+      "degenerate_faces": 0,
+      "area_change": 0.02
+     },
+     "remesh_report": {
+      "body": "right_index_DP",
+      "v_in": 97,
+      "v_ref": 97,
+      "target": 42,
+      "v_out": 43,
+      "f_out": 82,
+      "shells": 1,
+      "watertight": true,
+      "genus": 0,
+      "volume_cm3": 3.245,
+      "volume_change": -0.1804,
+      "dev_p95_um": 2675.6,
+      "added_p95_um": 1404.3,
+      "edge_mean_mm": 5.781,
+      "edge_cv": 0.0914,
+      "centroid_drift_um": 553.8
+     },
+     "watertight": {
+      "body": "right_index_DP",
+      "V": 7976,
+      "F": 15956,
+      "shells": 1,
+      "watertight": true,
+      "volume_cm3": 3.446,
+      "dev_mean_um": 735.0,
+      "dev_p95_um": 4428.3,
+      "added_p95_um": 89.4,
+      "seconds": 0.63,
+      "alpha_mm": 0.5,
+      "wn_used": false
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 129,
+    "faces": 256,
+    "grid_N": [
+     94,
+     100,
+     53
+    ],
+    "voxel_h": [
+     0.000437798211351037,
+     0.000437798211351037,
+     0.000437798211351037
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.02041814,
+     0.02188991,
+     0.0114
+    ],
+    "sha": "5ba71cb586daa77b",
+    "file": "viewer/assets/sharpa/final_sdata/right_middle_MCP_VL.npz",
+    "records": {
+     "assemble": {
+      "body": "right_middle_MCP_VL",
+      "geoms": [
+       "geom52"
+      ],
+      "meshes": [
+       "right_MCP_VL_visual"
+      ],
+      "v_in": 3223,
+      "f_in": 6450,
+      "trimmed": false,
+      "v_out": 3223,
+      "f_out": 6450,
+      "area_cm2": 19.55,
+      "watertight": true,
+      "components": 2
+     },
+     "create_surface_data": {
+      "body": "right_middle_MCP_VL",
+      "v": 129,
+      "e": 383,
+      "N": [
+       94,
+       100,
+       53
+      ],
+      "h_mm": 0.4378,
+      "sdf_error_h": 0.0934,
+      "bytes": 4230784,
+      "watertight": false,
+      "recommended_depth": 0
+     },
+     "decompose": {
+      "body": "right_middle_MCP_VL",
+      "hulls": 4,
+      "hull_vertices": 223,
+      "threshold": 0.515,
+      "max_hulls": -1,
+      "sum_hull_volume_cm3": 2.756,
+      "source_volume_cm3": 0.833,
+      "stale": false,
+      "source": "right_decimated/pamo/body"
+     },
+     "fuse": {
+      "body": "right_middle_MCP_VL",
+      "hulls": 4,
+      "v": 313,
+      "f": 622,
+      "shells": 1,
+      "watertight": true,
+      "genus": 0,
+      "volume_cm3": 2.76,
+      "vs_hull_sum": 0.0013,
+      "vs_source": 2.3145
+     },
+     "instant_meshes": {
+      "body": "right_middle_MCP_VL",
+      "target": 124,
+      "v": 129,
+      "f": 256,
+      "shells": 2,
+      "watertight": false,
+      "volume_cm3": 2.335,
+      "volume_change": -0.1539,
+      "stale": false,
+      "source": "right_cp_fused"
+     },
+     "project": {
+      "body": "right_middle_MCP_VL",
+      "v": 129,
+      "target_shells": 2,
+      "mean_um": 881.7,
+      "p95_um": 3379.7,
+      "max_um": 4703.5,
+      "off_main_component": 66,
+      "degenerate_faces": 0,
+      "area_change": 0.0848
+     },
+     "remesh_report": {
+      "body": "right_middle_MCP_VL",
+      "v_in": 313,
+      "v_ref": 313,
+      "target": 49,
+      "v_out": 52,
+      "f_out": 100,
+      "shells": 1,
+      "watertight": true,
+      "genus": 0,
+      "volume_cm3": 1.3,
+      "volume_change": -0.529,
+      "dev_p95_um": 3857.7,
+      "added_p95_um": 2381.7,
+      "edge_mean_mm": 4.785,
+      "edge_cv": 0.2279,
+      "centroid_drift_um": 1598.1
+     },
+     "watertight": {
+      "body": "right_middle_MCP_VL",
+      "V": 10498,
+      "F": 21032,
+      "shells": 1,
+      "watertight": true,
+      "volume_cm3": 0.833,
+      "dev_mean_um": 40.9,
+      "dev_p95_um": 131.2,
+      "added_p95_um": 77.0,
+      "seconds": 0.7,
+      "alpha_mm": 0.5,
+      "wn_used": false
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 100,
+    "faces": 196,
+    "grid_N": [
+     100,
+     42,
+     49
+    ],
+    "voxel_h": [
+     0.0009027086198329926,
+     0.0009027086198329926,
+     0.0009027086198329926
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04513543,
+     0.01859354,
+     0.0218515
+    ],
+    "sha": "fcdb888d3efe2385",
+    "file": "viewer/assets/sharpa/final_sdata/right_middle_PP.npz",
+    "records": {
+     "assemble": {
+      "body": "right_middle_PP",
+      "geoms": [
+       "geom54"
+      ],
+      "meshes": [
+       "right_PP_visual"
+      ],
+      "v_in": 6544,
+      "f_in": 11197,
+      "trimmed": false,
+      "v_out": 6544,
+      "f_out": 11197,
+      "area_cm2": 52.69,
+      "watertight": false,
+      "components": 12
+     },
+     "create_surface_data": {
+      "body": "right_middle_PP",
+      "v": 100,
+      "e": 294,
+      "N": [
+       100,
+       42,
+       49
+      ],
+      "h_mm": 0.9027,
+      "sdf_error_h": 0.0719,
+      "bytes": 1787280,
+      "watertight": true,
+      "recommended_depth": 0
+     },
+     "decompose": {
+      "body": "right_middle_PP",
+      "hulls": 2,
+      "hull_vertices": 160,
+      "threshold": 0.099,
+      "max_hulls": -1,
+      "sum_hull_volume_cm3": 13.335,
+      "source_volume_cm3": 12.912,
+      "stale": false,
+      "source": "right_decimated/pamo/body"
+     },
+     "fuse": {
+      "body": "right_middle_PP",
+      "hulls": 2,
+      "v": 217,
+      "f": 430,
+      "shells": 1,
+      "watertight": true,
+      "genus": 0,
+      "volume_cm3": 13.353,
+      "vs_hull_sum": 0.0013,
+      "vs_source": 0.0341
+     },
+     "instant_meshes": {
+      "body": "right_middle_PP",
+      "target": 102,
+      "v": 100,
+      "f": 196,
+      "shells": 1,
+      "watertight": true,
+      "volume_cm3": 12.043,
+      "volume_change": -0.0981,
+      "stale": false,
+      "source": "right_cp_fused"
+     },
+     "project": {
+      "body": "right_middle_PP",
+      "v": 100,
+      "target_shells": 12,
+      "mean_um": 218.4,
+      "p95_um": 773.2,
+      "max_um": 1548.4,
+      "off_main_component": 48,
+      "degenerate_faces": 0,
+      "area_change": -0.0102
+     },
+     "remesh_report": {
+      "body": "right_middle_PP",
+      "v_in": 217,
+      "v_ref": 217,
+      "target": 102,
+      "v_out": 100,
+      "f_out": 196,
+      "shells": 1,
+      "watertight": true,
+      "genus": 0,
+      "volume_cm3": 12.043,
+      "volume_change": -0.0981,
+      "dev_p95_um": 1796.9,
+      "added_p95_um": 1276.9,
+      "edge_mean_mm": 5.948,
+      "edge_cv": 0.0692,
+      "centroid_drift_um": 355.8
+     },
+     "watertight": {
+      "body": "right_middle_PP",
+      "V": 21462,
+      "F": 42928,
+      "shells": 1,
+      "watertight": true,
+      "volume_cm3": 13.101,
+      "dev_mean_um": 369.3,
+      "dev_p95_um": 1118.5,
+      "added_p95_um": 296.7,
+      "seconds": 3.4,
+      "alpha_mm": 0.5,
+      "wn_used": true
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 84,
+    "faces": 164,
+    "grid_N": [
+     100,
+     53,
+     47
+    ],
+    "voxel_h": [
+     0.0007079187780618668,
+     0.0007079187780618668,
+     0.0007079187780618668
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.03539594,
+     0.01849629,
+     0.01648675
+    ],
+    "sha": "e3c475101072f0b3",
+    "file": "viewer/assets/sharpa/final_sdata/right_middle_MP.npz",
+    "records": {
+     "assemble": {
+      "body": "right_middle_MP",
+      "geoms": [
+       "geom56"
+      ],
+      "meshes": [
+       "right_MP_visual"
+      ],
+      "v_in": 3985,
+      "f_in": 7386,
+      "trimmed": false,
+      "v_out": 3985,
+      "f_out": 7386,
+      "area_cm2": 38.16,
+      "watertight": false,
+      "components": 3
+     },
+     "create_surface_data": {
+      "body": "right_middle_MP",
+      "v": 84,
+      "e": 246,
+      "N": [
+       100,
+       53,
+       47
+      ],
+      "h_mm": 0.7079,
+      "sdf_error_h": 0.0769,
+      "bytes": 2150000,
+      "watertight": true,
+      "recommended_depth": 0
+     },
+     "decompose": {
+      "body": "right_middle_MP",
+      "hulls": 2,
+      "hull_vertices": 83,
+      "threshold": 0.148,
+      "max_hulls": -1,
+      "sum_hull_volume_cm3": 7.729,
+      "source_volume_cm3": 7.173,
+      "stale": false,
+      "source": "right_decimated/pamo/body"
+     },
+     "fuse": {
+      "body": "right_middle_MP",
+      "hulls": 2,
+      "v": 112,
+      "f": 220,
+      "shells": 1,
+      "watertight": true,
+      "genus": 0,
+      "volume_cm3": 7.739,
+      "vs_hull_sum": 0.0013,
+      "vs_source": 0.079
+     },
+     "instant_meshes": {
+      "body": "right_middle_MP",
+      "target": 84,
+      "v": 84,
+      "f": 164,
+      "shells": 1,
+      "watertight": true,
+      "volume_cm3": 6.758,
+      "volume_change": -0.1268,
+      "stale": false,
+      "source": "right_cp_fused"
+     },
+     "project": {
+      "body": "right_middle_MP",
+      "v": 84,
+      "target_shells": 3,
+      "mean_um": 438.8,
+      "p95_um": 1294.2,
+      "max_um": 1991.4,
+      "off_main_component": 61,
+      "degenerate_faces": 0,
+      "area_change": -0.0271
+     },
+     "remesh_report": {
+      "body": "right_middle_MP",
+      "v_in": 112,
+      "v_ref": 112,
+      "target": 71,
+      "v_out": 70,
+      "f_out": 136,
+      "shells": 1,
+      "watertight": true,
+      "genus": 0,
+      "volume_cm3": 6.537,
+      "volume_change": -0.1553,
+      "dev_p95_um": 2940.7,
+      "added_p95_um": 1684.5,
+      "edge_mean_mm": 5.738,
+      "edge_cv": 0.1277,
+      "centroid_drift_um": 551.3
+     },
+     "watertight": {
+      "body": "right_middle_MP",
+      "V": 12545,
+      "F": 25086,
+      "shells": 1,
+      "watertight": true,
+      "volume_cm3": 7.313,
+      "dev_mean_um": 531.9,
+      "dev_p95_um": 2346.3,
+      "added_p95_um": 147.7,
+      "seconds": 1.84,
+      "alpha_mm": 0.5,
+      "wn_used": true
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 100,
+    "faces": 196,
+    "grid_N": [
+     100,
+     60,
+     58
+    ],
+    "voxel_h": [
+     0.0005222415784373879,
+     0.0005222415784373879,
+     0.0005222415784373879
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.02611208,
+     0.015460479999999999,
+     0.01499707
+    ],
+    "sha": "83b6e07166a4d821",
+    "file": "viewer/assets/sharpa/final_sdata/right_middle_DP.npz",
+    "records": {
+     "assemble": {
+      "body": "right_middle_DP",
+      "geoms": [
+       "geom58",
+       "geom59"
+      ],
+      "meshes": [
+       "DP_visual_HB1_4F",
+       "elastomer_HB1_4F"
+      ],
+      "v_in": 5485,
+      "f_in": 10970,
+      "trimmed": false,
+      "v_out": 5485,
+      "f_out": 10970,
+      "area_cm2": 22.49,
+      "watertight": true,
+      "components": 2
+     },
+     "create_surface_data": {
+      "body": "right_middle_DP",
+      "v": 100,
+      "e": 294,
+      "N": [
+       100,
+       60,
+       58
+      ],
+      "h_mm": 0.5222,
+      "sdf_error_h": 0.07,
+      "bytes": 2975316,
+      "watertight": true,
+      "recommended_depth": 0
+     },
+     "decompose": {
+      "body": "right_middle_DP",
+      "hulls": 1,
+      "hull_vertices": 99,
+      "threshold": 0.41,
+      "max_hulls": -1,
+      "sum_hull_volume_cm3": 3.941,
+      "source_volume_cm3": 3.355,
+      "stale": false,
+      "source": "right_decimated/pamo/body"
+     },
+     "fuse": {
+      "body": "right_middle_DP",
+      "hulls": 1,
+      "v": 99,
+      "f": 194,
+      "shells": 1,
+      "watertight": true,
+      "genus": 0,
+      "volume_cm3": 3.947,
+      "vs_hull_sum": 0.0015,
+      "vs_source": 0.1767
+     },
+     "instant_meshes": {
+      "body": "right_middle_DP",
+      "target": 98,
+      "v": 100,
+      "f": 196,
+      "shells": 1,
+      "watertight": true,
+      "volume_cm3": 3.669,
+      "volume_change": -0.0705,
+      "stale": false,
+      "source": "right_cp_fused"
+     },
+     "project": {
+      "body": "right_middle_DP",
+      "v": 100,
+      "target_shells": 2,
+      "mean_um": 352.5,
+      "p95_um": 2015.7,
+      "max_um": 4547.1,
+      "off_main_component": 32,
+      "degenerate_faces": 0,
+      "area_change": 0.0174
+     },
+     "remesh_report": {
+      "body": "right_middle_DP",
+      "v_in": 99,
+      "v_ref": 99,
+      "target": 42,
+      "v_out": 44,
+      "f_out": 84,
+      "shells": 1,
+      "watertight": true,
+      "genus": 0,
+      "volume_cm3": 3.201,
+      "volume_change": -0.189,
+      "dev_p95_um": 2454.2,
+      "added_p95_um": 1616.6,
+      "edge_mean_mm": 5.677,
+      "edge_cv": 0.1033,
+      "centroid_drift_um": 509.7
+     },
+     "watertight": {
+      "body": "right_middle_DP",
+      "V": 7976,
+      "F": 15956,
+      "shells": 1,
+      "watertight": true,
+      "volume_cm3": 3.446,
+      "dev_mean_um": 735.0,
+      "dev_p95_um": 4428.3,
+      "added_p95_um": 89.4,
+      "seconds": 0.68,
+      "alpha_mm": 0.5,
+      "wn_used": false
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 110,
+    "faces": 216,
+    "grid_N": [
+     95,
+     100,
+     53
+    ],
+    "voxel_h": [
+     0.0004365766071714461,
+     0.0004365766071714461,
+     0.0004365766071714461
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.02052774,
+     0.02182883,
+     0.0114
+    ],
+    "sha": "96884c097feeb62f",
+    "file": "viewer/assets/sharpa/final_sdata/right_ring_MCP_VL.npz",
+    "records": {
+     "assemble": {
+      "body": "right_ring_MCP_VL",
+      "geoms": [
+       "geom61"
+      ],
+      "meshes": [
+       "right_MCP_VL_visual"
+      ],
+      "v_in": 3223,
+      "f_in": 6450,
+      "trimmed": false,
+      "v_out": 3223,
+      "f_out": 6450,
+      "area_cm2": 19.55,
+      "watertight": true,
+      "components": 2
+     },
+     "create_surface_data": {
+      "body": "right_ring_MCP_VL",
+      "v": 110,
+      "e": 324,
+      "N": [
+       95,
+       100,
+       53
+      ],
+      "h_mm": 0.4366,
+      "sdf_error_h": 0.105,
+      "bytes": 4275056,
+      "watertight": true,
+      "recommended_depth": 0
+     },
+     "decompose": {
+      "body": "right_ring_MCP_VL",
+      "hulls": 4,
+      "hull_vertices": 229,
+      "threshold": 0.507,
+      "max_hulls": -1,
+      "sum_hull_volume_cm3": 2.755,
+      "source_volume_cm3": 0.834,
+      "stale": false,
+      "source": "right_decimated/pamo/body"
+     },
+     "fuse": {
+      "body": "right_ring_MCP_VL",
+      "hulls": 4,
+      "v": 323,
+      "f": 642,
+      "shells": 1,
+      "watertight": true,
+      "genus": 0,
+      "volume_cm3": 2.758,
+      "vs_hull_sum": 0.0013,
+      "vs_source": 2.3065
+     },
+     "instant_meshes": {
+      "body": "right_ring_MCP_VL",
+      "target": 115,
+      "v": 110,
+      "f": 216,
+      "shells": 1,
+      "watertight": true,
+      "volume_cm3": 2.174,
+      "volume_change": -0.2118,
+      "stale": false,
+      "source": "right_cp_fused"
+     },
+     "project": {
+      "body": "right_ring_MCP_VL",
+      "v": 110,
+      "target_shells": 2,
+      "mean_um": 866.8,
+      "p95_um": 3389.1,
+      "max_um": 4770.3,
+      "off_main_component": 55,
+      "degenerate_faces": 0,
+      "area_change": 0.0988
+     },
+     "remesh_report": {
+      "body": "right_ring_MCP_VL",
+      "v_in": 323,
+      "v_ref": 323,
+      "target": 49,
+      "v_out": 51,
+      "f_out": 98,
+      "shells": 1,
+      "watertight": true,
+      "genus": 0,
+      "volume_cm3": 1.292,
+      "volume_change": -0.5315,
+      "dev_p95_um": 4415.7,
+      "added_p95_um": 2332.4,
+      "edge_mean_mm": 4.832,
+      "edge_cv": 0.2137,
+      "centroid_drift_um": 1774.2
+     },
+     "watertight": {
+      "body": "right_ring_MCP_VL",
+      "V": 10498,
+      "F": 21032,
+      "shells": 1,
+      "watertight": true,
+      "volume_cm3": 0.833,
+      "dev_mean_um": 40.9,
+      "dev_p95_um": 131.2,
+      "added_p95_um": 77.0,
+      "seconds": 0.7,
+      "alpha_mm": 0.5,
+      "wn_used": false
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 99,
+    "faces": 194,
+    "grid_N": [
+     100,
+     41,
+     49
+    ],
+    "voxel_h": [
+     0.00091075140517205,
+     0.00091075140517205,
+     0.00091075140517205
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04553757,
+     0.01847406,
+     0.02189943
+    ],
+    "sha": "1f7b52e703e57893",
+    "file": "viewer/assets/sharpa/final_sdata/right_ring_PP.npz",
+    "records": {
+     "assemble": {
+      "body": "right_ring_PP",
+      "geoms": [
+       "geom63"
+      ],
+      "meshes": [
+       "right_PP_visual"
+      ],
+      "v_in": 6544,
+      "f_in": 11197,
+      "trimmed": false,
+      "v_out": 6544,
+      "f_out": 11197,
+      "area_cm2": 52.69,
+      "watertight": false,
+      "components": 12
+     },
+     "create_surface_data": {
+      "body": "right_ring_PP",
+      "v": 99,
+      "e": 291,
+      "N": [
+       100,
+       41,
+       49
+      ],
+      "h_mm": 0.9108,
+      "sdf_error_h": 0.0713,
+      "bytes": 1746256,
+      "watertight": true,
+      "recommended_depth": 0
+     },
+     "decompose": {
+      "body": "right_ring_PP",
+      "hulls": 2,
+      "hull_vertices": 129,
+      "threshold": 0.123,
+      "max_hulls": -1,
+      "sum_hull_volume_cm3": 13.35,
+      "source_volume_cm3": 12.911,
+      "stale": false,
+      "source": "right_decimated/pamo/body"
+     },
+     "fuse": {
+      "body": "right_ring_PP",
+      "hulls": 2,
+      "v": 173,
+      "f": 342,
+      "shells": 1,
+      "watertight": true,
+      "genus": 0,
+      "volume_cm3": 13.368,
+      "vs_hull_sum": 0.0013,
+      "vs_source": 0.0354
+     },
+     "instant_meshes": {
+      "body": "right_ring_PP",
+      "target": 102,
+      "v": 99,
+      "f": 194,
+      "shells": 1,
+      "watertight": true,
+      "volume_cm3": 12.056,
+      "volume_change": -0.0981,
+      "stale": false,
+      "source": "right_cp_fused"
+     },
+     "project": {
+      "body": "right_ring_PP",
+      "v": 99,
+      "target_shells": 12,
+      "mean_um": 294.2,
+      "p95_um": 1386.2,
+      "max_um": 2902.1,
+      "off_main_component": 45,
+      "degenerate_faces": 0,
+      "area_change": -0.0039
+     },
+     "remesh_report": {
+      "body": "right_ring_PP",
+      "v_in": 173,
+      "v_ref": 173,
+      "target": 102,
+      "v_out": 99,
+      "f_out": 194,
+      "shells": 1,
+      "watertight": true,
+      "genus": 0,
+      "volume_cm3": 12.056,
+      "volume_change": -0.0981,
+      "dev_p95_um": 1733.9,
+      "added_p95_um": 1254.1,
+      "edge_mean_mm": 5.971,
+      "edge_cv": 0.0924,
+      "centroid_drift_um": 171.4
+     },
+     "watertight": {
+      "body": "right_ring_PP",
+      "V": 21462,
+      "F": 42928,
+      "shells": 1,
+      "watertight": true,
+      "volume_cm3": 13.101,
+      "dev_mean_um": 369.3,
+      "dev_p95_um": 1118.5,
+      "added_p95_um": 296.7,
+      "seconds": 3.31,
+      "alpha_mm": 0.5,
+      "wn_used": true
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 100,
+    "faces": 196,
+    "grid_N": [
+     100,
+     51,
+     46
+    ],
+    "voxel_h": [
+     0.0007291038054972887,
+     0.0007291038054972887,
+     0.0007291038054972887
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.036455190000000005,
+     0.01849415,
+     0.01661019
+    ],
+    "sha": "f6bed8599efc176f",
+    "file": "viewer/assets/sharpa/final_sdata/right_ring_MP.npz",
+    "records": {
+     "assemble": {
+      "body": "right_ring_MP",
+      "geoms": [
+       "geom65"
+      ],
+      "meshes": [
+       "right_MP_visual"
+      ],
+      "v_in": 3985,
+      "f_in": 7386,
+      "trimmed": false,
+      "v_out": 3985,
+      "f_out": 7386,
+      "area_cm2": 38.16,
+      "watertight": false,
+      "components": 3
+     },
+     "create_surface_data": {
+      "body": "right_ring_MP",
+      "v": 100,
+      "e": 294,
+      "N": [
+       100,
+       51,
+       46
+      ],
+      "h_mm": 0.7291,
+      "sdf_error_h": 0.0693,
+      "bytes": 2028552,
+      "watertight": true,
+      "recommended_depth": 0
+     },
+     "decompose": {
+      "body": "right_ring_MP",
+      "hulls": 2,
+      "hull_vertices": 85,
+      "threshold": 0.156,
+      "max_hulls": -1,
+      "sum_hull_volume_cm3": 7.699,
+      "source_volume_cm3": 7.144,
+      "stale": false,
+      "source": "right_decimated/pamo/body"
+     },
+     "fuse": {
+      "body": "right_ring_MP",
+      "hulls": 2,
+      "v": 121,
+      "f": 238,
+      "shells": 1,
+      "watertight": true,
+      "genus": 0,
+      "volume_cm3": 7.709,
+      "vs_hull_sum": 0.0013,
+      "vs_source": 0.0791
+     },
+     "instant_meshes": {
+      "body": "right_ring_MP",
+      "target": 102,
+      "v": 100,
+      "f": 196,
+      "shells": 1,
+      "watertight": true,
+      "volume_cm3": 6.749,
+      "volume_change": -0.1245,
+      "stale": false,
+      "source": "right_cp_fused"
+     },
+     "project": {
+      "body": "right_ring_MP",
+      "v": 100,
+      "target_shells": 3,
+      "mean_um": 416.5,
+      "p95_um": 1320.5,
+      "max_um": 2360.2,
+      "off_main_component": 73,
+      "degenerate_faces": 0,
+      "area_change": -0.0181
+     },
+     "remesh_report": {
+      "body": "right_ring_MP",
+      "v_in": 121,
+      "v_ref": 121,
+      "target": 71,
+      "v_out": 68,
+      "f_out": 132,
+      "shells": 1,
+      "watertight": true,
+      "genus": 0,
+      "volume_cm3": 6.436,
+      "volume_change": -0.1651,
+      "dev_p95_um": 3554.8,
+      "added_p95_um": 1672.7,
+      "edge_mean_mm": 5.789,
+      "edge_cv": 0.141,
+      "centroid_drift_um": 835.4
+     },
+     "watertight": {
+      "body": "right_ring_MP",
+      "V": 12545,
+      "F": 25086,
+      "shells": 1,
+      "watertight": true,
+      "volume_cm3": 7.313,
+      "dev_mean_um": 531.9,
+      "dev_p95_um": 2346.3,
+      "added_p95_um": 147.7,
+      "seconds": 1.82,
+      "alpha_mm": 0.5,
+      "wn_used": true
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 105,
+    "faces": 206,
+    "grid_N": [
+     100,
+     60,
+     58
+    ],
+    "voxel_h": [
+     0.0005213075783103704,
+     0.0005213075783103704,
+     0.0005213075783103704
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.02606538,
+     0.01546889,
+     0.01496964
+    ],
+    "sha": "e0899ca58bb1ff23",
+    "file": "viewer/assets/sharpa/final_sdata/right_ring_DP.npz",
+    "records": {
+     "assemble": {
+      "body": "right_ring_DP",
+      "geoms": [
+       "geom67",
+       "geom68"
+      ],
+      "meshes": [
+       "DP_visual_HB1_4F",
+       "elastomer_HB1_4F"
+      ],
+      "v_in": 5485,
+      "f_in": 10970,
+      "trimmed": false,
+      "v_out": 5485,
+      "f_out": 10970,
+      "area_cm2": 22.49,
+      "watertight": true,
+      "components": 2
+     },
+     "create_surface_data": {
+      "body": "right_ring_DP",
+      "v": 105,
+      "e": 309,
+      "N": [
+       100,
+       60,
+       58
+      ],
+      "h_mm": 0.5213,
+      "sdf_error_h": 0.0712,
+      "bytes": 2975316,
+      "watertight": true,
+      "recommended_depth": 0
+     },
+     "decompose": {
+      "body": "right_ring_DP",
+      "hulls": 1,
+      "hull_vertices": 92,
+      "threshold": 0.401,
+      "max_hulls": -1,
+      "sum_hull_volume_cm3": 3.957,
+      "source_volume_cm3": 3.358,
+      "stale": false,
+      "source": "right_decimated/pamo/body"
+     },
+     "fuse": {
+      "body": "right_ring_DP",
+      "hulls": 1,
+      "v": 92,
+      "f": 180,
+      "shells": 1,
+      "watertight": true,
+      "genus": 0,
+      "volume_cm3": 3.963,
+      "vs_hull_sum": 0.0015,
+      "vs_source": 0.1802
+     },
+     "instant_meshes": {
+      "body": "right_ring_DP",
+      "target": 98,
+      "v": 105,
+      "f": 206,
+      "shells": 1,
+      "watertight": true,
+      "volume_cm3": 3.687,
+      "volume_change": -0.0697,
+      "stale": false,
+      "source": "right_cp_fused"
+     },
+     "project": {
+      "body": "right_ring_DP",
+      "v": 105,
+      "target_shells": 2,
+      "mean_um": 351.3,
+      "p95_um": 2501.2,
+      "max_um": 3838.0,
+      "off_main_component": 30,
+      "degenerate_faces": 0,
+      "area_change": 0.016
+     },
+     "remesh_report": {
+      "body": "right_ring_DP",
+      "v_in": 92,
+      "v_ref": 92,
+      "target": 42,
+      "v_out": 43,
+      "f_out": 82,
+      "shells": 1,
+      "watertight": true,
+      "genus": 0,
+      "volume_cm3": 3.205,
+      "volume_change": -0.1914,
+      "dev_p95_um": 2268.9,
+      "added_p95_um": 1549.9,
+      "edge_mean_mm": 5.792,
+      "edge_cv": 0.1178,
+      "centroid_drift_um": 531.6
+     },
+     "watertight": {
+      "body": "right_ring_DP",
+      "V": 7877,
+      "F": 15758,
+      "shells": 1,
+      "watertight": true,
+      "volume_cm3": 3.446,
+      "dev_mean_um": 735.6,
+      "dev_p95_um": 4428.5,
+      "added_p95_um": 89.4,
+      "seconds": 0.66,
+      "alpha_mm": 0.5,
+      "wn_used": false
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 270,
+    "faces": 536,
+    "grid_N": [
+     74,
+     42,
+     100
+    ],
+    "voxel_h": [
+     0.0012026497861370444,
+     0.0012026497861370444,
+     0.0012026497861370444
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.044362359999999997,
+     0.02494957,
+     0.060132490000000004
+    ],
+    "sha": "42837853b940ad29",
+    "file": "viewer/assets/sharpa/final_sdata/right_pinky_MC.npz",
+    "records": {
+     "assemble": {
+      "body": "right_pinky_MC",
+      "geoms": [
+       "geom70"
+      ],
+      "meshes": [
+       "right_pinky_MC_visual"
+      ],
+      "v_in": 1940,
+      "f_in": 3872,
+      "trimmed": false,
+      "v_out": 1940,
+      "f_out": 3872,
+      "area_cm2": 89.16,
+      "watertight": true,
+      "components": 2
+     },
+     "create_surface_data": {
+      "body": "right_pinky_MC",
+      "v": 270,
+      "e": 804,
+      "N": [
+       74,
+       42,
+       100
+      ],
+      "h_mm": 1.2026,
+      "sdf_error_h": 0.052,
+      "bytes": 2670780,
+      "watertight": true,
+      "recommended_depth": 0
+     },
+     "decompose": {
+      "body": "right_pinky_MC",
+      "hulls": 6,
+      "hull_vertices": 317,
+      "threshold": 0.075,
+      "max_hulls": -1,
+      "sum_hull_volume_cm3": 43.817,
+      "source_volume_cm3": 42.337,
+      "stale": false,
+      "source": "right_decimated/pamo/body"
+     },
+     "fuse": {
+      "body": "right_pinky_MC",
+      "hulls": 6,
+      "v": 422,
+      "f": 840,
+      "shells": 1,
+      "watertight": true,
+      "genus": 0,
+      "volume_cm3": 43.877,
+      "vs_hull_sum": 0.0014,
+      "vs_source": 0.0364
+     },
+     "instant_meshes": {
+      "body": "right_pinky_MC",
+      "target": 268,
+      "v": 270,
+      "f": 536,
+      "shells": 1,
+      "watertight": true,
+      "volume_cm3": 41.811,
+      "volume_change": -0.0471,
+      "stale": false,
+      "source": "right_cp_fused"
+     },
+     "project": {
+      "body": "right_pinky_MC",
+      "v": 270,
+      "target_shells": 2,
+      "mean_um": 282.0,
+      "p95_um": 1267.9,
+      "max_um": 2828.1,
+      "off_main_component": 0,
+      "degenerate_faces": 0,
+      "area_change": 0.0053
+     },
+     "remesh_report": {
+      "body": "right_pinky_MC",
+      "v_in": 422,
+      "v_ref": 422,
+      "target": 268,
+      "v_out": 270,
+      "f_out": 536,
+      "shells": 1,
+      "watertight": true,
+      "genus": 0,
+      "volume_cm3": 41.811,
+      "volume_change": -0.0471,
+      "dev_p95_um": 2542.2,
+      "added_p95_um": 1113.0,
+      "edge_mean_mm": 5.762,
+      "edge_cv": 0.1337,
+      "centroid_drift_um": 517.7
+     },
+     "watertight": {
+      "body": "right_pinky_MC",
+      "V": 44197,
+      "F": 88390,
+      "shells": 1,
+      "watertight": true,
+      "volume_cm3": 42.632,
+      "dev_mean_um": 26.6,
+      "dev_p95_um": 18.3,
+      "added_p95_um": 17.7,
+      "seconds": 2.09,
+      "alpha_mm": 0.5,
+      "wn_used": false
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 115,
+    "faces": 226,
+    "grid_N": [
+     94,
+     100,
+     53
+    ],
+    "voxel_h": [
+     0.0004369581874925643,
+     0.0004369581874925643,
+     0.0004369581874925643
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.02040678,
+     0.021847909999999998,
+     0.0114
+    ],
+    "sha": "3190d82810b2f99f",
+    "file": "viewer/assets/sharpa/final_sdata/right_pinky_MCP_VL.npz",
+    "records": {
+     "assemble": {
+      "body": "right_pinky_MCP_VL",
+      "geoms": [
+       "geom72"
+      ],
+      "meshes": [
+       "right_MCP_VL_visual"
+      ],
+      "v_in": 3223,
+      "f_in": 6450,
+      "trimmed": false,
+      "v_out": 3223,
+      "f_out": 6450,
+      "area_cm2": 19.55,
+      "watertight": true,
+      "components": 2
+     },
+     "create_surface_data": {
+      "body": "right_pinky_MCP_VL",
+      "v": 115,
+      "e": 339,
+      "N": [
+       94,
+       100,
+       53
+      ],
+      "h_mm": 0.437,
+      "sdf_error_h": 0.1065,
+      "bytes": 4230784,
+      "watertight": true,
+      "recommended_depth": 0
+     },
+     "decompose": {
+      "body": "right_pinky_MCP_VL",
+      "hulls": 4,
+      "hull_vertices": 225,
+      "threshold": 0.515,
+      "max_hulls": -1,
+      "sum_hull_volume_cm3": 2.758,
+      "source_volume_cm3": 0.837,
+      "stale": false,
+      "source": "right_decimated/pamo/body"
+     },
+     "fuse": {
+      "body": "right_pinky_MCP_VL",
+      "hulls": 4,
+      "v": 313,
+      "f": 622,
+      "shells": 1,
+      "watertight": true,
+      "genus": 0,
+      "volume_cm3": 2.762,
+      "vs_hull_sum": 0.0013,
+      "vs_source": 2.3014
+     },
+     "instant_meshes": {
+      "body": "right_pinky_MCP_VL",
+      "target": 110,
+      "v": 115,
+      "f": 226,
+      "shells": 1,
+      "watertight": true,
+      "volume_cm3": 2.243,
+      "volume_change": -0.188,
+      "stale": false,
+      "source": "right_cp_fused"
+     },
+     "project": {
+      "body": "right_pinky_MCP_VL",
+      "v": 115,
+      "target_shells": 2,
+      "mean_um": 886.8,
+      "p95_um": 3517.7,
+      "max_um": 4751.3,
+      "off_main_component": 58,
+      "degenerate_faces": 0,
+      "area_change": 0.0851
+     },
+     "remesh_report": {
+      "body": "right_pinky_MCP_VL",
+      "v_in": 313,
+      "v_ref": 313,
+      "target": 49,
+      "v_out": 47,
+      "f_out": 90,
+      "shells": 1,
+      "watertight": true,
+      "genus": 0,
+      "volume_cm3": 0.956,
+      "volume_change": -0.6538,
+      "dev_p95_um": 4425.3,
+      "added_p95_um": 2590.4,
+      "edge_mean_mm": 4.731,
+      "edge_cv": 0.2679,
+      "centroid_drift_um": 2787.2
+     },
+     "watertight": {
+      "body": "right_pinky_MCP_VL",
+      "V": 10498,
+      "F": 21032,
+      "shells": 1,
+      "watertight": true,
+      "volume_cm3": 0.833,
+      "dev_mean_um": 40.9,
+      "dev_p95_um": 131.2,
+      "added_p95_um": 77.0,
+      "seconds": 0.74,
+      "alpha_mm": 0.5,
+      "wn_used": false
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 104,
+    "faces": 204,
+    "grid_N": [
+     100,
+     42,
+     49
+    ],
+    "voxel_h": [
+     0.0008941172272898257,
+     0.0008941172272898257,
+     0.0008941172272898257
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04470586,
+     0.01861019,
+     0.0218514
+    ],
+    "sha": "f34b6d74aaee15a3",
+    "file": "viewer/assets/sharpa/final_sdata/right_pinky_PP.npz",
+    "records": {
+     "assemble": {
+      "body": "right_pinky_PP",
+      "geoms": [
+       "geom74"
+      ],
+      "meshes": [
+       "right_PP_visual"
+      ],
+      "v_in": 6544,
+      "f_in": 11197,
+      "trimmed": false,
+      "v_out": 6544,
+      "f_out": 11197,
+      "area_cm2": 52.69,
+      "watertight": false,
+      "components": 12
+     },
+     "create_surface_data": {
+      "body": "right_pinky_PP",
+      "v": 104,
+      "e": 306,
+      "N": [
+       100,
+       42,
+       49
+      ],
+      "h_mm": 0.8941,
+      "sdf_error_h": 0.0638,
+      "bytes": 1787280,
+      "watertight": true,
+      "recommended_depth": 0
+     },
+     "decompose": {
+      "body": "right_pinky_PP",
+      "hulls": 2,
+      "hull_vertices": 136,
+      "threshold": 0.123,
+      "max_hulls": -1,
+      "sum_hull_volume_cm3": 13.36,
+      "source_volume_cm3": 12.931,
+      "stale": false,
+      "source": "right_decimated/pamo/body"
+     },
+     "fuse": {
+      "body": "right_pinky_PP",
+      "hulls": 2,
+      "v": 194,
+      "f": 384,
+      "shells": 1,
+      "watertight": true,
+      "genus": 0,
+      "volume_cm3": 13.378,
+      "vs_hull_sum": 0.0013,
+      "vs_source": 0.0346
+     },
+     "instant_meshes": {
+      "body": "right_pinky_PP",
+      "target": 102,
+      "v": 104,
+      "f": 204,
+      "shells": 1,
+      "watertight": true,
+      "volume_cm3": 12.144,
+      "volume_change": -0.0922,
+      "stale": false,
+      "source": "right_cp_fused"
+     },
+     "project": {
+      "body": "right_pinky_PP",
+      "v": 104,
+      "target_shells": 12,
+      "mean_um": 245.7,
+      "p95_um": 695.1,
+      "max_um": 2895.2,
+      "off_main_component": 47,
+      "degenerate_faces": 0,
+      "area_change": -0.0032
+     },
+     "remesh_report": {
+      "body": "right_pinky_PP",
+      "v_in": 194,
+      "v_ref": 194,
+      "target": 102,
+      "v_out": 104,
+      "f_out": 204,
+      "shells": 1,
+      "watertight": true,
+      "genus": 0,
+      "volume_cm3": 12.144,
+      "volume_change": -0.0922,
+      "dev_p95_um": 1728.1,
+      "added_p95_um": 1213.7,
+      "edge_mean_mm": 5.855,
+      "edge_cv": 0.1043,
+      "centroid_drift_um": 111.6
+     },
+     "watertight": {
+      "body": "right_pinky_PP",
+      "V": 21462,
+      "F": 42928,
+      "shells": 1,
+      "watertight": true,
+      "volume_cm3": 13.101,
+      "dev_mean_um": 369.3,
+      "dev_p95_um": 1118.5,
+      "added_p95_um": 296.7,
+      "seconds": 3.29,
+      "alpha_mm": 0.5,
+      "wn_used": true
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 84,
+    "faces": 164,
+    "grid_N": [
+     100,
+     53,
+     47
+    ],
+    "voxel_h": [
+     0.0007079233764670789,
+     0.0007079233764670789,
+     0.0007079233764670789
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.035396170000000005,
+     0.018481400000000002,
+     0.01636412
+    ],
+    "sha": "d3110e53c09de442",
+    "file": "viewer/assets/sharpa/final_sdata/right_pinky_MP.npz",
+    "records": {
+     "assemble": {
+      "body": "right_pinky_MP",
+      "geoms": [
+       "geom76"
+      ],
+      "meshes": [
+       "right_MP_visual"
+      ],
+      "v_in": 3985,
+      "f_in": 7386,
+      "trimmed": false,
+      "v_out": 3985,
+      "f_out": 7386,
+      "area_cm2": 38.16,
+      "watertight": false,
+      "components": 3
+     },
+     "create_surface_data": {
+      "body": "right_pinky_MP",
+      "v": 84,
+      "e": 246,
+      "N": [
+       100,
+       53,
+       47
+      ],
+      "h_mm": 0.7079,
+      "sdf_error_h": 0.0789,
+      "bytes": 2150000,
+      "watertight": true,
+      "recommended_depth": 0
+     },
+     "decompose": {
+      "body": "right_pinky_MP",
+      "hulls": 2,
+      "hull_vertices": 86,
+      "threshold": 0.164,
+      "max_hulls": -1,
+      "sum_hull_volume_cm3": 7.682,
+      "source_volume_cm3": 7.153,
+      "stale": false,
+      "source": "right_decimated/pamo/body"
+     },
+     "fuse": {
+      "body": "right_pinky_MP",
+      "hulls": 2,
+      "v": 112,
+      "f": 220,
+      "shells": 1,
+      "watertight": true,
+      "genus": 0,
+      "volume_cm3": 7.692,
+      "vs_hull_sum": 0.0013,
+      "vs_source": 0.0753
+     },
+     "instant_meshes": {
+      "body": "right_pinky_MP",
+      "target": 84,
+      "v": 84,
+      "f": 164,
+      "shells": 1,
+      "watertight": true,
+      "volume_cm3": 6.773,
+      "volume_change": -0.1195,
+      "stale": false,
+      "source": "right_cp_fused"
+     },
+     "project": {
+      "body": "right_pinky_MP",
+      "v": 84,
+      "target_shells": 3,
+      "mean_um": 389.7,
+      "p95_um": 1225.2,
+      "max_um": 1902.7,
+      "off_main_component": 58,
+      "degenerate_faces": 0,
+      "area_change": -0.0254
+     },
+     "remesh_report": {
+      "body": "right_pinky_MP",
+      "v_in": 112,
+      "v_ref": 112,
+      "target": 71,
+      "v_out": 75,
+      "f_out": 146,
+      "shells": 1,
+      "watertight": true,
+      "genus": 0,
+      "volume_cm3": 6.433,
+      "volume_change": -0.1638,
+      "dev_p95_um": 3066.6,
+      "added_p95_um": 1824.2,
+      "edge_mean_mm": 5.527,
+      "edge_cv": 0.1344,
+      "centroid_drift_um": 381.7
+     },
+     "watertight": {
+      "body": "right_pinky_MP",
+      "V": 12545,
+      "F": 25086,
+      "shells": 1,
+      "watertight": true,
+      "volume_cm3": 7.313,
+      "dev_mean_um": 531.9,
+      "dev_p95_um": 2346.3,
+      "added_p95_um": 147.7,
+      "seconds": 1.83,
+      "alpha_mm": 0.5,
+      "wn_used": true
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 106,
+    "faces": 208,
+    "grid_N": [
+     100,
+     60,
+     57
+    ],
+    "voxel_h": [
+     0.0005247920053079724,
+     0.0005247920053079724,
+     0.0005247920053079724
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.0262396,
+     0.015571310000000001,
+     0.0149485
+    ],
+    "sha": "82c9207355d2c250",
+    "file": "viewer/assets/sharpa/final_sdata/right_pinky_DP.npz",
+    "records": {
+     "assemble": {
+      "body": "right_pinky_DP",
+      "geoms": [
+       "geom78",
+       "geom79"
+      ],
+      "meshes": [
+       "DP_visual_HB1_4F",
+       "elastomer_HB1_4F"
+      ],
+      "v_in": 5485,
+      "f_in": 10970,
+      "trimmed": false,
+      "v_out": 5485,
+      "f_out": 10970,
+      "area_cm2": 22.49,
+      "watertight": true,
+      "components": 2
+     },
+     "create_surface_data": {
+      "body": "right_pinky_DP",
+      "v": 106,
+      "e": 312,
+      "N": [
+       100,
+       60,
+       57
+      ],
+      "h_mm": 0.5248,
+      "sdf_error_h": 0.0633,
+      "bytes": 2925360,
+      "watertight": true,
+      "recommended_depth": 0
+     },
+     "decompose": {
+      "body": "right_pinky_DP",
+      "hulls": 1,
+      "hull_vertices": 101,
+      "threshold": 0.409,
+      "max_hulls": -1,
+      "sum_hull_volume_cm3": 3.951,
+      "source_volume_cm3": 3.34,
+      "stale": false,
+      "source": "right_decimated/pamo/body"
+     },
+     "fuse": {
+      "body": "right_pinky_DP",
+      "hulls": 1,
+      "v": 101,
+      "f": 198,
+      "shells": 1,
+      "watertight": true,
+      "genus": 0,
+      "volume_cm3": 3.957,
+      "vs_hull_sum": 0.0015,
+      "vs_source": 0.1847
+     },
+     "instant_meshes": {
+      "body": "right_pinky_DP",
+      "target": 106,
+      "v": 106,
+      "f": 208,
+      "shells": 1,
+      "watertight": true,
+      "volume_cm3": 3.68,
+      "volume_change": -0.07,
+      "stale": false,
+      "source": "right_cp_fused"
+     },
+     "project": {
+      "body": "right_pinky_DP",
+      "v": 106,
+      "target_shells": 2,
+      "mean_um": 333.2,
+      "p95_um": 2291.7,
+      "max_um": 3977.3,
+      "off_main_component": 34,
+      "degenerate_faces": 0,
+      "area_change": 0.0177
+     },
+     "remesh_report": {
+      "body": "right_pinky_DP",
+      "v_in": 101,
+      "v_ref": 101,
+      "target": 42,
+      "v_out": 41,
+      "f_out": 78,
+      "shells": 1,
+      "watertight": true,
+      "genus": 0,
+      "volume_cm3": 2.982,
+      "volume_change": -0.2463,
+      "dev_p95_um": 2949.8,
+      "added_p95_um": 2104.9,
+      "edge_mean_mm": 5.728,
+      "edge_cv": 0.1293,
+      "centroid_drift_um": 453.3
+     },
+     "watertight": {
+      "body": "right_pinky_DP",
+      "V": 7976,
+      "F": 15956,
+      "shells": 1,
+      "watertight": true,
+      "volume_cm3": 3.446,
+      "dev_mean_um": 735.0,
+      "dev_p95_um": 4428.3,
+      "added_p95_um": 89.4,
+      "seconds": 0.67,
+      "alpha_mm": 0.5,
+      "wn_used": false
+     }
+    }
+   },
+   {
+    "kind": "surface",
+    "vertices": 451,
+    "faces": 898,
+    "grid_N": [
+     85,
+     76,
+     100
+    ],
+    "voxel_h": [
+     0.001408919459208846,
+     0.001408919459208846,
+     0.001408919459208846
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.05918624548420738,
+     0.05284486741122936,
+     0.07044597124044372
+    ],
+    "sha": "f847c8dba6d9f969",
+    "file": "viewer/assets/surfaces/armadillo/surface_data.npz"
+   },
+   {
+    "kind": "plane"
+   }
+  ],
+  "pairs": 249
+ },
+ "states": {
+  "path": "results/tuning/states/sharpa_armadillo_sdf.states.npz",
+  "digest": "cacf97ef9ad59fc8",
+  "size": 1300,
+  "source": {
+   "kind": "explore",
+   "scene": "sharpa_armadillo_sdf",
+   "strategy": [
+    "initial",
+    "perturb",
+    "actuation"
+   ],
+   "starts": 32,
+   "horizon": 1000,
+   "stride": 50,
+   "solver": "pc",
+   "seed": 0,
+   "jitter": 0.002,
+   "sigma": 0.3,
+   "max_depth": 0.01,
+   "dropped_nonfinite": 0,
+   "dropped_deep": 0
+  },
+  "horizon": 200,
+  "controls": {
+   "kind": "hold"
+  }
+ },
+ "safety": 1.5,
+ "created": "2026-11-01T00:51:26",
+ "commit": null,
+ "device": "NVIDIA GeForce RTX 4080",
+ "collision": {
+  "capacity_tile": 0.045616266798072014,
+  "capacity2": 0.03718751793812066
+ },
+ "runtime": {
+  "naconmax": 68607,
+  "nconmax": 17,
+  "njmax": 131
+ },
+ "sim": {},
+ "solver_kwargs": {},
+ "tiles": {
+  "groups": {
+   "61501e8691981d3e|c301183da42ed10d": 1,
+   "61501e8691981d3e|f847c8dba6d9f969": 1,
+   "f847c8dba6d9f969|plane": 1,
+   "42837853b940ad29|15349d52aadb34e0": 1,
+   "42837853b940ad29|c301183da42ed10d": 1,
+   "42837853b940ad29|fcdb888d3efe2385": 1,
+   "rest|rest": 243
+  },
+  "trials": [
+   {
+    "sizes": {
+     "61501e8691981d3e|c301183da42ed10d": 8,
+     "61501e8691981d3e|f847c8dba6d9f969": 8,
+     "f847c8dba6d9f969|plane": 8,
+     "42837853b940ad29|15349d52aadb34e0": 8,
+     "42837853b940ad29|c301183da42ed10d": 8,
+     "42837853b940ad29|fcdb888d3efe2385": 8,
+     "rest|rest": 8
+    },
+    "ms": 0.17198594996443717
+   },
+   {
+    "sizes": {
+     "61501e8691981d3e|c301183da42ed10d": 4,
+     "61501e8691981d3e|f847c8dba6d9f969": 8,
+     "f847c8dba6d9f969|plane": 8,
+     "42837853b940ad29|15349d52aadb34e0": 8,
+     "42837853b940ad29|c301183da42ed10d": 8,
+     "42837853b940ad29|fcdb888d3efe2385": 8,
+     "rest|rest": 8
+    },
+    "ms": 0.20840119996137219,
+    "error": null
+   },
+   {
+    "sizes": {
+     "61501e8691981d3e|c301183da42ed10d": 16,
+     "61501e8691981d3e|f847c8dba6d9f969": 8,
+     "f847c8dba6d9f969|plane": 8,
+     "42837853b940ad29|15349d52aadb34e0": 8,
+     "42837853b940ad29|c301183da42ed10d": 8,
+     "42837853b940ad29|fcdb888d3efe2385": 8,
+     "rest|rest": 8
+    },
+    "ms": 0.19097380009043263,
+    "error": null
+   },
+   {
+    "sizes": {
+     "61501e8691981d3e|c301183da42ed10d": 32,
+     "61501e8691981d3e|f847c8dba6d9f969": 8,
+     "f847c8dba6d9f969|plane": 8,
+     "42837853b940ad29|15349d52aadb34e0": 8,
+     "42837853b940ad29|c301183da42ed10d": 8,
+     "42837853b940ad29|fcdb888d3efe2385": 8,
+     "rest|rest": 8
+    },
+    "ms": 0.19704054993781028,
+    "error": null
+   },
+   {
+    "sizes": {
+     "61501e8691981d3e|c301183da42ed10d": 8,
+     "61501e8691981d3e|f847c8dba6d9f969": 4,
+     "f847c8dba6d9f969|plane": 8,
+     "42837853b940ad29|15349d52aadb34e0": 8,
+     "42837853b940ad29|c301183da42ed10d": 8,
+     "42837853b940ad29|fcdb888d3efe2385": 8,
+     "rest|rest": 8
+    },
+    "ms": 0.2078727500702371,
+    "error": null
+   },
+   {
+    "sizes": {
+     "61501e8691981d3e|c301183da42ed10d": 8,
+     "61501e8691981d3e|f847c8dba6d9f969": 16,
+     "f847c8dba6d9f969|plane": 8,
+     "42837853b940ad29|15349d52aadb34e0": 8,
+     "42837853b940ad29|c301183da42ed10d": 8,
+     "42837853b940ad29|fcdb888d3efe2385": 8,
+     "rest|rest": 8
+    },
+    "ms": 0.18919925005320692,
+    "error": null
+   },
+   {
+    "sizes": {
+     "61501e8691981d3e|c301183da42ed10d": 8,
+     "61501e8691981d3e|f847c8dba6d9f969": 32,
+     "f847c8dba6d9f969|plane": 8,
+     "42837853b940ad29|15349d52aadb34e0": 8,
+     "42837853b940ad29|c301183da42ed10d": 8,
+     "42837853b940ad29|fcdb888d3efe2385": 8,
+     "rest|rest": 8
+    },
+    "ms": 0.19160760002705501,
+    "error": null
+   },
+   {
+    "sizes": {
+     "61501e8691981d3e|c301183da42ed10d": 8,
+     "61501e8691981d3e|f847c8dba6d9f969": 8,
+     "f847c8dba6d9f969|plane": 4,
+     "42837853b940ad29|15349d52aadb34e0": 8,
+     "42837853b940ad29|c301183da42ed10d": 8,
+     "42837853b940ad29|fcdb888d3efe2385": 8,
+     "rest|rest": 8
+    },
+    "ms": 0.21363065006880788,
+    "error": null
+   },
+   {
+    "sizes": {
+     "61501e8691981d3e|c301183da42ed10d": 8,
+     "61501e8691981d3e|f847c8dba6d9f969": 8,
+     "f847c8dba6d9f969|plane": 16,
+     "42837853b940ad29|15349d52aadb34e0": 8,
+     "42837853b940ad29|c301183da42ed10d": 8,
+     "42837853b940ad29|fcdb888d3efe2385": 8,
+     "rest|rest": 8
+    },
+    "ms": 0.21022660002927296,
+    "error": null
+   },
+   {
+    "sizes": {
+     "61501e8691981d3e|c301183da42ed10d": 8,
+     "61501e8691981d3e|f847c8dba6d9f969": 8,
+     "f847c8dba6d9f969|plane": 32,
+     "42837853b940ad29|15349d52aadb34e0": 8,
+     "42837853b940ad29|c301183da42ed10d": 8,
+     "42837853b940ad29|fcdb888d3efe2385": 8,
+     "rest|rest": 8
+    },
+    "ms": 0.21041999989392934,
+    "error": null
+   },
+   {
+    "sizes": {
+     "61501e8691981d3e|c301183da42ed10d": 8,
+     "61501e8691981d3e|f847c8dba6d9f969": 8,
+     "f847c8dba6d9f969|plane": 8,
+     "42837853b940ad29|15349d52aadb34e0": 4,
+     "42837853b940ad29|c301183da42ed10d": 8,
+     "42837853b940ad29|fcdb888d3efe2385": 8,
+     "rest|rest": 8
+    },
+    "ms": 0.21074169999337755,
+    "error": null
+   },
+   {
+    "sizes": {
+     "61501e8691981d3e|c301183da42ed10d": 8,
+     "61501e8691981d3e|f847c8dba6d9f969": 8,
+     "f847c8dba6d9f969|plane": 8,
+     "42837853b940ad29|15349d52aadb34e0": 16,
+     "42837853b940ad29|c301183da42ed10d": 8,
+     "42837853b940ad29|fcdb888d3efe2385": 8,
+     "rest|rest": 8
+    },
+    "ms": 0.21047574991825968,
+    "error": null
+   },
+   {
+    "sizes": {
+     "61501e8691981d3e|c301183da42ed10d": 8,
+     "61501e8691981d3e|f847c8dba6d9f969": 8,
+     "f847c8dba6d9f969|plane": 8,
+     "42837853b940ad29|15349d52aadb34e0": 32,
+     "42837853b940ad29|c301183da42ed10d": 8,
+     "42837853b940ad29|fcdb888d3efe2385": 8,
+     "rest|rest": 8
+    },
+    "ms": 0.21018165007262724,
+    "error": null
+   },
+   {
+    "sizes": {
+     "61501e8691981d3e|c301183da42ed10d": 8,
+     "61501e8691981d3e|f847c8dba6d9f969": 8,
+     "f847c8dba6d9f969|plane": 8,
+     "42837853b940ad29|15349d52aadb34e0": 8,
+     "42837853b940ad29|c301183da42ed10d": 4,
+     "42837853b940ad29|fcdb888d3efe2385": 8,
+     "rest|rest": 8
+    },
+    "ms": 0.21076994999020826,
+    "error": null
+   },
+   {
+    "sizes": {
+     "61501e8691981d3e|c301183da42ed10d": 8,
+     "61501e8691981d3e|f847c8dba6d9f969": 8,
+     "f847c8dba6d9f969|plane": 8,
+     "42837853b940ad29|15349d52aadb34e0": 8,
+     "42837853b940ad29|c301183da42ed10d": 16,
+     "42837853b940ad29|fcdb888d3efe2385": 8,
+     "rest|rest": 8
+    },
+    "ms": 0.21018070001446176,
+    "error": null
+   },
+   {
+    "sizes": {
+     "61501e8691981d3e|c301183da42ed10d": 8,
+     "61501e8691981d3e|f847c8dba6d9f969": 8,
+     "f847c8dba6d9f969|plane": 8,
+     "42837853b940ad29|15349d52aadb34e0": 8,
+     "42837853b940ad29|c301183da42ed10d": 32,
+     "42837853b940ad29|fcdb888d3efe2385": 8,
+     "rest|rest": 8
+    },
+    "ms": 0.21013469995523337,
+    "error": null
+   },
+   {
+    "sizes": {
+     "61501e8691981d3e|c301183da42ed10d": 8,
+     "61501e8691981d3e|f847c8dba6d9f969": 8,
+     "f847c8dba6d9f969|plane": 8,
+     "42837853b940ad29|15349d52aadb34e0": 8,
+     "42837853b940ad29|c301183da42ed10d": 8,
+     "42837853b940ad29|fcdb888d3efe2385": 4,
+     "rest|rest": 8
+    },
+    "ms": 0.21065465007268358,
+    "error": null
+   },
+   {
+    "sizes": {
+     "61501e8691981d3e|c301183da42ed10d": 8,
+     "61501e8691981d3e|f847c8dba6d9f969": 8,
+     "f847c8dba6d9f969|plane": 8,
+     "42837853b940ad29|15349d52aadb34e0": 8,
+     "42837853b940ad29|c301183da42ed10d": 8,
+     "42837853b940ad29|fcdb888d3efe2385": 16,
+     "rest|rest": 8
+    },
+    "ms": 0.21028495011705672,
+    "error": null
+   },
+   {
+    "sizes": {
+     "61501e8691981d3e|c301183da42ed10d": 8,
+     "61501e8691981d3e|f847c8dba6d9f969": 8,
+     "f847c8dba6d9f969|plane": 8,
+     "42837853b940ad29|15349d52aadb34e0": 8,
+     "42837853b940ad29|c301183da42ed10d": 8,
+     "42837853b940ad29|fcdb888d3efe2385": 32,
+     "rest|rest": 8
+    },
+    "ms": 0.21031479991506785,
+    "error": null
+   },
+   {
+    "sizes": {
+     "61501e8691981d3e|c301183da42ed10d": 8,
+     "61501e8691981d3e|f847c8dba6d9f969": 8,
+     "f847c8dba6d9f969|plane": 8,
+     "42837853b940ad29|15349d52aadb34e0": 8,
+     "42837853b940ad29|c301183da42ed10d": 8,
+     "42837853b940ad29|fcdb888d3efe2385": 8,
+     "rest|rest": 4
+    },
+    "ms": 0.2955055999336764,
+    "error": null
+   },
+   {
+    "sizes": {
+     "61501e8691981d3e|c301183da42ed10d": 8,
+     "61501e8691981d3e|f847c8dba6d9f969": 8,
+     "f847c8dba6d9f969|plane": 8,
+     "42837853b940ad29|15349d52aadb34e0": 8,
+     "42837853b940ad29|c301183da42ed10d": 8,
+     "42837853b940ad29|fcdb888d3efe2385": 8,
+     "rest|rest": 16
+    },
+    "ms": 0.20411669993336545,
+    "error": null
+   },
+   {
+    "sizes": {
+     "61501e8691981d3e|c301183da42ed10d": 8,
+     "61501e8691981d3e|f847c8dba6d9f969": 8,
+     "f847c8dba6d9f969|plane": 8,
+     "42837853b940ad29|15349d52aadb34e0": 8,
+     "42837853b940ad29|c301183da42ed10d": 8,
+     "42837853b940ad29|fcdb888d3efe2385": 8,
+     "rest|rest": 32
+    },
+    "ms": 0.22506280001834966,
+    "error": null
+   }
+  ],
+  "base_ms": 0.17198594996443717,
+  "best_ms": 0.17198594996443717,
+  "sizes": {
+   "61501e8691981d3e|c301183da42ed10d": 8,
+   "61501e8691981d3e|f847c8dba6d9f969": 8,
+   "f847c8dba6d9f969|plane": 8,
+   "42837853b940ad29|15349d52aadb34e0": 8,
+   "42837853b940ad29|c301183da42ed10d": 8,
+   "42837853b940ad29|fcdb888d3efe2385": 8,
+   "rest|rest": 8
+  }
+ },
+ "baseline": {
+  "B": 1024,
+  "settings": {
+   "collision": {},
+   "runtime": {
+    "nconmax": 4096,
+    "njmax": 12288
+   },
+   "sim": {},
+   "solver_kwargs": {}
+  },
+  "throughput": {
+   "world_steps_per_s": 63271.40059858732,
+   "ms_per_step": 16.18424739001057,
+   "B": 1024,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.0008217033299975789,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 5891.264930725098
+  },
+  "artifacts": {
+   "nan": 0,
+   "escaped": 0,
+   "deep_mean": 0.00029519246734466265,
+   "deep_p99": 0.0015140124596655369,
+   "creep": 0.0003292088685944067,
+   "rest_speed": 0.008483155942599296,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "guard_B": 512
+ },
+ "peaks": {
+  "B": 4096,
+  "runtime": {
+   "nacon": 45738,
+   "ncollision": 0,
+   "naconmax": 87936,
+   "contacts_per_world": 29,
+   "overflow": false,
+   "nefc_per_world": 87,
+   "njmax": 114,
+   "efc_overflow": false
+  },
+  "lodos_col": {
+   "peak": {
+    "nCa1": 3902304,
+    "nCa2": 145117,
+    "nCa3": 45738,
+    "nTa": 487788,
+    "nTb": 0
+   },
+   "allocated": {
+    "nCa1": 7652352,
+    "nCa2": 277632,
+    "nCa3": 277632,
+    "nTa": 956544,
+    "nTb": 16039936
+   },
+   "overflow": {
+    "nCa1": false,
+    "nCa2": false,
+    "nCa3": false,
+    "nTa": false,
+    "nTb": false
+   },
+   "tile_slots": 16039936,
+   "slots_per_world": 31328,
+   "uniform_K": 1,
+   "tile_K": 8,
+   "compacts": 0,
+   "contacts_per_world": 29
+  },
+  "overflowed": false,
+  "layout": "independent",
+  "horizon": 200,
+  "batches": 1,
+  "states": 1300,
+  "controls": {
+   "kind": "hold"
+  }
+ },
+ "throughput": {
+  "world_steps_per_s": 173085.19211403347,
+  "B": 4096
+ },
+ "artifacts": {
+  "tuned": {
+   "nan": 0,
+   "escaped": 0,
+   "deep_mean": 0.00029520949902384075,
+   "deep_p99": 0.001514013905543834,
+   "creep": 0.0003297142838220243,
+   "rest_speed": 0.00912280441070834,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "baseline": {
+   "nan": 0,
+   "escaped": 0,
+   "deep_mean": 0.00029519246734466265,
+   "deep_p99": 0.0015140124596655369,
+   "creep": 0.0003292088685944067,
+   "rest_speed": 0.008483155942599296,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "ok": true,
+  "why": ""
+ }
+}

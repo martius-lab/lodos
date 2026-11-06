@@ -1,0 +1,58 @@
+\documentclass[tikz,border=4pt]{standalone}
+\input{fig/common.tex}
+\begin{document}
+% The contexts lodos.sim.make_sim builds, and the arrays they share. Solid: the same
+% wp.array object, bound once at construction and never rebound. Dashed: copied by a
+% kernel every step. The solver's parts exist only where its options ask for them.
+\begin{tikzpicture}[font=\small\sffamily]
+  \tikzset{
+    bound/.style={-{Latex[length=2.2mm]}, thick, ourblue!80!black},
+    copied/.style={-{Latex[length=2.2mm]}, thick, ourorange!85!black, dashed},
+    lab/.style={font=\scriptsize\ttfamily, text=ourgray, align=left, inner sep=2pt},
+  }
+  % the state
+  \node[box, fill=ourlightgray2!35, minimum width=38mm, minimum height=32mm, align=left] (rbd) at (0, 0)
+    {\textbf{lodos.rbd}: \texttt{mrbd, drbd}\\[2pt]
+     {\footnotesize the state and all it derives}\\[1pt]
+     {\scriptsize\ttfamily qpos qvel ctrl act time}\\[-2pt]
+     {\scriptsize\ttfamily xpos xquat xmat cdof}\\[-2pt]
+     {\scriptsize\ttfamily subtree\_com cinert}\\[-2pt]
+     {\scriptsize\ttfamily M\_blk L\_blk}\\[-2pt]
+     {\scriptsize\ttfamily qfrc\_smooth qacc\_smooth qacc}};
+  % collision
+  \node[lodos, minimum width=34mm, minimum height=12mm] (col) at (6.4, 2.4)
+    {\textbf{lodos.col.sdf}\\[-1pt]\texttt{mcol, dcol}};
+  \node[mjw, minimum width=40mm, minimum height=14mm] (mjw) at (6.4, -2.8)
+    {\textbf{MJWarp}: \texttt{m, d}\\[-1pt]{\footnotesize\texttt{PrimCollision} $\to$ \texttt{d.contact}}};
+  % the solver, and the parts its options build
+  \node[solver, minimum width=50mm, minimum height=33mm, align=left] (sol) at (14.6, 0.9)
+    {\textbf{lodos.cd.driver}: \texttt{SolverDriver}, \texttt{sim.solver}\\[3pt]
+     {\scriptsize\begin{tabular}{@{}l@{\hspace{2mm}}l@{}}
+       \texttt{lc} & Lodos's contacts, for \texttt{export\_lodos}\\
+       \texttt{rm, rd} & \texttt{lodos.cd.reduce}, under \texttt{contact\_reduction}\\
+       \texttt{groups} & \texttt{lodos.cd.groups}, under \texttt{groups}\\
+       \texttt{fused} & \texttt{lodos.cd.fused}, under \texttt{fused\_newton}\\
+       \texttt{rowspace} & \texttt{lodos.cd.rowspace}, under \texttt{row\_space}
+     \end{tabular}}\\[3pt]
+     {\footnotesize each part None where its option is off}};
+  % bound once, at construction
+  \draw[bound] ($(rbd.east)+(0, 0.9)$) -- ++(0.8, 0) |- (col.west) node[lab, pos=0.8, above] {xpos xquat};
+  \draw[bound] (rbd.south) |- (mjw.west)
+    node[lab, pos=0.76, below, text width=40mm] {\texttt{bind\_state}: qpos qvel xpos xmat cdof subtree\_com qfrc\_smooth qacc\_smooth qacc};
+  \draw[bound] (rbd.north) -- ++(0, 2.5) -| (sol.north)
+    node[lab, pos=0.33, above] {qvel cdof subtree\_com xmat (groups); L\_blk (rowspace)};
+  \draw[bound] (col.east) -- (col.east -| sol.west)
+    node[lab, midway, above] {ct b seg p n sdf v\_nCa3};
+  % copied every step
+  \draw[copied] (col.south) -- (mjw.north)
+    node[lab, midway, right, text width=40mm] {\texttt{export\_lodos} (what the reduction keeps), and a \texttt{GROUP} contact per group: into \texttt{d.contact}};
+  % MJWarp's solve
+  \draw[flow] (sol.south) |- (mjw.east)
+    node[lab, pos=0.75, below, text width=34mm] {make\_constraint, solve: qacc in place};
+  % legend
+  \draw[bound] (-1.9, -5.0) -- ++(0.9, 0) node[right, font=\footnotesize\sffamily, text=ourgray]
+    {the same array, bound once when \texttt{make\_sim} builds the contexts};
+  \draw[copied] (-1.9, -5.5) -- ++(0.9, 0) node[right, font=\footnotesize\sffamily, text=ourgray]
+    {copied by a kernel every step};
+\end{tikzpicture}
+\end{document}

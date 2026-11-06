@@ -1,0 +1,218 @@
+<!-- The MJCF of Lodos-v1's run of the Dexonomy grasp, its meshes taken out -->
+<mujoco model="MuJoCo Model">
+  <compiler angle="radian" />
+
+  <option timestep="0.004" impratio="10" integrator="implicitfast" cone="elliptic" noslip_iterations="2">
+    <flag gravity="disable" />
+  </option>
+
+  <size nkey="1" />
+
+  <default>
+    <default class="hand-main">
+      <default class="hand-right_hand">
+        <mesh scale="0.001 0.001 0.001" />
+        <joint armature="0.0002" damping="0.05" frictionloss="0.01" />
+        <general forcerange="-3 3" biastype="affine" gainprm="5" biasprm="0 -5" />
+        <default class="hand-wrist">
+          <joint damping="0.5" />
+          <default class="hand-wrist_y">
+            <joint range="-0.523599 0.174533" />
+            <general ctrlrange="-0.523599 0.174533" forcerange="-10 10" gainprm="10" biasprm="0 -10" />
+          </default>
+          <default class="hand-wrist_x">
+            <joint range="-0.698132 0.488692" />
+            <general ctrlrange="-0.698132 0.488692" forcerange="-5 5" gainprm="8" biasprm="0 -8" />
+          </default>
+        </default>
+        <default class="hand-thumb">
+          <default class="hand-thbase">
+            <joint range="-1.0472 1.0472" />
+          </default>
+          <default class="hand-thproximal">
+            <joint range="0 1.22173" />
+          </default>
+          <default class="hand-thhub">
+            <joint range="-0.20944 0.20944" />
+          </default>
+          <default class="hand-thmiddle">
+            <joint range="-0.698132 0.698132" />
+          </default>
+          <default class="hand-thdistal">
+            <joint range="-0.261799 1.5708" />
+          </default>
+        </default>
+        <default class="hand-metacarpal">
+          <joint range="0 0.785398" />
+        </default>
+        <default class="hand-knuckle">
+          <joint range="-0.349066 0.349066" />
+        </default>
+        <default class="hand-proximal">
+          <joint range="-0.261799 1.5708" />
+        </default>
+        <default class="hand-middle_distal">
+          <joint range="0 1.5708" />
+        </default>
+        <default class="hand-plastic">
+          <geom solref="0.005" solimp="0.5 0.99 0.0001" />
+          <default class="hand-plastic_visual">
+            <geom type="mesh" contype="0" conaffinity="0" group="2" material="black" />
+          </default>
+          <default class="hand-plastic_collision">
+            <geom group="3" />
+          </default>
+        </default>
+      </default>
+    </default>
+    <default class="obj-mujoco_Kong_Puppy_Teething_Rubber_Small_Pinkmain" />
+  </default>
+
+  <asset>
+    <texture type="skybox" colorspace="auto" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0.3 0.5 0.7" width="512" height="3072" />
+    <material name="hand-black" shininess="0.25" rgba="0.16355 0.16355 0.16355 1" />
+    <material name="hand-gray" specular="0" shininess="0.25" rgba="0.80848 0.80848 0.80848 1" />
+    <material name="hand-metallic" specular="0" shininess="0.25" rgba="0.9 0.9 0.9 1" />
+    </asset>
+
+  <worldbody>
+    <camera name="closeup" pos="0.5 -1 1" quat="0.92388 0.382683 0 0" />
+    <light name="spotlight" pos="0 -1 2" dir="0 0 -1" castshadow="false" />
+    <body name="hand-world">
+      <joint name="wrist_tx" type="slide" axis="1 0 0" /><joint name="wrist_ty" type="slide" axis="0 1 0" /><joint name="wrist_tz" type="slide" axis="0 0 1" /><joint name="wrist_rz" type="hinge" axis="0 0 1" /><joint name="wrist_rx" type="hinge" axis="1 0 0" /><joint name="wrist_ry" type="hinge" axis="0 1 0" /><body name="hand-rh_palm" pos="0 0 0.034">
+        <inertial pos="0 0 0.035" quat="0.707107 0 0 0.707107" mass="0.3" diaginertia="0.0005287 0.0003581 0.000191" />
+        <site name="hand-grasp_site" pos="0 -0.035 0.09" group="4" />
+        <body name="hand-rh_ffknuckle" pos="0.033 0 0.095">
+          <inertial pos="0 0 0" quat="0.5 0.5 -0.5 0.5" mass="0.008" diaginertia="3.2e-07 2.6e-07 2.6e-07" />
+          <joint name="hand-rh_FFJ4" class="hand-knuckle" pos="0 0 0" axis="0 -1 0" margin="0.1" />
+          <body name="hand-rh_ffproximal">
+            <inertial pos="0 0 0.0225" quat="0.707107 0 0 0.707107" mass="0.03" diaginertia="1e-05 9.8e-06 1.8e-06" />
+            <joint name="hand-rh_FFJ3" class="hand-proximal" pos="0 0 0" axis="1 0 0" margin="0.1" />
+            <body name="hand-rh_ffmiddle" pos="0 0 0.045">
+              <inertial pos="0 0 0.0125" quat="0.707107 0 0 0.707107" mass="0.017" diaginertia="2.7e-06 2.6e-06 8.7e-07" />
+              <joint name="hand-rh_FFJ2" class="hand-middle_distal" pos="0 0 0" axis="1 0 0" margin="0.1" />
+              <body name="hand-rh_ffdistal" pos="0 0 0.025">
+                <inertial pos="0 0 0.0130769" quat="0.707107 0 0 0.707107" mass="0.013" diaginertia="1.28092e-06 1.12092e-06 5.3e-07" />
+                <joint name="hand-rh_FFJ1" class="hand-middle_distal" pos="0 0 0" axis="1 0 0" margin="0.1" />
+                </body>
+            </body>
+          </body>
+        </body>
+        <body name="hand-rh_mfknuckle" pos="0.011 0 0.099">
+          <inertial pos="0 0 0" quat="0.5 0.5 -0.5 0.5" mass="0.008" diaginertia="3.2e-07 2.6e-07 2.6e-07" />
+          <joint name="hand-rh_MFJ4" class="hand-knuckle" pos="0 0 0" axis="0 -1 0" margin="0.1" />
+          <body name="hand-rh_mfproximal">
+            <inertial pos="0 0 0.0225" quat="0.707107 0 0 0.707107" mass="0.03" diaginertia="1e-05 9.8e-06 1.8e-06" />
+            <joint name="hand-rh_MFJ3" class="hand-proximal" pos="0 0 0" axis="1 0 0" margin="0.1" />
+            <body name="hand-rh_mfmiddle" pos="0 0 0.045">
+              <inertial pos="0 0 0.0125" quat="0.707107 0 0 0.707107" mass="0.017" diaginertia="2.7e-06 2.6e-06 8.7e-07" />
+              <joint name="hand-rh_MFJ2" class="hand-middle_distal" pos="0 0 0" axis="1 0 0" margin="0.1" />
+              <body name="hand-rh_mfdistal" pos="0 0 0.025">
+                <inertial pos="0 0 0.0130769" quat="0.707107 0 0 0.707107" mass="0.013" diaginertia="1.28092e-06 1.12092e-06 5.3e-07" />
+                <joint name="hand-rh_MFJ1" class="hand-middle_distal" pos="0 0 0" axis="1 0 0" margin="0.1" />
+                </body>
+            </body>
+          </body>
+        </body>
+        <body name="hand-rh_rfknuckle" pos="-0.011 0 0.095">
+          <inertial pos="0 0 0" quat="0.5 0.5 -0.5 0.5" mass="0.008" diaginertia="3.2e-07 2.6e-07 2.6e-07" />
+          <joint name="hand-rh_RFJ4" class="hand-knuckle" pos="0 0 0" axis="0 1 0" margin="0.1" />
+          <body name="hand-rh_rfproximal">
+            <inertial pos="0 0 0.0225" quat="0.707107 0 0 0.707107" mass="0.03" diaginertia="1e-05 9.8e-06 1.8e-06" />
+            <joint name="hand-rh_RFJ3" class="hand-proximal" pos="0 0 0" axis="1 0 0" margin="0.1" />
+            <body name="hand-rh_rfmiddle" pos="0 0 0.045">
+              <inertial pos="0 0 0.0125" quat="0.707107 0 0 0.707107" mass="0.017" diaginertia="2.7e-06 2.6e-06 8.7e-07" />
+              <joint name="hand-rh_RFJ2" class="hand-middle_distal" pos="0 0 0" axis="1 0 0" margin="0.1" />
+              <body name="hand-rh_rfdistal" pos="0 0 0.025">
+                <inertial pos="0 0 0.0130769" quat="0.707107 0 0 0.707107" mass="0.013" diaginertia="1.28092e-06 1.12092e-06 5.3e-07" />
+                <joint name="hand-rh_RFJ1" class="hand-middle_distal" pos="0 0 0" axis="1 0 0" margin="0.1" />
+                </body>
+            </body>
+          </body>
+        </body>
+        <body name="hand-rh_lfmetacarpal" pos="-0.033 0 0.02071">
+          <inertial pos="0 0 0.04" quat="0.707107 0 0 0.707107" mass="0.03" diaginertia="1.638e-05 1.45e-05 4.272e-06" />
+          <joint name="hand-rh_LFJ5" class="hand-metacarpal" pos="0 0 0" axis="0.573576 0 0.819152" margin="0.1" />
+          <body name="hand-rh_lfknuckle" pos="0 0 0.06579">
+            <inertial pos="0 0 0" quat="0.5 0.5 -0.5 0.5" mass="0.008" diaginertia="3.2e-07 2.6e-07 2.6e-07" />
+            <joint name="hand-rh_LFJ4" class="hand-knuckle" pos="0 0 0" axis="0 1 0" margin="0.1" />
+            <body name="hand-rh_lfproximal">
+              <inertial pos="0 0 0.0225" quat="0.707107 0 0 0.707107" mass="0.03" diaginertia="1e-05 9.8e-06 1.8e-06" />
+              <joint name="hand-rh_LFJ3" class="hand-proximal" pos="0 0 0" axis="1 0 0" margin="0.1" />
+              <body name="hand-rh_lfmiddle" pos="0 0 0.045">
+                <inertial pos="0 0 0.0125" quat="0.707107 0 0 0.707107" mass="0.017" diaginertia="2.7e-06 2.6e-06 8.7e-07" />
+                <joint name="hand-rh_LFJ2" class="hand-middle_distal" pos="0 0 0" axis="1 0 0" margin="0.1" />
+                <body name="hand-rh_lfdistal" pos="0 0 0.025">
+                  <inertial pos="0 0 0.0130769" quat="0.707107 0 0 0.707107" mass="0.013" diaginertia="1.28092e-06 1.12092e-06 5.3e-07" />
+                  <joint name="hand-rh_LFJ1" class="hand-middle_distal" pos="0 0 0" axis="1 0 0" margin="0.1" />
+                  </body>
+              </body>
+            </body>
+          </body>
+        </body>
+        <body name="hand-rh_thbase" pos="0.034 -0.00858 0.029" quat="0.92388 0 0.382683 0">
+          <inertial pos="0 0 0" mass="0.01" diaginertia="1.6e-07 1.6e-07 1.6e-07" />
+          <joint name="hand-rh_THJ5" class="hand-thbase" pos="0 0 0" axis="0 0 -1" margin="0.1" />
+          <body name="hand-rh_thproximal">
+            <inertial pos="0 0 0.019" mass="0.04" diaginertia="1.36e-05 1.36e-05 3.13e-06" />
+            <joint name="hand-rh_THJ4" class="hand-thproximal" pos="0 0 0" axis="1 0 0" margin="0.1" />
+            <body name="hand-rh_thhub" pos="0 0 0.038">
+              <inertial pos="0 0 0" mass="0.005" diaginertia="1e-06 1e-06 3e-07" />
+              <joint name="hand-rh_THJ3" class="hand-thhub" pos="0 0 0" axis="1 0 0" margin="0.1" />
+              <body name="hand-rh_thmiddle">
+                <inertial pos="0 0 0.016" mass="0.02" diaginertia="5.1e-06 5.1e-06 1.21e-06" />
+                <joint name="hand-rh_THJ2" class="hand-thmiddle" pos="0 0 0" axis="0 -1 0" margin="0.1" />
+                <body name="hand-rh_thdistal" pos="0 0 0.032" quat="0.707107 0 0 -0.707107">
+                  <inertial pos="0 0 0.0145588" quat="0.707107 0 0 0.707107" mass="0.017" diaginertia="2.37794e-06 2.27794e-06 1e-06" />
+                  <joint name="hand-rh_THJ1" class="hand-thdistal" pos="0 0 0" axis="1 0 0" margin="0.1" />
+                  </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+    <body name="obj-mujoco_Kong_Puppy_Teething_Rubber_Small_Pinkworld">
+      <joint name="mujoco_Kong_Puppy_Teething_Rubber_Small_Pink_freejoint" type="free" />
+      <body name="obj-mujoco_Kong_Puppy_Teething_Rubber_Small_Pinkobject">
+        <inertial pos="-0.000167103 1.93495e-05 -0.00594038" quat="0.450854 -0.00686953 -0.00230159 0.892568" mass="0.0809458" diaginertia="3.46438e-05 3.46118e-05 1.67997e-05" />
+        </body>
+    </body>
+    </worldbody>
+
+  <contact>
+    <exclude body1="hand-rh_palm" body2="hand-rh_ffproximal" />
+    <exclude body1="hand-rh_palm" body2="hand-rh_mfproximal" />
+    <exclude body1="hand-rh_palm" body2="hand-rh_rfproximal" />
+    <exclude body1="hand-rh_palm" body2="hand-rh_thproximal" />
+    <exclude body1="hand-rh_ffknuckle" body2="hand-rh_mfknuckle" />
+    <exclude body1="hand-rh_mfknuckle" body2="hand-rh_rfknuckle" />
+    <exclude body1="hand-rh_lfmetacarpal" body2="hand-rh_lfproximal" />
+    <exclude body1="hand-rh_thproximal" body2="hand-rh_thmiddle" />
+  </contact>
+
+  <actuator>
+    <general name="hand-rh_A_THJ5" class="hand-thbase" joint="hand-rh_THJ5" gainprm="0.25" biasprm="0 -0.25" />
+    <general name="hand-rh_A_THJ4" class="hand-thproximal" joint="hand-rh_THJ4" gainprm="0.25" biasprm="0 -0.25" />
+    <general name="hand-rh_A_THJ3" class="hand-thhub" joint="hand-rh_THJ3" gainprm="0.25" biasprm="0 -0.25" />
+    <general name="hand-rh_A_THJ2" class="hand-thmiddle" joint="hand-rh_THJ2" gainprm="0.25" biasprm="0 -0.25" />
+    <general name="hand-rh_A_THJ1" class="hand-thdistal" joint="hand-rh_THJ1" gainprm="0.25" biasprm="0 -0.25" />
+    <general name="hand-rh_A_FFJ4" class="hand-knuckle" joint="hand-rh_FFJ4" gainprm="0.25" biasprm="0 -0.25" />
+    <general name="hand-rh_A_FFJ3" class="hand-proximal" joint="hand-rh_FFJ3" gainprm="0.25" biasprm="0 -0.25" />
+    <general name="hand-rh_A_FFJ2" class="hand-middle_distal" joint="hand-rh_FFJ2" gainprm="0.25" biasprm="0 -0.25" />
+    <general name="hand-rh_A_FFJ1" class="hand-middle_distal" joint="hand-rh_FFJ1" gainprm="0.25" biasprm="0 -0.25" />
+    <general name="hand-rh_A_MFJ4" class="hand-knuckle" joint="hand-rh_MFJ4" gainprm="0.25" biasprm="0 -0.25" />
+    <general name="hand-rh_A_MFJ3" class="hand-proximal" joint="hand-rh_MFJ3" gainprm="0.25" biasprm="0 -0.25" />
+    <general name="hand-rh_A_MFJ2" class="hand-middle_distal" joint="hand-rh_MFJ2" gainprm="0.25" biasprm="0 -0.25" />
+    <general name="hand-rh_A_MFJ1" class="hand-middle_distal" joint="hand-rh_MFJ1" gainprm="0.25" biasprm="0 -0.25" />
+    <general name="hand-rh_A_RFJ4" class="hand-knuckle" joint="hand-rh_RFJ4" gainprm="0.25" biasprm="0 -0.25" />
+    <general name="hand-rh_A_RFJ3" class="hand-proximal" joint="hand-rh_RFJ3" gainprm="0.25" biasprm="0 -0.25" />
+    <general name="hand-rh_A_RFJ2" class="hand-middle_distal" joint="hand-rh_RFJ2" gainprm="0.25" biasprm="0 -0.25" />
+    <general name="hand-rh_A_RFJ1" class="hand-middle_distal" joint="hand-rh_RFJ1" gainprm="0.25" biasprm="0 -0.25" />
+    <general name="hand-rh_A_LFJ5" class="hand-metacarpal" joint="hand-rh_LFJ5" gainprm="0.25" biasprm="0 -0.25" />
+    <general name="hand-rh_A_LFJ4" class="hand-knuckle" joint="hand-rh_LFJ4" gainprm="0.25" biasprm="0 -0.25" />
+    <general name="hand-rh_A_LFJ3" class="hand-proximal" joint="hand-rh_LFJ3" gainprm="0.25" biasprm="0 -0.25" />
+    <general name="hand-rh_A_LFJ2" class="hand-middle_distal" joint="hand-rh_LFJ2" gainprm="0.25" biasprm="0 -0.25" />
+    <general name="hand-rh_A_LFJ1" class="hand-middle_distal" joint="hand-rh_LFJ1" gainprm="0.25" biasprm="0 -0.25" />
+  <general name="act_wrist_tx" joint="wrist_tx" biastype="affine" gainprm="211.34" biasprm="0 -211.34 -24.2215" /><general name="act_wrist_ty" joint="wrist_ty" biastype="affine" gainprm="211.34" biasprm="0 -211.34 -24.2215" /><general name="act_wrist_tz" joint="wrist_tz" biastype="affine" gainprm="211.34" biasprm="0 -211.34 -24.2215" /><general name="act_wrist_rz" joint="wrist_rz" biastype="affine" gainprm="0.243992" biasprm="0 -0.243992 -0.0279636" /><general name="act_wrist_rx" joint="wrist_rx" biastype="affine" gainprm="3.29313" biasprm="0 -3.29313 -0.377422" /><general name="act_wrist_ry" joint="wrist_ry" biastype="affine" gainprm="3.52053" biasprm="0 -3.52053 -0.403484" /></actuator>
+</mujoco>

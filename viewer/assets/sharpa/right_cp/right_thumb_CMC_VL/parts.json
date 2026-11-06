@@ -1,0 +1,11 @@
+{
+  "body": "right_thumb_CMC_VL",
+  "hulls": 4,
+  "hull_vertices": 249,
+  "threshold": 0.548,
+  "max_hulls": -1,
+  "sum_hull_volume_cm3": 3.179,
+  "source_volume_cm3": 1.016,
+  "stale": false,
+  "source": "right_decimated/pamo/body"
+}

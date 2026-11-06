@@ -1,0 +1,146 @@
+{
+ "scene": "sharpa_walled_20_polytope",
+ "B": 128,
+ "states": 1280,
+ "baseline": {
+  "B": 128,
+  "settings": {
+   "collision": {},
+   "runtime": {
+    "nconmax": 10240,
+    "njmax": 40960
+   },
+   "sim": {},
+   "solver_kwargs": {}
+  },
+  "error_at_B": null,
+  "throughput": {
+   "world_steps_per_s": 438.9781663180615,
+   "ms_per_step": 291.58625604002737,
+   "B": 128,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.011397249531502503,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 9607.347723960876
+  },
+  "artifacts": {
+   "nan": 0,
+   "escaped": 0,
+   "deep_mean": 0.00032221484809156207,
+   "deep_p99": 0.00279868526384234,
+   "creep": 0.001141602139065319,
+   "rest_speed": 0.02680714004964102,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "guard_B": 128
+ },
+ "capacities": {
+  "throughput": {
+   "world_steps_per_s": 451.9110112215557,
+   "ms_per_step": 283.24160470001516,
+   "B": 128,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.005503058075485618,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 498.20258617401123
+  },
+  "rounds": 1
+ },
+ "noise": {
+  "deep_mean": 2.6486349042897928e-06,
+  "deep_p99": 3.4507829696148185e-08,
+  "creep": 4.105511017826486e-06,
+  "rest_speed": 0.00042207783553749323
+ },
+ "budgets": [
+  {
+   "candidate": {
+    "prox_iters_per_qp": 5
+   },
+   "throughput": 690.0636974471167,
+   "artifacts": {
+    "nan": 0,
+    "escaped": 0,
+    "deep_mean": 0.00034585803679192394,
+    "deep_p99": 0.003294403161853549,
+    "creep": 0.0011275668102266553,
+    "rest_speed": 0.02489266829797998,
+    "rest_nan": 0,
+    "overflow": []
+   },
+   "ok": true,
+   "why": ""
+  },
+  {
+   "candidate": {
+    "prox_iters_per_qp": 3
+   },
+   "throughput": 938.8513849069551,
+   "artifacts": {
+    "nan": 0,
+    "escaped": 0,
+    "deep_mean": 0.00037858356301967433,
+    "deep_p99": 0.004274239218793806,
+    "creep": 0.0011547154874868987,
+    "rest_speed": 0.026555836127954535,
+    "rest_nan": 0,
+    "overflow": []
+   },
+   "ok": false,
+   "why": "penetration deep_p99 4.274 mm (baseline 2.799)"
+  }
+ ],
+ "batch": [
+  {
+   "B": 128,
+   "world_steps_per_s": 690.0636974471167
+  },
+  {
+   "B": 256,
+   "world_steps_per_s": 1120.3527329470267,
+   "error": null
+  },
+  {
+   "B": 512,
+   "world_steps_per_s": 1602.6858063171198,
+   "error": null
+  },
+  {
+   "B": 1024,
+   "world_steps_per_s": 1745.6301306132582,
+   "error": null
+  },
+  {
+   "B": 2048,
+   "world_steps_per_s": null,
+   "error": "RuntimeError: Failed to allocate 2717908992 bytes on device 'cuda:0'"
+  }
+ ],
+ "tuned": {
+  "B": 1024,
+  "world_steps_per_s": 1745.6301306132582,
+  "settings": {
+   "collision": {},
+   "runtime": {
+    "naconmax": 1630178,
+    "nconmax": 1592,
+    "njmax": 2649,
+    "nccdmax": 70
+   },
+   "sim": {},
+   "solver_kwargs": {
+    "prox_iters_per_qp": 5
+   },
+   "B": 1024
+  },
+  "artifacts_ok": true,
+  "why": ""
+ },
+ "speedup": 3.976576204813937,
+ "seconds": 3734.448146343231
+}

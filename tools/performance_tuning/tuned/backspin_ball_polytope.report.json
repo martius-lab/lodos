@@ -1,0 +1,139 @@
+{
+ "scene": "backspin_ball_polytope",
+ "B": 8192,
+ "states": 990,
+ "baseline": {
+  "B": 8192,
+  "settings": {
+   "collision": {},
+   "runtime": {
+    "nconmax": 1024,
+    "njmax": 4096
+   },
+   "sim": {},
+   "solver_kwargs": {}
+  },
+  "error_at_B": null,
+  "throughput": {
+   "world_steps_per_s": 498970.1498525045,
+   "ms_per_step": 16.417815780005185,
+   "B": 8192,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.0008458475960238696,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 5051.06014251709
+  },
+  "artifacts": {
+   "nan": 0,
+   "escaped": 433,
+   "deep_mean": 0.00023207102494779975,
+   "deep_p99": 0.0005379617214202881,
+   "creep": 11.433754329146971,
+   "rest_speed": 45.75699317455292,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "guard_B": 512
+ },
+ "capacities": {
+  "throughput": {
+   "world_steps_per_s": 3602830.905039328,
+   "ms_per_step": 2.273767549995682,
+   "B": 8192,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.0041766362635047944,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 42.232017517089844
+  },
+  "rounds": 1
+ },
+ "noise": {
+  "deep_mean": 0.0,
+  "deep_p99": 0.0,
+  "creep": 0.0,
+  "rest_speed": 0.0,
+  "path": 0.0
+ },
+ "budgets": [
+  {
+   "candidate": {
+    "prox_iters_per_qp": 5
+   },
+   "throughput": 6315422.5781339,
+   "artifacts": {
+    "nan": 0,
+    "escaped": 433,
+    "deep_mean": 0.001101682972512208,
+    "deep_p99": 0.002838930934667589,
+    "creep": 11.4283650241426,
+    "rest_speed": 45.812768399715424,
+    "rest_nan": 0,
+    "overflow": []
+   },
+   "ok": false,
+   "why": "penetration deep_mean 1.102 mm (baseline 0.232); penetration deep_p99 2.839 mm (baseline 0.538); paths differ by 79.02 mm"
+  },
+  {
+   "candidate": {
+    "prox_iters_per_qp": 3
+   },
+   "throughput": 9143502.903041938,
+   "artifacts": {
+    "nan": 0,
+    "escaped": 433,
+    "deep_mean": 0.0041140776389511306,
+    "deep_p99": 0.007378876209259033,
+    "creep": 11.408842651651902,
+    "rest_speed": 46.0108568072319,
+    "rest_nan": 0,
+    "overflow": []
+   },
+   "ok": false,
+   "why": "penetration deep_mean 4.114 mm (baseline 0.232); penetration deep_p99 7.379 mm (baseline 0.538); paths differ by 186.64 mm"
+  }
+ ],
+ "batch": [
+  {
+   "B": 8192,
+   "world_steps_per_s": 3602830.905039328
+  },
+  {
+   "B": 16384,
+   "world_steps_per_s": 4249693.898333988,
+   "error": null
+  },
+  {
+   "B": 32768,
+   "world_steps_per_s": 4634277.396274324,
+   "error": null
+  },
+  {
+   "B": 65536,
+   "world_steps_per_s": 4309723.344952152,
+   "error": null
+  }
+ ],
+ "tuned": {
+  "B": 32768,
+  "world_steps_per_s": 4634277.396274324,
+  "settings": {
+   "collision": {},
+   "runtime": {
+    "naconmax": 49152,
+    "nconmax": 2,
+    "njmax": 16
+   },
+   "sim": {},
+   "solver_kwargs": {},
+   "B": 32768
+  },
+  "artifacts_ok": true,
+  "why": ""
+ },
+ "speedup": 9.28768463934008,
+ "seconds": 44.709073543548584
+}

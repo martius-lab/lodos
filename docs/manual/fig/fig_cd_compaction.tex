@@ -1,0 +1,30 @@
+\documentclass[tikz,border=4pt]{standalone}
+\input{fig/common.tex}
+\begin{document}
+\begin{tikzpicture}[font=\small, cell/.style={draw=ourgray2, minimum width=8mm, minimum height=6mm, inner sep=0pt, font=\footnotesize\ttfamily}]
+  \def\flags{0,1,1,0,1,0,0,1}
+  \def\scan{0,0,1,2,2,3,3,3}
+  \node[anchor=east, font=\sffamily\small] at (-0.4, 0) {candidates};
+  \node[anchor=east, font=\sffamily\small] at (-0.4, -0.9) {flags};
+  \node[anchor=east, font=\sffamily\small] at (-0.4, -1.8) {exclusive scan};
+  \node[anchor=east, font=\sffamily\small] at (-0.4, -3.1) {survivors};
+  \foreach \f [count=\i from 0] in \flags {
+    \pgfmathsetmacro{\c}{\i < 4 ? "ourblue!18" : "ourorange!22"}
+    \node[cell, fill=\c] (c\i) at (\i*0.95, 0) {\i};
+    \node[cell] (f\i) at (\i*0.95, -0.9) {\f};
+  }
+  \foreach \s [count=\i from 0] in \scan { \node[cell] (s\i) at (\i*0.95, -1.8) {\s}; }
+  \foreach \o/\src [count=\j from 0] in {0/1,1/2,2/4,3/7} {
+    \pgfmathsetmacro{\c}{\src < 4 ? "ourblue!18" : "ourorange!22"}
+    \node[cell, fill=\c] (o\j) at (\j*0.95 + 1.425, -3.1) {\src};
+    \draw[-{Latex[length=1.5mm]}, ourgray] (s\src.south) -- (o\j.north);
+  }
+  \foreach \i in {1,2,4,7} { \node[cell, fill=ourgreen!25, draw=ourgreen!70!black] at (\i*0.95, -0.9) {1}; }
+  \draw[decorate, decoration={brace, amplitude=4pt}] ($(c0.north west)+(0,0.08)$) -- ($(c3.north east)+(0,0.08)$) node[midway, above=4pt, font=\sffamily\footnotesize] {segment $s$};
+  \draw[decorate, decoration={brace, amplitude=4pt}] ($(c4.north west)+(0,0.08)$) -- ($(c7.north east)+(0,0.08)$) node[midway, above=4pt, font=\sffamily\footnotesize] {segment $s+1$};
+  \node[note, anchor=west] at (8.0, -1.8) {the scan at segment $s+1$'s first slot, 2,\\is where its survivors start: runs survive\\compaction, and their bounds are the scan};
+  \node[note, anchor=west] at (8.0, -0.9) {written by the stage's test};
+  \node[note, anchor=west] at (8.0, -3.1) {count = last scan + last flag = 4,\\written to \texttt{dcol.ct} on the device};
+  \draw[ourgray2, densely dotted] (7.6, -1.8) -- (8.0, -1.8);
+\end{tikzpicture}
+\end{document}

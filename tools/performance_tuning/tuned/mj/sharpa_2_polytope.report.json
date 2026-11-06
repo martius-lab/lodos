@@ -1,0 +1,107 @@
+{
+ "scene": "sharpa_2_polytope",
+ "B": 1024,
+ "states": 1276,
+ "baseline": {
+  "B": 1024,
+  "settings": {
+   "collision": {},
+   "runtime": {
+    "nconmax": 1024,
+    "njmax": 4096
+   },
+   "sim": {},
+   "solver_kwargs": {}
+  },
+  "error_at_B": null,
+  "throughput": {
+   "world_steps_per_s": 261287.00137892747,
+   "ms_per_step": 3.9190621599846054,
+   "B": 1024,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.0038145375986062464,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 6859.13426399231
+  },
+  "artifacts": {
+   "nan": 0,
+   "escaped": 0,
+   "deep_mean": 0.0005795562028939827,
+   "deep_p99": 0.004485655548051034,
+   "creep": 0.0005953899425698143,
+   "rest_speed": 0.016850628548127133,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "guard_B": 512
+ },
+ "capacities": {
+  "throughput": {
+   "world_steps_per_s": 354592.1373298169,
+   "ms_per_step": 2.887824890058255,
+   "B": 1024,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.006353387317475275,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 390.90381813049316
+  },
+  "rounds": 1
+ },
+ "noise": {
+  "deep_mean": 2.56173906620894e-07,
+  "deep_p99": 2.231448888775217e-08,
+  "creep": 1.9331851690198437e-10,
+  "rest_speed": 7.084971002768725e-06
+ },
+ "budgets": [],
+ "batch": [
+  {
+   "B": 1024,
+   "world_steps_per_s": 354592.1373298169
+  },
+  {
+   "B": 2048,
+   "world_steps_per_s": 454059.60995521874,
+   "error": null
+  },
+  {
+   "B": 4096,
+   "world_steps_per_s": 532492.4466353665,
+   "error": null
+  },
+  {
+   "B": 8192,
+   "world_steps_per_s": 562015.689522974,
+   "error": null
+  },
+  {
+   "B": 16384,
+   "world_steps_per_s": 576179.1289607513,
+   "error": null
+  }
+ ],
+ "tuned": {
+  "B": 8192,
+  "world_steps_per_s": 562015.689522974,
+  "settings": {
+   "collision": {},
+   "runtime": {
+    "naconmax": 1080075,
+    "nconmax": 132,
+    "njmax": 639,
+    "nccdmax": 9
+   },
+   "sim": {},
+   "solver_kwargs": {},
+   "B": 8192
+  },
+  "artifacts_ok": true,
+  "why": ""
+ },
+ "speedup": 2.1509515841085385,
+ "seconds": 90.6235876083374
+}

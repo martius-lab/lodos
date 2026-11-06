@@ -1,0 +1,27 @@
+{
+ "scene": "cube_20_polytope",
+ "B": 8192,
+ "pre": 50,
+ "ms": {
+  "rbd": 0.8322342337730031,
+  "prim_collision": 0.5894355340084683,
+  "contact_dynamics": 28.760647267336026,
+  "integrate": 0.6441365325978647,
+  "whole_step": 30.12820926766532
+ },
+ "stages_sum_ms": 30.82645356771536,
+ "world_steps_per_s": 271904.6434927664,
+ "funnel": {
+  "runtime": {
+   "contacts": {
+    "n": 413291,
+    "allocated": 670815
+   },
+   "rows_per_world": {
+    "n": 249,
+    "allocated": 378
+   }
+  }
+ },
+ "mempool_mb": 1740.544701576233
+}

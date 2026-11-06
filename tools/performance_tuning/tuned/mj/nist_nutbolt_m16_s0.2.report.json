@@ -1,0 +1,115 @@
+{
+ "scene": "nist_nutbolt_m16_s0.2",
+ "B": 1024,
+ "states": 960,
+ "baseline": {
+  "B": 512,
+  "settings": {
+   "collision": {},
+   "runtime": {
+    "nconmax": 8192,
+    "njmax": 24576
+   },
+   "sim": {},
+   "solver_kwargs": {}
+  },
+  "error_at_B": null,
+  "throughput": {
+   "world_steps_per_s": 103294.8938674488,
+   "ms_per_step": 4.956682569973054,
+   "B": 512,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.00044330255001689706,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 8372.735624313354
+  },
+  "artifacts": {
+   "nan": 0,
+   "escaped": 0,
+   "deep_mean": 4.8950402085701225e-05,
+   "deep_p99": 6.953256801352838e-05,
+   "creep": 0.0004104970647162346,
+   "rest_speed": 1.4807483283802867,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "guard_B": 512
+ },
+ "capacities": {
+  "throughput": {
+   "world_steps_per_s": 346313.9513208494,
+   "ms_per_step": 2.956854599979124,
+   "B": 1024,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.038436387781102414,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 858.6745090484619
+  },
+  "rounds": 1
+ },
+ "noise": {
+  "deep_mean": 1.341433897295019e-08,
+  "deep_p99": 2.4659966584283108e-08,
+  "creep": 3.2446317130405047e-07,
+  "rest_speed": 0.032234069891273975
+ },
+ "compacted": {
+  "world_steps_per_s": 356123.7794858409,
+  "ms_per_step": 2.8754047300026286,
+  "B": 1024,
+  "steps": 100,
+  "reps": 3,
+  "spread": 0.04787411960883726,
+  "overflowed": false,
+  "overflow": [],
+  "mempool_mb": 897.4842948913574
+ },
+ "budgets": [],
+ "batch": [
+  {
+   "B": 1024,
+   "world_steps_per_s": 346313.9513208494
+  },
+  {
+   "B": 2048,
+   "world_steps_per_s": 390873.2888763349,
+   "error": null
+  },
+  {
+   "B": 4096,
+   "world_steps_per_s": 397997.49194495525,
+   "error": null
+  }
+ ],
+ "tuned": {
+  "B": 2048,
+  "world_steps_per_s": 390873.2888763349,
+  "settings": {
+   "collision": {
+    "capacity_tile": 0.14928836147884847,
+    "capacity2": 0.3260324131131378,
+    "tile_size": {
+     "default": 8,
+     "1,0": 16,
+     "1,2": 16
+    }
+   },
+   "runtime": {
+    "naconmax": 95354,
+    "nconmax": 47,
+    "njmax": 239
+   },
+   "sim": {},
+   "solver_kwargs": {},
+   "B": 2048
+  },
+  "artifacts_ok": true,
+  "why": ""
+ },
+ "speedup": 3.784052378987054,
+ "seconds": 68.94274973869324
+}

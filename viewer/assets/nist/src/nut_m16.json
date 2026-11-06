@@ -1,0 +1,64 @@
+{
+ "source": "viewer/assets/nist/usd/nut_m16.usd",
+ "body": "/factory_nut_m16_loose/factory_nut_loose",
+ "meters_per_unit": 1.0,
+ "y_up_turned": false,
+ "authored_mass": 0.05000000074505806,
+ "meshes": {
+  "collision": {
+   "prims": [
+    "/factory_nut_m16_loose/factory_nut_loose/sdf"
+   ],
+   "approximation": [
+    "sdf"
+   ],
+   "prim_scale": [
+    [
+     1.0,
+     1.0,
+     1.0
+    ]
+   ],
+   "vertices": 650,
+   "triangles": 1301,
+   "bbox_min": [
+    -0.012014148756861687,
+    -0.013500000350177288,
+    0.012655951082706451
+   ],
+   "bbox_max": [
+    0.012014120817184448,
+    0.013500000350177288,
+    0.025655951350927353
+   ]
+  },
+  "visual": {
+   "prims": [
+    "/factory_nut_m16_loose/factory_nut_loose/sdf"
+   ],
+   "approximation": [
+    "sdf"
+   ],
+   "prim_scale": [
+    [
+     1.0,
+     1.0,
+     1.0
+    ]
+   ],
+   "vertices": 650,
+   "triangles": 1301,
+   "bbox_min": [
+    -0.012014148756861687,
+    -0.013500000350177288,
+    0.012655951082706451
+   ],
+   "bbox_max": [
+    0.012014120817184448,
+    0.013500000350177288,
+    0.025655951350927353
+   ]
+  }
+ },
+ "visual_is_collision": true
+}

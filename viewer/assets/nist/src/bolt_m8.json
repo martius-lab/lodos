@@ -1,0 +1,64 @@
+{
+ "source": "viewer/assets/nist/usd/bolt_m8.usd",
+ "body": "/factory_bolt_m8/factory_bolt_m8",
+ "meters_per_unit": 1.0,
+ "y_up_turned": false,
+ "authored_mass": 0.05000000074505806,
+ "meshes": {
+  "collision": {
+   "prims": [
+    "/factory_bolt_m8/factory_bolt_m8/collision"
+   ],
+   "approximation": [
+    "sdf"
+   ],
+   "prim_scale": [
+    [
+     1.0,
+     1.0,
+     1.0
+    ]
+   ],
+   "vertices": 1563,
+   "triangles": 3122,
+   "bbox_min": [
+    -0.006506767123937607,
+    -0.006422022357583046,
+    -1.3769677309483086e-07
+   ],
+   "bbox_max": [
+    0.0064766244031488895,
+    0.006580532528460026,
+    0.026000691577792168
+   ]
+  },
+  "visual": {
+   "prims": [
+    "/factory_bolt_m8/factory_bolt_m8/visual"
+   ],
+   "approximation": [
+    null
+   ],
+   "prim_scale": [
+    [
+     1.0,
+     1.0,
+     1.0
+    ]
+   ],
+   "vertices": 11333,
+   "triangles": 22662,
+   "bbox_min": [
+    -0.006515000015497208,
+    -0.006415999960154295,
+    0.0
+   ],
+   "bbox_max": [
+    0.006484000012278557,
+    0.0065830000676214695,
+    0.026000000536441803
+   ]
+  }
+ },
+ "visual_is_collision": false
+}

@@ -1,0 +1,102 @@
+{
+ "scene": "arm_walled_20_polytope",
+ "B": 1024,
+ "states": 1117,
+ "baseline": {
+  "B": 256,
+  "settings": {
+   "collision": {},
+   "runtime": {
+    "nconmax": 8192,
+    "njmax": 16384
+   },
+   "sim": {},
+   "solver_kwargs": {}
+  },
+  "error_at_B": null,
+  "throughput": {
+   "world_steps_per_s": 30351.210910174268,
+   "ms_per_step": 8.43458934003138,
+   "B": 256,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.001459095345664696,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 13570.963960647583
+  },
+  "artifacts": {
+   "nan": 0,
+   "escaped": 0,
+   "deep_mean": 0.004091991620390445,
+   "deep_p99": 0.042741754762828356,
+   "creep": 0.012837824780407275,
+   "rest_speed": 0.031151713053986896,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "guard_B": 256
+ },
+ "capacities": {
+  "throughput": {
+   "world_steps_per_s": 125170.91116144383,
+   "ms_per_step": 8.180814459992689,
+   "B": 1024,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.0012719088113309954,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 612.858980178833
+  },
+  "rounds": 1
+ },
+ "noise": {
+  "deep_mean": 7.224335848832371e-06,
+  "deep_p99": 6.5651163458912976e-06,
+  "creep": 0.001068566183070524,
+  "rest_speed": 0.00642998314651777
+ },
+ "budgets": [],
+ "batch": [
+  {
+   "B": 1024,
+   "world_steps_per_s": 125170.91116144383
+  },
+  {
+   "B": 2048,
+   "world_steps_per_s": 137775.69674575477,
+   "error": null
+  },
+  {
+   "B": 4096,
+   "world_steps_per_s": 146313.73890543796,
+   "error": null
+  },
+  {
+   "B": 8192,
+   "world_steps_per_s": 150585.9140012695,
+   "error": null
+  }
+ ],
+ "tuned": {
+  "B": 4096,
+  "world_steps_per_s": 146313.73890543796,
+  "settings": {
+   "collision": {},
+   "runtime": {
+    "naconmax": 2592617,
+    "nconmax": 633,
+    "njmax": 477,
+    "nccdmax": 46
+   },
+   "sim": {},
+   "solver_kwargs": {},
+   "B": 4096
+  },
+  "artifacts_ok": false,
+  "why": "RuntimeError: Failed to allocate 33554432 bytes on device 'cuda:0'"
+ },
+ "speedup": 4.8206886815310215,
+ "seconds": 143.92425346374512
+}

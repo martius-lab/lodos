@@ -1,0 +1,272 @@
+{
+ "cube_walled_5_polytope": {
+  "lodos_contact": {
+   "B": 8192,
+   "world_steps_per_s": 1614886.8465887029,
+   "sim_seconds_per_s": 3229.773693177406
+  },
+  "mjwarp": {
+   "B": 8192,
+   "world_steps_per_s": 1113774.3100278054,
+   "sim_seconds_per_s": 2227.5486200556106
+  }
+ },
+ "cube_walled_5_sdf": {
+  "lodos_contact": {
+   "B": 4096,
+   "world_steps_per_s": 551153.0570483971,
+   "sim_seconds_per_s": 1102.3061140967943
+  },
+  "lodos_cone": {
+   "B": 8192,
+   "world_steps_per_s": 1272722.054932413,
+   "sim_seconds_per_s": 2545.444109864826
+  },
+  "lodos_ray": {
+   "B": 8192,
+   "world_steps_per_s": 1861575.398541009,
+   "sim_seconds_per_s": 3723.150797082018
+  },
+  "mjwarp": {
+   "B": 2048,
+   "world_steps_per_s": 275518.5293497424,
+   "sim_seconds_per_s": 551.0370586994848
+  }
+ },
+ "arm_walled_5_polytope": {
+  "lodos_contact": {
+   "B": 8192,
+   "world_steps_per_s": 984715.8174227963,
+   "sim_seconds_per_s": 1969.4316348455925
+  },
+  "mjwarp": {
+   "B": 2048,
+   "world_steps_per_s": 163122.35625211804,
+   "sim_seconds_per_s": 326.2447125042361
+  }
+ },
+ "arm_walled_5_sdf": {
+  "lodos_contact": {
+   "B": 4096,
+   "world_steps_per_s": 1243698.7174068398,
+   "sim_seconds_per_s": 2487.39743481368
+  },
+  "lodos_cone": {
+   "B": 8192,
+   "world_steps_per_s": 1250550.5427144703,
+   "sim_seconds_per_s": 2501.1010854289407
+  },
+  "lodos_ray": {
+   "B": 8192,
+   "world_steps_per_s": 1974853.8227371657,
+   "sim_seconds_per_s": 3949.7076454743315
+  },
+  "mjwarp": {
+   "B": 2048,
+   "world_steps_per_s": 238244.8920384351,
+   "sim_seconds_per_s": 476.48978407687014
+  }
+ },
+ "shadow_grasp_polytope": {
+  "lodos_contact": {
+   "B": 8192,
+   "world_steps_per_s": 1177089.6991454752,
+   "sim_seconds_per_s": 2354.1793982909503
+  },
+  "mjwarp": {
+   "B": 32768,
+   "world_steps_per_s": 431853.79829631385,
+   "sim_seconds_per_s": 863.7075965926277
+  }
+ },
+ "shadow_grasp_sdf": {
+  "lodos_contact": {
+   "B": 8192,
+   "world_steps_per_s": 1383202.705094255,
+   "sim_seconds_per_s": 2766.40541018851
+  },
+  "lodos_cone": {
+   "B": 8192,
+   "world_steps_per_s": 1254396.4009110397,
+   "sim_seconds_per_s": 2508.792801822079
+  },
+  "lodos_ray": {
+   "B": 8192,
+   "world_steps_per_s": 1415161.8795605886,
+   "sim_seconds_per_s": 2830.3237591211773
+  },
+  "mjwarp": {
+   "B": 4096,
+   "world_steps_per_s": 126454.63066143474,
+   "sim_seconds_per_s": 252.90926132286947
+  }
+ },
+ "shadow_walled_5_polytope": {
+  "lodos_contact": {
+   "B": 8192,
+   "world_steps_per_s": 130133.98623179975,
+   "sim_seconds_per_s": 260.2679724635995
+  },
+  "mjwarp": {
+   "B": 2048,
+   "world_steps_per_s": 36189.50250381098,
+   "sim_seconds_per_s": 72.37900500762197
+  }
+ },
+ "shadow_walled_5_sdf": {
+  "lodos_contact": {
+   "B": 4096,
+   "world_steps_per_s": 111607.14332342993,
+   "sim_seconds_per_s": 223.21428664685988
+  },
+  "lodos_cone": {
+   "B": 8192,
+   "world_steps_per_s": 112757.85119098368,
+   "sim_seconds_per_s": 225.51570238196737
+  },
+  "lodos_ray": {
+   "B": 8192,
+   "world_steps_per_s": 109650.10955228937,
+   "sim_seconds_per_s": 219.30021910457873
+  },
+  "mjwarp": {
+   "B": 4096,
+   "world_steps_per_s": 17444.38590485316,
+   "sim_seconds_per_s": 34.88877180970632
+  }
+ },
+ "nist_threading_m8": {
+  "lodos_contact": {
+   "B": 8192,
+   "world_steps_per_s": 1743166.221051759,
+   "sim_seconds_per_s": 2178.9577763146985
+  },
+  "lodos_cone": {
+   "B": 8192,
+   "world_steps_per_s": 1943197.7652357074,
+   "sim_seconds_per_s": 2428.997206544634
+  },
+  "lodos_ray": {
+   "B": 8192,
+   "world_steps_per_s": 1971642.6045073143,
+   "sim_seconds_per_s": 2464.5532556341427
+  },
+  "mjwarp": {
+   "B": 1024,
+   "world_steps_per_s": 52030.48330865614,
+   "sim_seconds_per_s": 65.03810413582018
+  }
+ },
+ "cube_walled_20_polytope": {
+  "lodos_contact": {
+   "B": 16384,
+   "world_steps_per_s": 394217.8604959518,
+   "sim_seconds_per_s": 788.4357209919036
+  },
+  "mjwarp": {
+   "B": 16384,
+   "world_steps_per_s": 256071.22139552224,
+   "sim_seconds_per_s": 512.1424427910445
+  }
+ },
+ "cube_walled_20_sdf": {
+  "lodos_contact": {
+   "B": 4096,
+   "world_steps_per_s": 119254.36545728233,
+   "sim_seconds_per_s": 238.50873091456464
+  },
+  "lodos_cone": {
+   "B": 16384,
+   "world_steps_per_s": 262578.22094061435,
+   "sim_seconds_per_s": 525.1564418812287
+  },
+  "lodos_ray": {
+   "B": 8192,
+   "world_steps_per_s": 348808.22562966746,
+   "sim_seconds_per_s": 697.6164512593349
+  },
+  "mjwarp": {
+   "B": 4096,
+   "world_steps_per_s": 107282.86826053375,
+   "sim_seconds_per_s": 214.56573652106752
+  }
+ },
+ "arm_walled_20_polytope": {
+  "lodos_contact": {
+   "B": 16384,
+   "world_steps_per_s": 178071.35003507498,
+   "sim_seconds_per_s": 356.14270007014994
+  },
+  "mjwarp": {
+   "B": 512,
+   "world_steps_per_s": 44190.90860938998,
+   "sim_seconds_per_s": 88.38181721877996
+  },
+  "mjwarp_sap": {
+   "B": 2048,
+   "world_steps_per_s": 46280.472315714695,
+   "sim_seconds_per_s": 92.5609446314294
+  }
+ },
+ "arm_walled_20_sdf": {
+  "lodos_contact": {
+   "B": 16384,
+   "world_steps_per_s": 261227.57478859532,
+   "sim_seconds_per_s": 522.4551495771906
+  },
+  "lodos_cone": {
+   "B": 16384,
+   "world_steps_per_s": 258683.09320837728,
+   "sim_seconds_per_s": 517.3661864167545
+  },
+  "lodos_ray": {
+   "B": 16384,
+   "world_steps_per_s": 365797.97306172387,
+   "sim_seconds_per_s": 731.5959461234478
+  },
+  "mjwarp": {
+   "B": 4096,
+   "world_steps_per_s": 83958.40143421345,
+   "sim_seconds_per_s": 167.91680286842688
+  }
+ },
+ "shadow_walled_20_polytope": {
+  "lodos_contact": {
+   "B": 512,
+   "world_steps_per_s": 3307.3188144840997,
+   "sim_seconds_per_s": 6.614637628968199
+  },
+  "mjwarp": {
+   "B": 128,
+   "world_steps_per_s": 1558.3113907178506,
+   "sim_seconds_per_s": 3.116622781435701
+  },
+  "mjwarp_sap": {
+   "B": 512,
+   "world_steps_per_s": 2589.5024192976266,
+   "sim_seconds_per_s": 5.179004838595254
+  }
+ },
+ "shadow_walled_20_sdf": {
+  "lodos_contact": {
+   "B": 512,
+   "world_steps_per_s": 2880.7317013185343,
+   "sim_seconds_per_s": 5.761463402637069
+  },
+  "lodos_cone": {
+   "B": 512,
+   "world_steps_per_s": 2299.7230356363034,
+   "sim_seconds_per_s": 4.599446071272607
+  },
+  "lodos_ray": {
+   "B": 512,
+   "world_steps_per_s": 2359.9824763885836,
+   "sim_seconds_per_s": 4.719964952777167
+  },
+  "mjwarp": {
+   "B": 64,
+   "world_steps_per_s": 625.7755999103429,
+   "sim_seconds_per_s": 1.2515511998206856
+  }
+ }
+}

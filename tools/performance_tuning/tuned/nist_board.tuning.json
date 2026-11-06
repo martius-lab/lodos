@@ -1,0 +1,662 @@
+{
+ "format": "lodos-tuning/2",
+ "scene": "nist_board",
+ "B": 2048,
+ "layout": "independent",
+ "fingerprint": {
+  "model": {
+   "nq": 21,
+   "nv": 18,
+   "nu": 0,
+   "na": 0,
+   "structure": "88b06461cb9f8dc8"
+  },
+  "geometry": "bc7353b5e0522028",
+  "timestep": 0.0020833333333333333,
+  "hulls": {
+   "hulls": 7,
+   "vertices": 5806,
+   "max_vertices": 1562,
+   "bodies": 7,
+   "hulls_per_body_max": 1,
+   "sha": "f34172f2e63ea1f5"
+  },
+  "surfaces": [
+   {
+    "kind": "surface",
+    "vertices": 3346,
+    "faces": 6688,
+    "grid_N": [
+     199,
+     199,
+     22
+    ],
+    "voxel_h": [
+     0.0020000000949949026,
+     0.0020000000949949026,
+     0.0020000000949949026
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.38499999999999995,
+     0.38461500000000004,
+     0.030000000000000002
+    ],
+    "sha": "8a2a2e2a57958546",
+    "file": "viewer/assets/nist/surfaces/nistboard/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 1562,
+    "faces": 3120,
+    "grid_N": [
+     190,
+     191,
+     321
+    ],
+    "voxel_h": [
+     9.999999747378752e-05,
+     9.999999747378752e-05,
+     9.999999747378752e-05
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.012983390000000001,
+     0.01300255,
+     0.02600083
+    ],
+    "sha": "5ec0c9ec1e0e4c12",
+    "file": "viewer/assets/nist/surfaces/bolt_m8/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 1467,
+    "faces": 2930,
+    "grid_N": [
+     172,
+     172,
+     272
+    ],
+    "voxel_h": [
+     0.00014000000373926014,
+     0.00014000000373926014,
+     0.00014000000373926014
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.01799428,
+     0.01802105,
+     0.03200074
+    ],
+    "sha": "e6c2fa720b62eb93",
+    "file": "viewer/assets/nist/surfaces/bolt_m12/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 1055,
+    "faces": 2106,
+    "grid_N": [
+     130,
+     130,
+     194
+    ],
+    "voxel_h": [
+     0.00015999999595806003,
+     0.00015999999595806003,
+     0.00015999999595806003
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.01473144,
+     0.01474486,
+     0.0250025
+    ],
+    "sha": "88a457041fef865a",
+    "file": "viewer/assets/nist/surfaces/bolt_m16/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 3235,
+    "faces": 6470,
+    "grid_N": [
+     96,
+     106,
+     63
+    ],
+    "voxel_h": [
+     0.00019999999494757503,
+     0.00019999999494757503,
+     0.00019999999494757503
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.01300312,
+     0.015010490000000001,
+     0.0065038100000000005
+    ],
+    "sha": "fc4f75819ea87797",
+    "file": "viewer/assets/nist/surfaces/nut_m8_s0.5/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 3622,
+    "faces": 7244,
+    "grid_N": [
+     126,
+     140,
+     81
+    ],
+    "voxel_h": [
+     0.00019999999494757503,
+     0.00019999999494757503,
+     0.00019999999494757503
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.01900703,
+     0.02193096,
+     0.010020450000000002
+    ],
+    "sha": "d366e21848bdee86",
+    "file": "viewer/assets/nist/surfaces/nut_m12_s0.7/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 4881,
+    "faces": 9770,
+    "grid_N": [
+     151,
+     165,
+     95
+    ],
+    "voxel_h": [
+     0.00019999999494757503,
+     0.00019999999494757503,
+     0.00019999999494757503
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.02402825,
+     0.02699767,
+     0.013000000000000001
+    ],
+    "sha": "b7df011fe491f571",
+    "file": "viewer/assets/nist/surfaces/nut_m16_s0.8/surface_data.npz"
+   },
+   {
+    "kind": "plane"
+   }
+  ],
+  "pairs": 9
+ },
+ "states": {
+  "path": "results/tuning/states/nist_board.states.npz",
+  "digest": "bf06d6675bccb28b",
+  "size": 960,
+  "source": {
+   "kind": "explore",
+   "scene": "nist_board",
+   "strategy": [
+    "scatter"
+   ],
+   "starts": 32,
+   "horizon": 3000,
+   "stride": 100,
+   "seed": 0,
+   "jitter": 0.01,
+   "sigma": 0.5,
+   "max_depth": 0.01,
+   "dropped_nonfinite": 0,
+   "dropped_deep": 0
+  },
+  "horizon": 200,
+  "controls": {
+   "kind": "hold"
+  }
+ },
+ "safety": 1.5,
+ "created": "2026-11-01T08:43:51",
+ "commit": null,
+ "device": "NVIDIA GeForce RTX 4080",
+ "collision": {
+  "capacity_tile": 0.5269337466495064,
+  "capacity2": 0.26210760251563336
+ },
+ "runtime": {
+  "naconmax": 142203,
+  "nconmax": 70,
+  "njmax": 455
+ },
+ "sim": {},
+ "solver_kwargs": {
+  "prox_iters_per_qp": 3
+ },
+ "tiles": {
+  "groups": {
+   "b7df011fe491f571|88a457041fef865a": 1,
+   "b7df011fe491f571|8a2a2e2a57958546": 1,
+   "b7df011fe491f571|plane": 1,
+   "d366e21848bdee86|e6c2fa720b62eb93": 1,
+   "d366e21848bdee86|8a2a2e2a57958546": 1,
+   "d366e21848bdee86|plane": 1,
+   "rest|rest": 3
+  },
+  "trials": [
+   {
+    "sizes": {
+     "b7df011fe491f571|88a457041fef865a": 8,
+     "b7df011fe491f571|8a2a2e2a57958546": 8,
+     "b7df011fe491f571|plane": 8,
+     "d366e21848bdee86|e6c2fa720b62eb93": 8,
+     "d366e21848bdee86|8a2a2e2a57958546": 8,
+     "d366e21848bdee86|plane": 8,
+     "rest|rest": 8
+    },
+    "ms": 1.3556972502556164
+   },
+   {
+    "sizes": {
+     "b7df011fe491f571|88a457041fef865a": 4,
+     "b7df011fe491f571|8a2a2e2a57958546": 8,
+     "b7df011fe491f571|plane": 8,
+     "d366e21848bdee86|e6c2fa720b62eb93": 8,
+     "d366e21848bdee86|8a2a2e2a57958546": 8,
+     "d366e21848bdee86|plane": 8,
+     "rest|rest": 8
+    },
+    "ms": 1.620670700140181,
+    "error": null
+   },
+   {
+    "sizes": {
+     "b7df011fe491f571|88a457041fef865a": 16,
+     "b7df011fe491f571|8a2a2e2a57958546": 8,
+     "b7df011fe491f571|plane": 8,
+     "d366e21848bdee86|e6c2fa720b62eb93": 8,
+     "d366e21848bdee86|8a2a2e2a57958546": 8,
+     "d366e21848bdee86|plane": 8,
+     "rest|rest": 8
+    },
+    "ms": 1.4569818500604015,
+    "error": null
+   },
+   {
+    "sizes": {
+     "b7df011fe491f571|88a457041fef865a": 32,
+     "b7df011fe491f571|8a2a2e2a57958546": 8,
+     "b7df011fe491f571|plane": 8,
+     "d366e21848bdee86|e6c2fa720b62eb93": 8,
+     "d366e21848bdee86|8a2a2e2a57958546": 8,
+     "d366e21848bdee86|plane": 8,
+     "rest|rest": 8
+    },
+    "ms": 1.483186199766351,
+    "error": null
+   },
+   {
+    "sizes": {
+     "b7df011fe491f571|88a457041fef865a": 8,
+     "b7df011fe491f571|8a2a2e2a57958546": 4,
+     "b7df011fe491f571|plane": 8,
+     "d366e21848bdee86|e6c2fa720b62eb93": 8,
+     "d366e21848bdee86|8a2a2e2a57958546": 8,
+     "d366e21848bdee86|plane": 8,
+     "rest|rest": 8
+    },
+    "ms": 1.611295350085129,
+    "error": null
+   },
+   {
+    "sizes": {
+     "b7df011fe491f571|88a457041fef865a": 8,
+     "b7df011fe491f571|8a2a2e2a57958546": 16,
+     "b7df011fe491f571|plane": 8,
+     "d366e21848bdee86|e6c2fa720b62eb93": 8,
+     "d366e21848bdee86|8a2a2e2a57958546": 8,
+     "d366e21848bdee86|plane": 8,
+     "rest|rest": 8
+    },
+    "ms": 1.437859649740858,
+    "error": null
+   },
+   {
+    "sizes": {
+     "b7df011fe491f571|88a457041fef865a": 8,
+     "b7df011fe491f571|8a2a2e2a57958546": 32,
+     "b7df011fe491f571|plane": 8,
+     "d366e21848bdee86|e6c2fa720b62eb93": 8,
+     "d366e21848bdee86|8a2a2e2a57958546": 8,
+     "d366e21848bdee86|plane": 8,
+     "rest|rest": 8
+    },
+    "ms": 1.4244710000639316,
+    "error": null
+   },
+   {
+    "sizes": {
+     "b7df011fe491f571|88a457041fef865a": 8,
+     "b7df011fe491f571|8a2a2e2a57958546": 8,
+     "b7df011fe491f571|plane": 4,
+     "d366e21848bdee86|e6c2fa720b62eb93": 8,
+     "d366e21848bdee86|8a2a2e2a57958546": 8,
+     "d366e21848bdee86|plane": 8,
+     "rest|rest": 8
+    },
+    "ms": 1.5550761498161592,
+    "error": null
+   },
+   {
+    "sizes": {
+     "b7df011fe491f571|88a457041fef865a": 8,
+     "b7df011fe491f571|8a2a2e2a57958546": 8,
+     "b7df011fe491f571|plane": 16,
+     "d366e21848bdee86|e6c2fa720b62eb93": 8,
+     "d366e21848bdee86|8a2a2e2a57958546": 8,
+     "d366e21848bdee86|plane": 8,
+     "rest|rest": 8
+    },
+    "ms": 1.4842128999589477,
+    "error": null
+   },
+   {
+    "sizes": {
+     "b7df011fe491f571|88a457041fef865a": 8,
+     "b7df011fe491f571|8a2a2e2a57958546": 8,
+     "b7df011fe491f571|plane": 32,
+     "d366e21848bdee86|e6c2fa720b62eb93": 8,
+     "d366e21848bdee86|8a2a2e2a57958546": 8,
+     "d366e21848bdee86|plane": 8,
+     "rest|rest": 8
+    },
+    "ms": 1.4830661999440053,
+    "error": null
+   },
+   {
+    "sizes": {
+     "b7df011fe491f571|88a457041fef865a": 8,
+     "b7df011fe491f571|8a2a2e2a57958546": 8,
+     "b7df011fe491f571|plane": 8,
+     "d366e21848bdee86|e6c2fa720b62eb93": 4,
+     "d366e21848bdee86|8a2a2e2a57958546": 8,
+     "d366e21848bdee86|plane": 8,
+     "rest|rest": 8
+    },
+    "ms": 1.56458700002986,
+    "error": null
+   },
+   {
+    "sizes": {
+     "b7df011fe491f571|88a457041fef865a": 8,
+     "b7df011fe491f571|8a2a2e2a57958546": 8,
+     "b7df011fe491f571|plane": 8,
+     "d366e21848bdee86|e6c2fa720b62eb93": 16,
+     "d366e21848bdee86|8a2a2e2a57958546": 8,
+     "d366e21848bdee86|plane": 8,
+     "rest|rest": 8
+    },
+    "ms": 1.4676083999802358,
+    "error": null
+   },
+   {
+    "sizes": {
+     "b7df011fe491f571|88a457041fef865a": 8,
+     "b7df011fe491f571|8a2a2e2a57958546": 8,
+     "b7df011fe491f571|plane": 8,
+     "d366e21848bdee86|e6c2fa720b62eb93": 32,
+     "d366e21848bdee86|8a2a2e2a57958546": 8,
+     "d366e21848bdee86|plane": 8,
+     "rest|rest": 8
+    },
+    "ms": 1.4837896000244655,
+    "error": null
+   },
+   {
+    "sizes": {
+     "b7df011fe491f571|88a457041fef865a": 8,
+     "b7df011fe491f571|8a2a2e2a57958546": 8,
+     "b7df011fe491f571|plane": 8,
+     "d366e21848bdee86|e6c2fa720b62eb93": 8,
+     "d366e21848bdee86|8a2a2e2a57958546": 4,
+     "d366e21848bdee86|plane": 8,
+     "rest|rest": 8
+    },
+    "ms": 1.5465701999346493,
+    "error": null
+   },
+   {
+    "sizes": {
+     "b7df011fe491f571|88a457041fef865a": 8,
+     "b7df011fe491f571|8a2a2e2a57958546": 8,
+     "b7df011fe491f571|plane": 8,
+     "d366e21848bdee86|e6c2fa720b62eb93": 8,
+     "d366e21848bdee86|8a2a2e2a57958546": 16,
+     "d366e21848bdee86|plane": 8,
+     "rest|rest": 8
+    },
+    "ms": 1.4447080498939613,
+    "error": null
+   },
+   {
+    "sizes": {
+     "b7df011fe491f571|88a457041fef865a": 8,
+     "b7df011fe491f571|8a2a2e2a57958546": 8,
+     "b7df011fe491f571|plane": 8,
+     "d366e21848bdee86|e6c2fa720b62eb93": 8,
+     "d366e21848bdee86|8a2a2e2a57958546": 32,
+     "d366e21848bdee86|plane": 8,
+     "rest|rest": 8
+    },
+    "ms": 1.4260657499107765,
+    "error": null
+   },
+   {
+    "sizes": {
+     "b7df011fe491f571|88a457041fef865a": 8,
+     "b7df011fe491f571|8a2a2e2a57958546": 8,
+     "b7df011fe491f571|plane": 8,
+     "d366e21848bdee86|e6c2fa720b62eb93": 8,
+     "d366e21848bdee86|8a2a2e2a57958546": 8,
+     "d366e21848bdee86|plane": 4,
+     "rest|rest": 8
+    },
+    "ms": 1.507250799841131,
+    "error": null
+   },
+   {
+    "sizes": {
+     "b7df011fe491f571|88a457041fef865a": 8,
+     "b7df011fe491f571|8a2a2e2a57958546": 8,
+     "b7df011fe491f571|plane": 8,
+     "d366e21848bdee86|e6c2fa720b62eb93": 8,
+     "d366e21848bdee86|8a2a2e2a57958546": 8,
+     "d366e21848bdee86|plane": 16,
+     "rest|rest": 8
+    },
+    "ms": 1.4819368501775898,
+    "error": null
+   },
+   {
+    "sizes": {
+     "b7df011fe491f571|88a457041fef865a": 8,
+     "b7df011fe491f571|8a2a2e2a57958546": 8,
+     "b7df011fe491f571|plane": 8,
+     "d366e21848bdee86|e6c2fa720b62eb93": 8,
+     "d366e21848bdee86|8a2a2e2a57958546": 8,
+     "d366e21848bdee86|plane": 32,
+     "rest|rest": 8
+    },
+    "ms": 1.4846633501292672,
+    "error": null
+   },
+   {
+    "sizes": {
+     "b7df011fe491f571|88a457041fef865a": 8,
+     "b7df011fe491f571|8a2a2e2a57958546": 8,
+     "b7df011fe491f571|plane": 8,
+     "d366e21848bdee86|e6c2fa720b62eb93": 8,
+     "d366e21848bdee86|8a2a2e2a57958546": 8,
+     "d366e21848bdee86|plane": 8,
+     "rest|rest": 4
+    },
+    "ms": 1.6217262997088255,
+    "error": null
+   },
+   {
+    "sizes": {
+     "b7df011fe491f571|88a457041fef865a": 8,
+     "b7df011fe491f571|8a2a2e2a57958546": 8,
+     "b7df011fe491f571|plane": 8,
+     "d366e21848bdee86|e6c2fa720b62eb93": 8,
+     "d366e21848bdee86|8a2a2e2a57958546": 8,
+     "d366e21848bdee86|plane": 8,
+     "rest|rest": 16
+    },
+    "ms": 1.4495926501695067,
+    "error": null
+   },
+   {
+    "sizes": {
+     "b7df011fe491f571|88a457041fef865a": 8,
+     "b7df011fe491f571|8a2a2e2a57958546": 8,
+     "b7df011fe491f571|plane": 8,
+     "d366e21848bdee86|e6c2fa720b62eb93": 8,
+     "d366e21848bdee86|8a2a2e2a57958546": 8,
+     "d366e21848bdee86|plane": 8,
+     "rest|rest": 32
+    },
+    "ms": 1.4527835002809297,
+    "error": null
+   }
+  ],
+  "base_ms": 1.3556972502556164,
+  "best_ms": 1.3556972502556164,
+  "sizes": {
+   "b7df011fe491f571|88a457041fef865a": 8,
+   "b7df011fe491f571|8a2a2e2a57958546": 8,
+   "b7df011fe491f571|plane": 8,
+   "d366e21848bdee86|e6c2fa720b62eb93": 8,
+   "d366e21848bdee86|8a2a2e2a57958546": 8,
+   "d366e21848bdee86|plane": 8,
+   "rest|rest": 8
+  }
+ },
+ "baseline": {
+  "B": 512,
+  "settings": {
+   "collision": {},
+   "runtime": {
+    "nconmax": 16384,
+    "njmax": 49152
+   },
+   "sim": {},
+   "solver_kwargs": {}
+  },
+  "throughput": {
+   "world_steps_per_s": 23944.027983731063,
+   "ms_per_step": 21.38320254001883,
+   "B": 512,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.006817688781053977,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 7307.4319858551025
+  },
+  "artifacts": {
+   "nan": 0,
+   "escaped": 0,
+   "deep_mean": 1.043420763435221e-05,
+   "deep_p99": 4.4063279419788185e-05,
+   "creep": 5.087068252967478e-06,
+   "rest_speed": 0.04477555464083084,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "guard_B": 512
+ },
+ "peaks": {
+  "B": 2048,
+  "runtime": {
+   "nacon": 94802,
+   "ncollision": 0,
+   "naconmax": 193792,
+   "contacts_per_world": 101,
+   "overflow": false,
+   "nefc_per_world": 303,
+   "njmax": 498,
+   "efc_overflow": false
+  },
+  "lodos_col": {
+   "peak": {
+    "nCa1": 25364584,
+    "nCa2": 6648251,
+    "nCa3": 639888,
+    "nTa": 3170573,
+    "nTb": 0
+   },
+   "allocated": {
+    "nCa1": 50732032,
+    "nCa2": 13274497,
+    "nCa3": 13274497,
+    "nTa": 6341504,
+    "nTb": 9025536
+   },
+   "overflow": {
+    "nCa1": false,
+    "nCa2": false,
+    "nCa3": false,
+    "nTa": false,
+    "nTb": false
+   },
+   "tile_slots": 9025536,
+   "slots_per_world": 35256,
+   "uniform_K": 1,
+   "tile_K": 8,
+   "compacts": 0,
+   "contacts_per_world": 771
+  },
+  "overflowed": false,
+  "layout": "independent",
+  "horizon": 200,
+  "batches": 1,
+  "states": 960,
+  "controls": {
+   "kind": "hold"
+  }
+ },
+ "throughput": {
+  "world_steps_per_s": 243703.30920415587,
+  "B": 2048
+ },
+ "artifacts": {
+  "tuned": {
+   "nan": 0,
+   "escaped": 0,
+   "deep_mean": 1.0660579515109348e-05,
+   "deep_p99": 4.101968785107602e-05,
+   "creep": 1.1647066543162174e-05,
+   "rest_speed": 0.03452504635139172,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "baseline": {
+   "nan": 0,
+   "escaped": 0,
+   "deep_mean": 1.043420763435221e-05,
+   "deep_p99": 4.4063279419788185e-05,
+   "creep": 5.087068252967478e-06,
+   "rest_speed": 0.04477555464083084,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "ok": true,
+  "why": ""
+ }
+}

@@ -1,0 +1,146 @@
+{
+ "format": "lodos-tuning/2",
+ "scene": "arm_20_polytope",
+ "B": 4096,
+ "layout": "independent",
+ "fingerprint": {
+  "model": {
+   "nq": 140,
+   "nv": 120,
+   "nu": 0,
+   "na": 0,
+   "structure": "06bbe2e0f5a0e8b2"
+  },
+  "geometry": "130dad15ec868c4e",
+  "timestep": 0.002,
+  "hulls": {
+   "hulls": 680,
+   "vertices": 111760,
+   "max_vertices": 896,
+   "bodies": 20,
+   "hulls_per_body_max": 34,
+   "sha": "fd5d3d82648e0e27"
+  }
+ },
+ "states": {
+  "path": "results/tuning/states/mj/arm_20_polytope.states.npz",
+  "digest": "743b6359fc299dc1",
+  "size": 1011,
+  "source": {
+   "kind": "explore",
+   "scene": "arm_20_polytope",
+   "strategy": [
+    "scatter"
+   ],
+   "starts": 32,
+   "horizon": 2500,
+   "stride": 50,
+   "seed": 0,
+   "jitter": 0.01,
+   "sigma": 0.5,
+   "max_depth": 0.01,
+   "dropped_nonfinite": 0,
+   "dropped_deep": 589
+  },
+  "horizon": 200,
+  "controls": {
+   "kind": "hold"
+  }
+ },
+ "safety": 1.5,
+ "created": "2026-11-01T09:56:28",
+ "commit": null,
+ "device": "NVIDIA GeForce RTX 4080",
+ "collision": {},
+ "runtime": {
+  "naconmax": 2053692,
+  "nconmax": 502,
+  "njmax": 455,
+  "nccdmax": 25
+ },
+ "sim": {},
+ "solver_kwargs": {
+  "mode": "mj"
+ },
+ "baseline": {
+  "B": 256,
+  "settings": {
+   "collision": {},
+   "runtime": {
+    "nconmax": 8192,
+    "njmax": 16384
+   },
+   "sim": {},
+   "solver_kwargs": {}
+  },
+  "throughput": {
+   "world_steps_per_s": 30854.078334978167,
+   "ms_per_step": 8.297120310016908,
+   "B": 256,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.001124594997352173,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 13570.746339797974
+  },
+  "artifacts": {
+   "nan": 0,
+   "escaped": 0,
+   "deep_mean": 0.005009142248128739,
+   "deep_p99": 0.04123259086161865,
+   "creep": 0.026391909226202156,
+   "rest_speed": 0.06225367872282229,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "guard_B": 256
+ },
+ "peaks": {
+  "B": 4096,
+  "runtime": {
+   "nacon": 269181,
+   "ncollision": 1369128,
+   "naconmax": 2697344,
+   "contacts_per_world": 101,
+   "overflow": false,
+   "nefc_per_world": 303,
+   "njmax": 576,
+   "efc_overflow": false,
+   "ccd": {
+    "epa": 58910,
+    "manifold": 65912,
+    "contacts": 269183,
+    "naccdmax": 135168,
+    "overflow": false
+   }
+  },
+  "overflowed": false,
+  "layout": "independent",
+  "horizon": 200,
+  "batches": 1,
+  "states": 1011,
+  "controls": {
+   "kind": "hold"
+  }
+ },
+ "throughput": {
+  "world_steps_per_s": 160286.45487342327,
+  "B": 4096
+ },
+ "artifacts": {
+  "tuned": null,
+  "baseline": {
+   "nan": 0,
+   "escaped": 0,
+   "deep_mean": 0.005009142248128739,
+   "deep_p99": 0.04123259086161865,
+   "creep": 0.026391909226202156,
+   "rest_speed": 0.06225367872282229,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "ok": false,
+  "why": "RuntimeError: Failed to allocate 33554432 bytes on device 'cuda:0'"
+ }
+}

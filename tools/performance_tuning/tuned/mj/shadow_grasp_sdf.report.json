@@ -1,0 +1,139 @@
+{
+ "scene": "shadow_grasp_sdf",
+ "B": 1024,
+ "states": 1300,
+ "baseline": {
+  "B": 1024,
+  "settings": {
+   "collision": {},
+   "runtime": {
+    "nconmax": 1024,
+    "njmax": 4096
+   },
+   "sim": {},
+   "solver_kwargs": {}
+  },
+  "error_at_B": null,
+  "throughput": {
+   "world_steps_per_s": 601215.2227199316,
+   "ms_per_step": 1.7032170199672692,
+   "B": 1024,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.04785499382459781,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 2602.732340812683
+  },
+  "artifacts": {
+   "nan": 0,
+   "escaped": 3,
+   "deep_mean": 2.7331110083791966e-05,
+   "deep_p99": 0.00047652909241151134,
+   "creep": 0.0,
+   "rest_speed": 0.000412038023966943,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "guard_B": 512
+ },
+ "capacities": {
+  "throughput": {
+   "world_steps_per_s": 1105925.4415969376,
+   "ms_per_step": 0.9259213699988322,
+   "B": 1024,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.00482193221436177,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 267.26323986053467
+  },
+  "rounds": 2
+ },
+ "noise": {
+  "deep_mean": 6.041063482786768e-12,
+  "deep_p99": 3.556488081465914e-10,
+  "creep": 0.0,
+  "rest_speed": 1.9377921489649452e-10
+ },
+ "compacted": {
+  "world_steps_per_s": 1131066.2942804222,
+  "ms_per_step": 0.9053403900179546,
+  "B": 1024,
+  "steps": 100,
+  "reps": 3,
+  "spread": 0.005768062620847567,
+  "overflowed": false,
+  "overflow": [],
+  "mempool_mb": 259.66791439056396
+ },
+ "budgets": [
+  {
+   "candidate": {
+    "contact_reduction": true
+   },
+   "throughput": 980713.7094111056,
+   "artifacts": {
+    "nan": 0,
+    "escaped": 3,
+    "deep_mean": 2.733119126764119e-05,
+    "deep_p99": 0.00047652250679675555,
+    "creep": 0.0,
+    "rest_speed": 0.0004120378540051206,
+    "rest_nan": 0,
+    "overflow": []
+   },
+   "ok": true,
+   "why": ""
+  }
+ ],
+ "batch": [
+  {
+   "B": 1024,
+   "world_steps_per_s": 1105925.4415969376
+  },
+  {
+   "B": 2048,
+   "world_steps_per_s": 1543052.9439966101,
+   "error": null
+  },
+  {
+   "B": 4096,
+   "world_steps_per_s": 1839499.9057252936,
+   "error": null
+  },
+  {
+   "B": 8192,
+   "world_steps_per_s": 1958070.122546393,
+   "error": null
+  },
+  {
+   "B": 16384,
+   "world_steps_per_s": 1899488.928258207,
+   "error": null
+  }
+ ],
+ "tuned": {
+  "B": 8192,
+  "world_steps_per_s": 1958070.122546393,
+  "settings": {
+   "collision": {
+    "capacity_tile": 0.00887921715930125,
+    "capacity2": 0.005830597755553859
+   },
+   "runtime": {
+    "naconmax": 8192,
+    "nconmax": 1,
+    "njmax": 231
+   },
+   "sim": {},
+   "solver_kwargs": {},
+   "B": 8192
+  },
+  "artifacts_ok": true,
+  "why": ""
+ },
+ "speedup": 3.2568538662211064,
+ "seconds": 40.55432415008545
+}

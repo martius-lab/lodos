@@ -1,0 +1,102 @@
+{
+ "scene": "masonry_arch_polytope",
+ "B": 2048,
+ "states": 924,
+ "baseline": {
+  "B": 1024,
+  "settings": {
+   "collision": {},
+   "runtime": {
+    "nconmax": 1024,
+    "njmax": 4096
+   },
+   "sim": {},
+   "solver_kwargs": {}
+  },
+  "error_at_B": null,
+  "throughput": {
+   "world_steps_per_s": 208721.4728085625,
+   "ms_per_step": 4.9060596699564485,
+   "B": 1024,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.005965673484277213,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 6485.158331871033
+  },
+  "artifacts": {
+   "nan": 0,
+   "escaped": 0,
+   "deep_mean": 0.0016743614803999662,
+   "deep_p99": 0.004764056205749538,
+   "creep": 0.013239524739487677,
+   "rest_speed": 0.01625102403704659,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "guard_B": 512
+ },
+ "capacities": {
+  "throughput": {
+   "world_steps_per_s": 286013.8353307013,
+   "ms_per_step": 7.1604927699809195,
+   "B": 2048,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.00303783422730145,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 790.8550519943237
+  },
+  "rounds": 1
+ },
+ "noise": {
+  "deep_mean": 1.0702977988326194e-07,
+  "deep_p99": 4.8050880432103094e-05,
+  "creep": 3.7245378728036765e-06,
+  "rest_speed": 0.00013122660857334267
+ },
+ "budgets": [],
+ "batch": [
+  {
+   "B": 2048,
+   "world_steps_per_s": 286013.8353307013
+  },
+  {
+   "B": 4096,
+   "world_steps_per_s": 323070.3258473604,
+   "error": null
+  },
+  {
+   "B": 8192,
+   "world_steps_per_s": 341457.62461991195,
+   "error": null
+  },
+  {
+   "B": 16384,
+   "world_steps_per_s": 350368.83747057314,
+   "error": null
+  }
+ ],
+ "tuned": {
+  "B": 8192,
+  "world_steps_per_s": 341457.62461991195,
+  "settings": {
+   "collision": {},
+   "runtime": {
+    "naconmax": 1080075,
+    "nconmax": 132,
+    "njmax": 432,
+    "nccdmax": 36
+   },
+   "sim": {},
+   "solver_kwargs": {},
+   "B": 8192
+  },
+  "artifacts_ok": true,
+  "why": ""
+ },
+ "speedup": 1.635948712057498,
+ "seconds": 98.24590182304382
+}

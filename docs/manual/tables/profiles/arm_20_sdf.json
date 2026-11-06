@@ -1,0 +1,48 @@
+{
+ "scene": "arm_20_sdf",
+ "B": 4096,
+ "pre": 50,
+ "ms": {
+  "rbd": 0.4267777995361636,
+  "lodos_bbox": 1.1159176317354043,
+  "lodos_sdf": 1.628268234586964,
+  "lodos_narrow": 0.3167233992523203,
+  "contact_dynamics": 31.5139267341389,
+  "integrate": 0.3337174013722688,
+  "whole_step": 35.08543793383676
+ },
+ "stages_sum_ms": 35.33533120062202,
+ "world_steps_per_s": 116743.59053816384,
+ "funnel": {
+  "lodos": {
+   "candidates": {
+    "n": 43099448,
+    "allocated": 78073086
+   },
+   "tiles": {
+    "n": 1746823,
+    "allocated": 2788325,
+    "of": 28016640
+   },
+   "voxel": {
+    "n": 535147,
+    "allocated": 861747
+   },
+   "contacts": {
+    "n": 152369,
+    "allocated": 861747
+   }
+  },
+  "runtime": {
+   "contacts": {
+    "n": 152369,
+    "allocated": 247853
+   },
+   "rows_per_world": {
+    "n": 186,
+    "allocated": 297
+   }
+  }
+ },
+ "mempool_mb": 1198.6866512298584
+}

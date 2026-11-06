@@ -1,0 +1,519 @@
+\input{preamble.tex}
+\begin{document}
+
+\manualtitle{Lodos v2: Performance Tuning}{Every knob that sets a simulation's throughput, what it costs, and how to set it}{Lodos v2 as of 2026-11-04. A how-to guide on top of the two manuals, \emph{Collision Detection} (\code{docs/collision_detection.pdf}) and \emph{Contact Dynamics} (\code{docs/contact_dynamics.pdf}). Its prequel, \emph{Creating a Simulation from an MJCF} (\code{docs/creating_new_sim_from_mjcf.pdf}), makes the scene. The tools are in \code{tools/performance_tuning/}. Built from \code{docs/manual/}.}
+
+\paragraph{About this document}
+A Lodos v2 scene runs correctly at its defaults, and slowly. Every buffer is sized for a worst case no real scene reaches, the solver runs its full budget, and the batch size is whatever you picked. This guide covers what sets a simulation's throughput and how to measure it, every knob, and the procedures and tools that set them. Its last part is the built-in scenes, tuned under both modes and measured before and after.
+
+\begin{itemize}
+\item \textbf{The knobs}: the collision capacities and tile sizes, the SDF representation and the vertex budget, MJWarp's capacities, the solver's budgets and options, the batch size.
+\item \textbf{The tools} in \code{tools/performance_tuning/}: state sets, a calibration that sizes every capacity, sweeps with an artifact guard, a stage profiler, and \code{tune.py}, which does all of it. The result is a tuning file that \code{make_sim(..., tuning=...)} reads.
+\end{itemize}
+
+Throughput is in world-steps per second: a step of one world, at the batch size stated. All numbers are measured on an RTX 4080 (16\,GiB) with Warp 1.16, the step captured as one CUDA graph and replayed.
+
+\setcounter{tocdepth}{2}
+\tableofcontents
+
+\section{The short version}\label{sec:short}
+
+\begin{lstlisting}
+python tools/performance_tuning/tune.py my_scene.xml --out-dir tuning     # or a built-in scene's name
+\end{lstlisting}
+\begin{lstlisting}
+sim = make_sim(mjm, B, surfaces=surf, tuning="tuning/my_scene.tuning.json")
+\end{lstlisting}
+
+\code{tune.py} does what the rest of this guide explains, for one scene.
+
+\begin{enumerate}
+\item It explores a set of states the scene visits.
+\item It times the scene as it is.
+\item It picks the tile sizes.
+\item It sizes every capacity to its peak over the states, times 1.5.
+\item It tries cheaper solver budgets, keeping one only if it is faster and its artifacts are no worse.
+\item It finds the batch size where throughput stops growing.
+\end{enumerate}
+
+On the built-in scenes this made the step 1.2--29$\times$ faster under the exact mode, with a median of 4.8$\times$, and 1.2--21$\times$ under mj, with a median of 3.2$\times$ (\cref{sec:builtin}). Most of the gain came from the capacities and the batch size, which do not change the answer. The rest of the guide is for when you want to know why, or to do better by hand.
+
+\section{Measuring throughput}\label{sec:measure}
+
+\begin{itemize}
+\item \textbf{Capture the step.} \code{lodos.step.make_step_graph(sim)} captures the whole step into one CUDA graph, and replaying it is how a simulation should run. Uncaptured, the Python-side launches cost more than a small scene's kernels. Every timing here is of graph replays.
+\item \textbf{Warm up, then time a window, from states that matter.}
+  \begin{itemize}
+  \item A step's cost depends on the state: a pile in contact costs several times a pile in the air.
+  \item A window that is mostly a settled pile favours a solver that is fast at rest. Report the two phases apart.
+  \item The tools here time from a state set (\cref{sec:states}): $B$ states drawn from it, 30 steps of warm-up, then 100 steps, three times, taking the median.
+  \end{itemize}
+\item \textbf{Interleave what you compare.} Time A, B, C, then A, B, C again, not A three times and then B. The GPU's clock and temperature drift over minutes, and interleaving makes the drift fall on all of them alike (\code{sweep.py} does this).
+\item \textbf{A run that overflowed timed a different problem.} Every capacity drops work when exceeded rather than failing (\cref{sec:capacities}): a run that dropped contacts is faster and wrong. Every timing here records every overflow flag and discards a run that set one.
+\item \textbf{Nothing else on the GPU.} Another process's kernels, the live viewer stepping among them, slow a timing by an unpredictable amount.
+\end{itemize}
+
+\section{Where a step's time goes}\label{sec:where}
+
+A step is five passes (collision manual, \emph{Where collision sits in a step}):
+
+\begin{enumerate}
+\item the rigid-body pass;
+\item MJWarp's collision (\code{lodos.col.prim}), if the scene has MJCF geoms that pair;
+\item Lodos's collision, if it has Lodos pairs;
+\item the contact solve, the NLSP solver: Lodos's contacts exported into MJWarp's contact arrays, the constraint rows built, and MJWarp's solve (\code{lodos.cd.driver.SolverDriver.contact_dynamics});
+\item integration.
+\end{enumerate}
+
+\code{tools/performance_tuning/profile_scene.py} times each on its own, replayed on a frozen state, and reads the funnel: how many candidates each Lodos stage leaves, against what it is allocated.
+
+\begin{table}[t]
+\centering
+\caption{Where the time goes: each stage replayed alone on one frozen state of the scene's state set, at its tuned settings and the batch it was tuned at, under the exact mode, ms per step (\code{profile_scene.py}, 2026-11-04). ``MJWarp coll.'' is the profiler's \code{prim_collision}, ``Lodos coll.'' its three Lodos stages.}
+\label{tab:profiles}
+\small
+\input{tables/profiles.tex}
+\end{table}
+
+\Cref{tab:profiles} measures representative scenes. The pattern:
+
+\begin{itemize}
+\item \textbf{The solve}, with building its constraint rows, is most of a tuned step: 39 of 51\,ms on the twenty armadillos as hulls, and 88--95\,\% of the step on the 1\,mm nut-bolt, the five-hand pile and the grasp as surfaces. Its cost grows with the contacts, every one a row of three at \code{condim} 3 unless reduced or grouped (\cref{sec:solvers}), and with the proximal loop's iterations. On the piles, 120 and 140 dofs, most of it is MJWarp's dense Hessian and its factorization, whose cost the dofs set.
+\item \textbf{The mode} moves that share. Tuned under mj, with no proximal loop, the 1\,mm nut-bolt steps in 3.7\,ms against the exact mode's 10.3 at 2\,048 worlds (\cref{tab:builtin}), while its collision pipeline costs no less (0.72 against 0.55\,ms at 1\,024 worlds, the tile search's timings): collision becomes a much larger part of its step.
+\item \textbf{Lodos surfaces}: under the exact mode collision is a small part of the step, 0.99 of 10.5\,ms on the 1\,mm nut-bolt, and within it the stage that scales with the vertex count. The 0.5\,mm nut, with four times the vertices, takes 2.4 times as long to collide (\cref{sec:asset}).
+\item \textbf{Hulls}: MJWarp's collision, its broadphase and the hybrid narrowphase, is 12 of the twenty-armadillo pile's 51\,ms. Its cost grows with the hull pairs whose boxes overlap, not with the contacts.
+\item \textbf{The rigid-body pass} is small: 5.3 of 123\,ms on five hands, 28 dofs each.
+\end{itemize}
+
+\section{State sets: what to measure from}\label{sec:states}
+
+Every capacity is sized to a demand, and the demand is a property of the states the scene visits. A state set (\code{lodos.utils.states}) is the list of states that every tool runs from. They all use the same states, so that the capacities, the timings and the accuracy they report are about the same thing.
+
+\begin{lstlisting}
+from lodos.utils import states
+S = states.from_keyframes(mjm)                       # the MJCF's keyframes
+S = states.from_qpos(mjm, qpos, qvel, ctrl=u)        # any (N, nq) arrays: a controller's trace, RL rollouts
+S.save("scene.states.npz"); S = states.load("scene.states.npz", mjm)   # refuses another model's
+\end{lstlisting}
+
+\paragraph{Exploration} \code{tools/performance_tuning/explore.py} makes a set from the scene alone. It rolls each of its starts out for a horizon and samples the state every few steps (\cref{tab:explore}). A still frame misses the impacts: Lodos-v1's MPC (\code{papers/lodos_v1.pdf}) sized its \code{njmax} on 10\,ms frames of a 2\,ms step and got 211 rows where the run needed 398. Filters drop states that went non-finite and states deeper in penetration than \code{--max-depth}. The report says whether the set's heaviest state is still being found: the running peak of contacts per world against the number of states, in a random order. If the last rise is near the end, explore more.
+
+\begin{table}[t]
+\centering
+\caption{\code{explore.py}'s strategies. Each start is rolled out \code{--horizon} steps and sampled every \code{--stride}.}
+\label{tab:explore}
+\small
+\begin{tabularx}{\linewidth}{@{}L{20mm}Y@{}}
+\toprule
+strategy & starts \\
+\midrule
+\code{initial} & the scene's own start, in every world (a deterministic scene: one rollout) \\
+\code{scatter} & \code{--starts} starts drawn the way the scene draws its own (\code{SceneSource.sampler}: a drop's stacks, the hands' orientations), or free bodies placed at random without overlap above where they start \\
+\code{actuation} & the scene's start under random control: an Ornstein--Uhlenbeck walk inside \code{ctrlrange}, \code{--sigma} of the range \\
+\code{perturb} & the start and the keyframes jittered: free bodies by \code{--jitter} m and rad, joints by \code{--jitter} of their range \\
+\code{keyframes} & the MJCF's keyframes as they are, with no rollout \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{Layouts} Some capacities are \emph{batch totals}, shared by all $B$ worlds, and some are \emph{per world} (\cref{tab:caps}). A batch total depends on how the $B$ worlds of a batch are assigned to states:
+
+\begin{itemize}
+\item \textbf{independent} (the default): each world its own state. This is reinforcement learning's many independent episodes. A batch's totals are about $B$ times the \emph{mean} load, and the larger the batch the closer.
+\item \textbf{shared}: every world of a batch from one state, each with its own controls. This is model-predictive control's one plant and many candidate futures. A batch's totals are about $B$ times \emph{that state's} load, so the heaviest state sets them, at any $B$.
+\item \textbf{explicit}: an index per world.
+\end{itemize}
+
+A tuning file records the layout it was measured under. A file measured independent and run shared will overflow on the first heavy state; measure the way you will run.
+
+\paragraph{Controls} During a rollout the actuators can:
+
+\begin{itemize}
+\item hold each state's control (\code{hold}, the default);
+\item be zero (\code{none});
+\item walk at random inside \code{ctrlrange} (\code{random});
+\item play the set's own control sequences, \code{(N, H, nu)} (\code{sequence}).
+\end{itemize}
+
+An MPC's state set should carry its candidate control sequences: the controls are what take the plant into its heavy states.
+
+\section{Capacities}\label{sec:capacities}
+
+\subsection{What they are, and what overflow does}\label{sec:capwhat}
+
+Every array of a \code{Sim} is allocated once, at construction, because a captured graph needs stable addresses. Every count that varies is bounded by a capacity chosen then (\cref{tab:caps}). A capacity that is exceeded \textbf{drops} work rather than failing:
+
+\begin{itemize}
+\item a Lodos stage keeps its first survivors;
+\item MJWarp drops contacts past \code{naconmax}, broadphase pairs past the same \code{naconmax}, and rows past \code{njmax};
+\item Lodos's contacts, and contact groups, are exported into MJWarp's contact arrays after MJWarp's own, and the ones past \code{naconmax} are dropped the same way;
+\item the hybrid drops EPA pairs and manifold contacts.
+\end{itemize}
+
+Each leaves a trace, a sticky flag or a count past its capacity, that nothing in the step reads. A run that overflowed simulated a different problem, faster.
+
+\begin{table}[t]
+\centering
+\caption{Every capacity of a \code{Sim}: what it bounds, whether it is a batch total or per world, and where it is set. ``Per world'' in MJWarp's names (\code{nconmax}, \code{nccdmax}) means times $B$ and shared: what a calibration gives them is a share of a batch total.}
+\label{tab:caps}
+\small
+\begin{tabularx}{\linewidth}{@{}L{24mm}YL{12mm}L{30mm}@{}}
+\toprule
+capacity & bounds & kind & set by \\
+\midrule
+\code{capacity_tile} & the surviving tiles, and with them stage 1's candidates & batch & \code{col_kwargs} \\
+\code{capacity2} & the voxel-SDF survivors and the contacts (\code{nCa3_max} = \code{nCa2_max}) & batch & \code{col_kwargs} \\
+\code{capacity1} & the tile filter's compacted launch; 1.0 launches densely and cannot overflow & batch & \code{col_kwargs} \\
+\code{naconmax} & MJWarp's contacts, Lodos's exported ones and the contact groups among them, and its broadphase pairs & batch & \code{make_sim} \\
+\code{nconmax} & \code{naconmax} / $B$ when \code{naconmax} is not given & share & \code{make_sim} \\
+\code{nccdmax} & the hybrid's EPA and manifold scratch, times $B$ & share & \code{make_sim} \\
+\code{njmax} & MJWarp's constraint rows: every contact's, joint limits and friction loss & world & \code{make_sim} \\
+\code{njmax_nnz} & a sparse Jacobian's nonzeros (models over 32 dofs) & world & \code{make_sim}; derived from \code{njmax} by default \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{What over-sizing costs}\label{sec:capcost}
+
+It depends on the capacity.
+
+\begin{itemize}
+\item \textbf{Lodos's collision capacities} cost launch width. Every compaction's scan reads its length from the device (\code{dyn_scan}), and stage 1 walks a hardware-sized grid (\code{grid_stride}), so an idle slot is nearly free, but not free. Measured on the SHARPA hand at $B$ = 8192, each knob alone (collision manual, \emph{Capacities and overflow}):
+  \begin{itemize}
+  \item 3$\times$ over-sized costs 2.2\,\% of the step for \code{capacity1}, 1.2\,\% for \code{capacity2} and 5.2\,\% for \code{capacity_tile};
+  \item each further doubling costs 1.3, 1.5 and 6.7\,\%.
+  \end{itemize}
+  The defaults of 1.0 are worse than 3$\times$ over on a real scene: the five-armadillo drop's worst-case buffers are about 4\,GB at $B$ = 4096.
+\item \textbf{MJWarp's capacities} cost much more, because several of its kernels launch over \code{njmax} rows and \code{naconmax} contacts. On the five-armadillo drop, the scene's own capacities (sized for the live viewer's one world: 4\,096 contacts and 12\,288 rows per world) against calibrated ones made the step 3.4$\times$ faster at the same batch size, with identical contacts.
+\item \textbf{The row capacity also sizes two of the solver's options.} \code{fused_newton} keeps a world's rows in shared memory and refuses an \code{njmax} whose rows do not fit there, and \code{row_space}'s memory grows with \code{njmax}: a world's rows times its dofs, and its rows squared, up to 1\,024 rows. Both want a calibrated \code{njmax} (\cref{sec:solvers}).
+\end{itemize}
+
+\subsection{Measuring the demand}\label{sec:calibrate}
+
+\begin{lstlisting}
+python tools/performance_tuning/calibrate.py arm_5_sdf --states arm_5_sdf.states.npz --B 4096 \
+    [--layout independent|shared] [--horizon 200] [--controls hold|none|random|sequence] \
+    [--safety 1.5] [--out arm_5_sdf.tuning.json] [--update]
+\end{lstlisting}
+
+\code{lodos.utils.calibrate.measure} rolls every batch of a state set out for \code{--horizon} steps. After every step, inside the captured graph, a \code{Tracker} keeps the running maximum of every count on the device:
+
+\begin{itemize}
+\item Lodos's stage counts (the stages' own \code{ct_peak}), and its contacts per world;
+\item MJWarp's contacts (Lodos's exported ones among them) and broadphase pairs, its rows per world, and its contacts per world;
+\item the hybrid's EPA, manifold and contact counts.
+\end{itemize}
+
+Every count is read raw, before any clamping, so an overflowed stage still reports its true demand. The stages behind it saw fewer than they would have, though. So \code{lodos.utils.calibrate.calibrate} grows whatever overflowed and measures again, until nothing does. Only then are the peaks the demand. The capacities are then \code{--safety} times the peaks (\code{lodos.utils.calibrate.settings}).
+
+To start that loop somewhere sensible, \code{calibrate.py} first measures a small batch, 64 worlds at the scene's own capacities, which hold at that size. It starts the real batch from those fractions: a smaller batch's mean is noisier, so its peak fraction is the larger.
+
+\begin{notebox}{The counters that are easy to miss}
+\textbf{MJWarp's broadphase pairs} are written into arrays of the same \code{naconmax} as its contacts, and counted separately (\code{d.ncollision}). A scene of many hulls has many more overlapping boxes than contacts. On the SHARPA grasp's 121 hulls, sizing \code{naconmax} by contacts alone dropped broadphase pairs, missed contacts, and threw the armadillo out of the hand in a tenth of the worlds.
+
+\textbf{The hybrid's EPA and manifold scratch}, sized by \code{nccdmax} $\times$ $B$. \code{lodos.utils.calibrate.peaks}, which measures one rollout rather than a state set, reads the broadphase's pairs too, every step by default (\code{every=1}), and \code{lodos.utils.calibrate.suggest} sizes \code{nconmax} to hold the larger of the two peaks; neither measures the hybrid's counts.
+\end{notebox}
+
+\subsection{Batch size and capacities}\label{sec:capB}
+
+A batch total measured at one $B$ is not right at another.
+
+\begin{itemize}
+\item \textbf{Fractions} (\code{capacity_tile}, \code{capacity2}, \code{capacity1}) already scale with $B$. Under the independent layout they are conservative at a larger batch, which is closer to its mean, and unsafe at a smaller one.
+\item \textbf{Absolute totals} (\code{naconmax}) must be scaled by the ratio of the batch sizes.
+\end{itemize}
+
+\code{lodos.utils.tuning.apply} does both:
+
+\begin{itemize}
+\item at the measured batch size or above, it takes the file's settings whole and scales the absolute totals;
+\item below it, it leaves the batch totals out, with a warning.
+\end{itemize}
+
+The live viewer runs one world, and takes a tuning file without its capacities (\cref{sec:viewer}). Settings measured at 8192 worlds and applied whole at 2048 overflowed: \code{tune.py}'s own final check caught it.
+
+\subsection{The online alternative}\label{sec:autosizer}
+
+\code{lodos.col.sdf.collide.Autosizer} sizes Lodos's collision capacities on a live run instead: it shrinks onto the peaks it sees and grows a stage that overflows. It needs no state set and converges lower than an offline calibration (0.047 against 0.073 on the SHARPA hand), because it sizes to the batch's mean behaviour. But it sizes to what it has seen: a capacity shrunk in a quiet phase is overrun by a busy one, for up to \code{every} steps, and those contacts are lost. It also resizes in place, which invalidates every captured graph. Where a dropped contact matters, run it once as an instrument and build the real context from what it found (\code{suggest_capacity}). It sizes only Lodos's collision, not MJWarp's.
+
+\section{Lodos collision}\label{sec:lodos}
+
+\subsection{Tile sizes}\label{sec:tiles}
+
+\code{tile_size} (default 8) is how many consecutive Hilbert-ordered vertices a tile holds. A tile is rejected whole against the other geometry's voxel SDF, so the tile size trades the tile level's own cost (small tiles) against how many vertices survive into stage 1 (large tiles). The collision manual's \emph{Tiles} has the curves: on the SHARPA hand, 131.6\,ns per world at 4, 106.1 at 8, 216.1 at 128.
+
+\begin{itemize}
+\item \textbf{Per directional pair.} \code{tile_size={None: 8, (1, 0): 16}} sizes the segments whose vertices come from geometry 1 and whose field from geometry 0, and gives the rest 8. A 55-tile palm and a 6-tile phalanx want different sizes. Sizes that differ cost 4.9\,ns per world: a slot's tile is then a lookup, not a division (\code{partition}, which \code{make_collision_context} turns on by itself exactly then).
+\item \textbf{Small geometries}: a geometry of fewer than $2\cdot$\code{tile_size} vertices is one or two tiles that cull nothing. Lower its pairs' size, down to 1, where a tile is a vertex.
+\item \code{tile_tuner.py} groups the segments by their (vertex surface, SDF surface) assets. It searches 4, 8, 16 and 32 for the largest groups, one at a time, timing the collision pipeline alone on a frozen batch, each candidate at 1.5$\times$ its own demand. On the built-in scenes, under the exact mode, it kept 8 for the five-armadillo drop the default was chosen on, the nut-bolt and the grasps. It moved to 16 or 32 on the large piles, the hands' minor link pairs, most of the NIST nuts against their bolts and some bodies against the floor, and took up to 44\,\% off the collision step there (\cref{sec:builtin}).
+\end{itemize}
+
+\subsection{Super-tiles and the compacted tile filter}\label{sec:supertiles}
+
+\code{super_size} groups tiles into super-tiles, tested like tiles, whose rejection removes their children from the tile filter's launch. It pays for fine tiles. It needs the compacted launch (\code{capacity1} $< 1$), is off by default and is per directional pair, like \code{tile_size}. Keep it off for box-like geometry, where this stage has twice measured slower.
+
+\code{capacity1} $< 1$ compacts the box filter's surviving segments first, so the tile filter runs over the tiles of active segments only. On the SHARPA hand the box test rejects 90\,\% of the segments, and the tile filter's grid shrinks five- to sevenfold. At 1.0 it launches densely, bit-identically. \code{tune.py} measures both and keeps the faster.
+
+\subsection{Scans, grid stride and the memory pool}\label{sec:scans}
+
+\code{dyn_scan} and \code{grid_stride} (both on by default) are what make an over-sized capacity cheap. Leave them on; off, each compaction scans its whole arena. \code{mempool_release_threshold} (1\,GiB) lets Warp's memory pool keep the CUB scans' scratch: Warp's default of 0 makes each scan's temporary allocation a driver round trip, about 0.6\,ms a scan.
+
+\subsection{The SDF representation}\label{sec:spline}
+
+A bake can be evaluated as a tricubic B-spline ($S_{\mathrm{c2}}$, \code{"cubic"}, the default, 64 coefficients per query) or as trilinear interpolation of the same knot samples ($S_{\mathrm{c0}}$, \code{"linear"}, 8 samples per query). The choice is made when the surface is loaded, and the narrowphase kernel is compiled for it.
+
+\begin{itemize}
+\item $S_{\mathrm{c0}}$ makes the narrowphase cheaper.
+\item Its normals are only C$^0$: a contact sliding across a voxel face sees its normal jump.
+\end{itemize}
+
+The nut-bolt ships both (\code{nutbolt_*} and \code{nutbolt_*_trilinear}); their tuned throughputs are in \cref{tab:builtin}. There $S_{\mathrm{c0}}$ cut the collision pipeline's time by 30--44\,\%; the tuned step was no faster for it under the exact mode, and 13--16\,\% faster under mj (\cref{sec:builtin}). Choose $S_{\mathrm{c0}}$ when the narrowphase is a large share of the step and the contacts do not slide far.
+
+\subsection{What was decided at bake time}\label{sec:asset}
+
+\begin{itemize}
+\item \textbf{The vertex budget is the largest lever on Lodos's collision}, and without contact reduction on the solve too.
+  \begin{itemize}
+  \item Every vertex of a vertex side is a candidate in every pair it is in, before the filters, so stage 1's arena and the tile filter's grid are proportional to it.
+  \item Every penetrating vertex is a contact, and every contact a row of three in the solve, unless the reduction (\cref{sec:mjw}) or contact groups (\cref{sec:solvers}) stand in for it.
+  \item The 0.5\,mm nut has 4.0 times the 1\,mm nut's vertices (19\,100 against 4\,799), and its collision pipeline takes 2.4 times as long (1.29 against 0.55\,ms a step at 1\,024 worlds, the tile search's timings in \code{tools/performance_tuning/tuned/}). Its tuned step is only 1.12$\times$ slower (177k against 199k world-steps/s at 2\,048 worlds): the solve is most of it, and the reduction, on for both nuts, hands it at most 240 contacts a segment.
+  \item Lowering a body's target in step 3 of the mesh pipeline is the first thing to try on a surface scene whose collision is slow.
+  \item A tuning file records each surface's vertex count and its pipeline records, and goes stale when they change (\cref{sec:file}).
+  \end{itemize}
+\item \textbf{The voxel grid} costs memory, 4 bytes per voxel and per coefficient: 3--5\,MB a surface on the SHARPA hand. It costs no time per step beyond cache behaviour: each query reads its own 8 or 64 values. A finer grid makes the voxel prefilter reject more tightly.
+\item \textbf{Which side supplies the vertices}, and \textbf{which pairs are declared}, are speed choices too. A pair costs its box test at every step, and its vertex side's tiles whenever the boxes overlap. Declare both directions only where the second finds contacts the first misses.
+\item \textbf{Inner spheres} add primitives to a geometry. A scene where no geometry has any runs the sphere-free kernels, compiled for it.
+\end{itemize}
+
+\section{MJWarp and the hybrid narrowphase}\label{sec:mjw}
+
+\begin{itemize}
+\item \textbf{The hybrid} (\code{make_sim(hybrid=ALL_TYPES)}, the default) takes box--box, box--mesh, mesh--mesh and plane--mesh pairs. Against a float64 ground truth it misses no contact where MJWarp's own narrowphase misses 27--250 per scan, and its narrowphase is 7.6--18.5$\times$ MJWarp's on twenty armadillos (collision manual, \emph{Exactness and speed}). There is no reason to turn it off except a model it refuses.
+\item \textbf{Hull counts} set the hybrid's cost: hull pairs whose boxes overlap go to GJK, and those in contact to EPA and the manifold. A coarser decomposition (a higher CoACD threshold in step 2) is the polytope scenes' vertex budget.
+\item \textbf{Contact reduction} (\code{make_sim(contact_reduction=True)}) hands MJWarp at most 240 of each Lodos pair segment's contacts, chosen deterministically (Newton's reduction). Every contact is a row of three in the solve, so this is the solver's largest lever on a dense contact patch. It made the exact mode's proximal solve 18.5$\times$ faster on the nut-bolt (at slop 0, measured on 2026-10-24); the nut-bolts and the NIST scenes ship with it on. Grouped pairs are reduced too: their groups are made of the contacts it keeps. It changes the answer, so it is guarded like a budget (\cref{sec:solvers}).
+\item \textbf{The sparse Jacobian.} A model over 32 dofs gets a sparse constraint Jacobian, whose nonzeros \code{njmax_nnz} bounds. By default it is estimated from \code{njmax} and the widest contact, Lodos's pairs counted beside the MJCF's own (\code{lodos.mjcf.io}), so sizing \code{njmax} sizes it too. When it was too small, a pile of twenty armadillos fell through the floor without a word.
+\item \textbf{The EPA scratch} is \code{nccdmax} $\times$ $B$ rows of polytope workspace. Left out, it is sized to the whole contact capacity: 2.5\,GiB for twenty armadillos at $B$ = 1024.
+\end{itemize}
+
+\section{The solver: budgets and accuracy}\label{sec:solvers}
+
+The capacities and the tile sizes do not change the answer. With no overflow, the contacts are identical. The budgets do: fewer iterations are a less converged solve. Every budget change here is held to the scene's own settings by the artifact guard (\cref{sec:guard}).
+
+\begin{table}[t]
+\centering
+\caption{The solver's throughput knobs, its options (\code{solver_kwargs}) unless named otherwise. ``Answer'' says whether a knob changes the trajectory; ``same'' is to rounding.}
+\label{tab:solverknobs}
+\small
+\begin{tabularx}{\linewidth}{@{}L{38mm}YL{13mm}@{}}
+\toprule
+knob & what it buys, what it costs & answer \\
+\midrule
+\code{prox_iters_per_qp} (10) & the exact mode's proximal loop, its outer iterations: fewer is less converged & changes \\
+\code{prox_tol_z}, \code{prox_tol_sigma} (\code{1e-3} each) & the loop's stopping tolerances, on the anchor and on the de Saxc\'e term & changes \\
+\code{contact_reduction} (\code{make_sim}) & at most 240 contacts per Lodos pair segment & changes \\
+MJWarp's \code{opt.iterations}, \code{opt.tolerance} & the Newton solve's cap and tolerance, from the MJCF (100 iterations in the built-in scenes') & changes \\
+\code{fused_newton} (off) & the Newton solve, and the exact mode's proximal rounds, in one kernel per world, for small models (up to 16 dofs) at a calibrated \code{njmax}: the exact step 2.3$\times$ faster on the 1\,mm nut-bolt & same \\
+\code{groups}, \code{normal_bins}, \code{moment_bins} (off; 1, 1) & a pair segment's contacts in each normal bin and moment sector solved as one contact, a ray (one row) or a cone (three): fewer rows, another problem & changes \\
+\code{row_space} (off) & MJWarp's Newton system solved through the rows rather than as the dofs' dense Hessian: pays where a world has fewer rows than dofs, as with ray groups on the piles & same \\
+\code{shared_hessian} (from 64 padded dofs) & MJWarp's sparse Hessian (more than 32 dofs, up to 144 padded) summed per world in shared memory rather than rebuilt in global memory every iteration: the same Hessian, so the same iterates; on by default wherever it can be built on a model of 64 padded dofs or more (48 dofs; below, it measured slower); its block, 512 threads a world, is a GPU-specific tuning parameter, chosen on an RTX 4080 (\emph{Contact Dynamics}) & same \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\Cref{tab:solverknobs} lists them. \code{tune.py} tries two of them: 5 and 3 proximal iterations, and the contact reduction on a scene with Lodos surfaces that does not ship with it on; under mj, which runs no proximal loop, only the reduction (\cref{sec:tools}). The others are for \code{sweep.py} and a scene's own check. Two were measured on 2026-10-29:
+
+\begin{itemize}
+\item \textbf{\code{fused_newton}} solves the same problem to the same iterates. On the 1\,mm nut-bolt at 2\,048 worlds it took the exact step from 194k to 448k world-steps/s, and it passed the artifact guard, its metrics equal to the third digit. It refuses a model of more than 16 dofs, and a row capacity whose rows do not fit in shared memory: a scene's own, sized for the viewer's one world, is usually too large (the nut-bolt's is 24\,576 rows a world).
+\item \textbf{Ray groups with \code{row_space}} cut the twenty walled armadillos' rows from 125 to 31 a world and ran their exact step 3.1$\times$ faster than per contact without the shared Hessian, at 4\,096 worlds (2.6$\times$ on five walled hands). Cone groups, 94 rows a world there, gained nothing: their row system is as large as the Hessian. Groups change the problem: on the contact dynamics manual's slope test, ray groups let a cube creep 53\,mm in a second where per contact and cone groups hold it, and one group a pair cannot hold the NIST nut on its thread.
+\end{itemize}
+
+Which mode to run is the larger choice. The mj mode solves MuJoCo's soft problem with no proximal loop: tuned, it runs a median 2.1 times the exact mode's throughput on the built-in scenes (2.8 on the 1\,mm nut-bolt), though slower on 7 of the 67, and its contacts creep where the exact mode's hold, 1.0\,mm/s on the same slope. The contact dynamics manual weighs the two; \cref{tab:builtin} measures both modes on every built-in scene, tuned.
+
+\subsection{The artifact guard}\label{sec:guard}
+
+A budget is kept only if it is faster by 3\,\% \emph{and} \code{common.no_worse} passes against the scene's own settings, on the same states, at 512 worlds (the guard's metrics are means and percentiles over worlds, and 512 measure them as well as thousands):
+
+\begin{itemize}
+\item no new non-finite or escaped worlds;
+\item no capacity overflow during the guard's rollouts;
+\item the penetration within 1.25$\times$ + 0.2\,mm, both its mean and its 99th percentile, per world, sampled every 20 steps over 400;
+\item the creep at rest within 1.5$\times$ + 0.2\,mm/s, and the speed at rest within 2$\times$ + 0.02, over 500 steps from the set's settled states, which take up to half the batch;
+\item for the scenes that are not chaotic (the incline, the backspin ball, Painlev\'e's box), every body's path within 5\,mm of the baseline's.
+\end{itemize}
+
+\paragraph{Its noise floor} Two runs of the same physics do not land in the same place. The capacities change only the order of floating-point sums, and MJWarp's solve sums with atomics, whose order varies from run to run. On a chaotic scene that is enough to move the metrics: the SHARPA grasp's speed at rest varied twofold.
+
+So \code{tune.py} measures the gap between the baseline's artifacts and the capacities-only settings' on the same states, which is each metric's run-to-run spread. It widens each limit by twice that gap, and the path limit by twice the paths' own spread. A budget that passes one rollout and fails the final check is dropped, and the settings are recalibrated without it.
+
+Its thresholds are heuristics. They catch what was seen: the grasp thrown, creep doubled, penetration up by half. A scene with a quantity of its own to hold (a seat's depth, a grasp's slip) deserves a check of its own beside them.
+
+\section{Batch size and memory}\label{sec:batch}
+
+Throughput grows with the batch size until the GPU is busy, then flattens. Memory grows linearly, and the largest batch that fits is set by the capacities. \code{tune.py} doubles the batch from the family's starting size while throughput grows by more than 5\,\%, recalibrating at each size, and keeps the fastest. Each tuning file records the batch it was measured at (\cref{tab:builtin}). The light scenes saturate later than the heavy ones. Under the exact mode the single bodies of the exactness scenes (the incline, the backspin ball, Painlev\'e's box) were fastest at 8\,192--32\,768 worlds (under mj up to 65\,536). Of the other 61 scenes, 45 were fastest at 2\,048--4\,096 and 12 at 8\,192: the five SHARPA hands as hulls, the twenty cubes as boxes, the Shadow grasp, the driven nuts and five of the nine NIST nut-bolts; the twenty-hand piles at 1\,024.
+
+\section{The tuning file}\label{sec:file}
+
+\code{lodos.utils.tuning} holds a scene's settings in one JSON file per scene (format \code{lodos-tuning/2}). The settings are four groups at the top level, the ones \code{make_sim} takes: \code{collision}, \code{runtime} (the capacities of the buffers both pipelines' contacts share: \code{naconmax}, \code{nconmax}, \code{njmax}, \code{nccdmax}, \code{njmax_nnz}), \code{sim} (\code{contact_reduction}) and \code{solver_kwargs} (the budgets the tuning changed, and the mode of a file tuned under mj). Beside them are \code{B}, the batch they were measured at, the \code{peaks} the capacities came from, the \code{throughput} and \code{artifacts} they reached, the \code{baseline} they were compared with, and the tile search's record:
+
+\needspace{30\baselineskip}
+\begin{lstlisting}[language={}]
+{ "format": "lodos-tuning/2", "scene": "arm_5_sdf", "B": 4096, "layout": "independent",
+  "fingerprint": {
+    "model": {...}, "geometry": "...", "timestep": 0.002, "hulls": { "hulls": 0 },
+    "surfaces": [ { "kind": "surface", "vertices": 451, "faces": 898,
+                    "grid_N": [85, 76, 100], "voxel_h": [...], "spline_type": "cubic",
+                    "spheres": 0, "extent": [...], "sha": "079adb9906bc5b25",
+                    "file": "viewer/assets/surfaces/armadillo/surface_data.npz" }, ... ],
+    "pairs": 25 },
+  "states": { "path": ".../arm_5_sdf.states.npz",
+              "digest": "8ccc73cd2032f603", "size": 2560, "horizon": 200,
+              "controls": { "kind": "hold" }, "source": {...} },
+  "safety": 1.5, "created": "2026-11-01T02:50:20", "commit": null,
+  "device": "NVIDIA GeForce RTX 4080",
+  "collision": { "capacity_tile": 0.134, "capacity2": 0.0259 },
+  "runtime": { "naconmax": 51098, "nconmax": 13, "njmax": 77 },
+  "sim": {}, "solver_kwargs": {},
+  "peaks": {...}, "throughput": { "world_steps_per_s": 308526, "B": 4096 },
+  "artifacts": { "tuned": {...}, "baseline": {...}, "ok": true, "why": "" },
+  "baseline": { "B": 2048, "settings": { "runtime": { "nconmax": 4096, "njmax": 12288 }, ... },
+                "throughput": {...}, "artifacts": {...}, "guard_B": 512 },
+  "tiles": { "groups": {...}, "trials": [...], "base_ms": 0.163, "best_ms": 0.163,
+             "sizes": {...} } }
+\end{lstlisting}
+
+\begin{itemize}
+\item \textbf{Applying it.} \code{make_sim(..., tuning=path)}, or \code{SceneSource.make_sim(..., B=, tuning=)} for a viewer scene, fills whatever the call leaves out (\code{lodos.utils.tuning.apply}, \code{merge_into_make_sim}):
+  \begin{itemize}
+  \item MJWarp's capacities and \code{contact_reduction};
+  \item the solver's options the file names;
+  \item the collision options that \code{surfaces.col_kwargs} does not name.
+  \end{itemize}
+  Arguments given explicitly win. A scene's own defaults (a \code{SceneSource}'s \code{caps}, \code{sim_kwargs}, \code{solver_defaults} and \code{mode_defaults}) give way to the file. Batch sizes follow \cref{sec:capB}. \code{lodos.utils.tuning.describe(file)} summarizes a file in two lines.
+\item \textbf{Staleness.} The fingerprint covers:
+  \begin{itemize}
+  \item the model's structure, geometry and timestep;
+  \item every hull set's counts and hash;
+  \item every Lodos surface's vertex and face counts, SDF grid, voxel size, spline type, inner spheres and a hash of its arrays;
+  \item when they sit beside its bake, the mesh pipeline's records of how it was made: decomposition threshold, vertex target, bake settings.
+  \end{itemize}
+  \code{lodos.utils.tuning.stale(file, mjm, surfaces)} lists what changed. \code{make_sim} warns on a stale file, and \code{calibrate.py --update} re-measures it.
+\item \textbf{The records} answer ``how was this surface made?'' from the tuning file alone. That matters, because the vertex budget is the largest lever on collision (\cref{sec:asset}). \code{tools/performance_tuning/tuned/sharpa_armadillo_sdf.tuning.json} carries each link's CoACD threshold and hull count, its Instant Meshes target and its bake's grid. A surface with no records beside its bake, like the armadillo above, has none.
+\end{itemize}
+
+\section{The tools}\label{sec:tools}
+
+\begin{table}[t]
+\centering
+\caption{\code{tools/performance_tuning/}: a scene is a built-in scene's name or an MJCF file the viewer can load.}
+\label{tab:tools}
+\small
+\begin{tabularx}{\linewidth}{@{}L{25mm}Y@{}}
+\toprule
+script & does \\
+\midrule
+\code{explore.py} & a state set: strategies, filters, the running-peak report (\cref{sec:states}) \\
+\code{calibrate.py} & every capacity at a batch size, into the tuning file (\cref{sec:calibrate}); in code, \code{calibrate.calibrate_section} \\
+\code{tile_tuner.py} & the tile size of each kind of segment (\cref{sec:tiles}); \code{--write} into the file \\
+\code{sweep.py} & any knobs over a grid, interleaved rounds, optionally guarded and recalibrated per configuration \\
+\code{profile_scene.py} & each stage's time and the funnel (\cref{sec:where}) \\
+\code{tune.py} & all of it for one scene: baseline, tiles, capacities, compaction, guarded budgets, batch size; \code{--copy-from} makes a variant that differs from another scene only in its joint rows follow that scene's tiles, budgets and batch size; \code{--keep-tiles} takes the scene's file's tile sizes rather than searching them again (a missing, tile-less or stale file is refused); \code{--mode mj} tunes under a mode other than the scene's own, from a state set explored under it, into \code{<out-dir>/mj/}, the file recording the mode \\
+\code{tune_all.py} & \code{tune.py} over every built-in scene, a process each; \code{--mode mj} under mj \\
+\code{summarize.py} & the table of every tuned scene, before and after: \code{tuned/README.md} \\
+\code{time_variant.py} & a variant of a scene's tuned settings with other solver options (by default the mj mode without the proximal loop, labelled \code{lodos_mj}, for the comparison with Newton's solvers), recalibrated at each batch and timed as \code{tune.py} does, guarded; into a file a scene in \code{--out}, not the tuning file \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\Cref{tab:tools} lists them. \code{common.py} is what they share: scenes by name, builds from a set of settings, \code{throughput}, \code{artifacts}, \code{no_worse}. A knob of \code{sweep.py} is \code{<group>.<name>} in one of the tuning file's four groups. Examples:
+
+\begin{lstlisting}[language=bash]
+python tools/performance_tuning/sweep.py nutbolt_1 --B 4096 \
+    --tuning tools/performance_tuning/tuned/nutbolt_1.tuning.json \
+    --knob solver_kwargs.prox_iters_per_qp=10,5,3 --knob sim.contact_reduction=true,false \
+    --guard --recalibrate --rounds 3
+python tools/performance_tuning/sweep.py nutbolt_1 --B 2048 \
+    --tuning tools/performance_tuning/tuned/nutbolt_1.tuning.json \
+    --knob solver_kwargs.fused_newton=false,true --guard
+python tools/performance_tuning/profile_scene.py sharpa_5_sdf --B 4096 \
+    --tuning tools/performance_tuning/tuned/sharpa_5_sdf.tuning.json --states sharpa_5_sdf.states.npz
+\end{lstlisting}
+
+The profile runs at the file's own batch size: below it, the file's batch totals give way to the scene's own (\cref{sec:capB}), which are sized for the viewer's one world.
+
+\section{In the live viewer}\label{sec:viewer}
+
+The viewer's \textbf{Performance} panel (\code{viewer.performance}) does five things.
+
+\begin{itemize}
+\item \textbf{The tuning file.} It loads the scene's file, by default \code{tools/performance_tuning/tuned/<scene>.tuning.json}, the exact mode's (a file tuned under mj loads by its path), shows its settings and the throughput before and after, and flags it stale. \emph{Apply knobs} takes the file's tile sizes, which rebuild the runners, and its solver budgets and contact reduction, which become Lodos's options in the Sim panel, where they can be seen and changed. It does not take the capacities: the viewer runs one world and grows its own capacities when a step overflows them. A tuning file tunes Lodos, not Newton's sims (MJWarp, Kamino), and is not applied under them. With its checkbox, or \code{python -m viewer --tuned}, the file is applied on every scene load and sim switch.
+\item \textbf{The state set.} \emph{Add frame} adds the state on screen to the scene's set, and \emph{Add take} adds a take every few frames. Save and load the set; select a state in the list to show it.
+\item \textbf{The tools}, in the background at a chosen batch size: explore, calibrate, profile, or the whole tuning. A finished calibration or tuning reloads the file, and a profile shows its stage table. They time on the GPU the viewer is using, so pause the viewer for clean numbers.
+\item \textbf{Counters.} The state on screen against the viewer's own capacities: each Lodos stage (candidates, tiles, voxel survivors, contacts) and MJWarp's contacts and rows (\emph{Runtime contacts}, \emph{Runtime rows}); under one of Newton's sims, its contacts.
+\item \textbf{Tile size}, for every pair at once, with a rebuild.
+\end{itemize}
+
+\section{The built-in scenes, tuned}\label{sec:builtin}
+
+\code{tune_all.py} tuned the 71 built-in viewer scenes on 2026-11-01 on an RTX 4080, each under the exact mode and, with \code{--mode mj}, under mj, every scene on the elliptic cone. 67 of them have a file under each mode: the four twenty-hand piles as surfaces ran out of memory exploring their states. The files are in \code{tools/performance_tuning/tuned/} and \code{tuned/mj/}, each with its baseline and every trial in \code{<scene>.report.json}. \Cref{tab:builtin} is the result.
+
+A file tuned under mj names the mode in its \code{solver_kwargs}, so a build from it runs mj, and its capacities hold that mode's demand: MuJoCo's soft contacts let bodies sink further, and the walled five-hand pile as surfaces peaks at 874 contacts and 2\,750 rows in one world under mj, against 158 and 603 under exact. The files were measured with the shared Hessian on wherever MJWarp could build it, from 33 dofs; by default it is on from 64 padded dofs (\cref{tab:solverknobs}), so \code{arm_box_6} (36 dofs) and the Shadow grasp (34) run without it unless asked (\code{shared_hessian=True}).
+
+\begin{itemize}
+\item \textbf{Baseline} is the scene's own settings: its own MJWarp capacities, which the viewer sized for one world, the collision defaults (every fraction 1.0, tile size 8) and the solver defaults. It is measured at the family's batch size, or the largest that fit.
+\item \textbf{Tuned} is the file, at the batch size the sweep found fastest.
+\end{itemize}
+
+\input{tables/builtin_summary.tex}
+
+\begingroup\small
+\input{tables/builtin.tex}
+\endgroup
+
+\input{tables/builtin_findings.tex}
+
+\section{Knobs at a glance}\label{sec:glance}
+
+\begin{longtable}{@{}L{30mm}L{17mm}L{14mm}L{84mm}@{}}
+\caption{Every throughput knob: where it is set, whether it changes the answer, and how to set it.}\label{tab:glance}\\
+\toprule
+knob & set in & answer & how to set it \\
+\midrule
+\endfirsthead
+\toprule
+knob & set in & answer & how to set it \\
+\midrule
+\endhead
+batch size $B$ & \code{make_sim} & same & \code{tune.py}'s sweep: largest before throughput flattens, within memory \\
+\code{capacity_tile}, \code{capacity2} & \code{col_kwargs} & same & \code{calibrate.py}: 1.5$\times$ the peak over a state set \\
+\code{capacity1} & \code{col_kwargs} & same & below 1 compacts the tile filter's launch; \code{tune.py} keeps it if faster \\
+\code{tile_size} & \code{col_kwargs} & same & \code{tile_tuner.py}; 8 unless a geometry is small or very large \\
+\code{super_size} & \code{col_kwargs} & same & off; try 4--8 with fine tiles and \code{capacity1} $<$ 1 \\
+\code{dyn_scan}, \code{grid_stride} & \code{col_kwargs} & same & on \\
+spline type & load time & changes & $S_{\mathrm{c2}}$; $S_{\mathrm{c0}}$ where the narrowphase dominates and contacts do not slide far \\
+vertex budget & mesh step 3 & changes & the fewest vertices that keep the shape where contacts are made \\
+hull count & mesh step 2 & changes & the coarsest decomposition that keeps the contact surfaces \\
+\code{naconmax}, \code{nconmax} & \code{make_sim} & same & \code{calibrate.py}: contacts, Lodos's among them, and broadphase pairs \\
+\code{njmax}, \code{njmax_nnz} & \code{make_sim} & same & \code{calibrate.py}: rows, Lodos's contacts' among them \\
+\code{nccdmax} & \code{make_sim} & same & \code{calibrate.py}: the hybrid's EPA and manifold counts \\
+\code{contact_reduction} & \code{make_sim} & changes & on with dense Lodos contact patches, if the guard passes \\
+\code{prox_iters_per_qp} & \code{solver_kwargs} & changes & 10; 5 or 3 if the guard passes \\
+\code{fused_newton} & \code{solver_kwargs} & same & off; on for a model of up to 16 dofs, at a calibrated \code{njmax} \\
+\code{groups} and their bins & \code{solver_kwargs} & changes & off; ray or cone groups where the scene's own checks pass \\
+\code{row_space} & \code{solver_kwargs} & same & off; on where a world has fewer rows than dofs (ray groups on a pile) \\
+\code{shared_hessian} & \code{solver_kwargs} & same & the default: on from 64 padded dofs where it can be built; time it on another GPU \\
+\code{mode} & \code{solver_kwargs} & changes & \code{"exact"}; \code{"mj"}, MuJoCo's soft problem, is faster on most scenes, and its contacts creep \\
+\code{hybrid} & \code{make_sim} & changes & the default \\
+\bottomrule
+\end{longtable}
+
+\section{Limitations}\label{sec:limits}
+
+\begin{itemize}
+\item \textbf{The guard is a heuristic.} It holds what it measures: penetration, rest, escapes, paths on the non-chaotic scenes. It can accept a budget that changes a quantity it does not measure, such as a seat's settling time or a grasp's slip under a disturbance. It judges depth by a mean and a 99th percentile over every world and sample, so a budget that goes wrong in a few worlds of hundreds can pass, and it has no orientation check: a nut seated cocked is not seen. A scene's own check, and watching it in the viewer, are the last word.
+\item \textbf{Timing noise} is a few percent between rounds. Hence the 3\,\% threshold, and decisions near it can go either way between runs.
+\item \textbf{\code{tune.py} measures the independent layout.} For an MPC-style shared batch, run \code{calibrate.py --layout shared} on the controller's own state set and control sequences.
+\item \textbf{Lodos's stage counts are batch totals.} Per-world peaks are measured only for the contacts, so a file applied below its batch size leaves the collision fractions at 1.0 rather than sizing them for the smaller batch.
+\item \textbf{Throughput is per GPU.} A file's capacities hold on another GPU, but its batch size and tile sizes were chosen for the device it names.
+\end{itemize}
+
+\end{document}

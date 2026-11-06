@@ -1,0 +1,51 @@
+<!--
+  Every joint type the live viewer edits, for trying its gizmos: a free box, a hinge
+  pendulum, a slider and a ball-jointed arm, over a floor. Everything collides through
+  MJWarp's pipeline, which every solver handles.
+
+      python -m viewer viewer/assets/mjcf/joints_demo.xml
+-->
+<mujoco model="joints_demo">
+  <option timestep="0.002" cone="elliptic" iterations="50"/>
+  <contact>
+    <!-- Each link overlaps its fixed support at the joint, and MuJoCo does not filter a
+         parent welded to the world: without these, the exact mode fights the joints. -->
+    <exclude body1="post" body2="pendulum"/>
+    <exclude body1="rail" body2="carriage"/>
+    <exclude body1="base" body2="arm"/>
+  </contact>
+  <worldbody>
+    <light pos="0 0 4"/>
+    <geom name="floor" type="plane" size="4 4 0.1" friction="0.8"/>
+    <body name="box" pos="0 0 0.6">
+      <freejoint name="box"/>
+      <geom type="box" size="0.15 0.1 0.08" density="500"/>
+    </body>
+    <body name="post" pos="0.8 0 0.8">
+      <geom type="box" size="0.03 0.03 0.4" pos="0 0 -0.4" rgba="0.6 0.6 0.65 1"/>
+      <body name="pendulum" pos="0 0 0">
+        <joint name="hinge" type="hinge" axis="0 1 0" damping="0.05"/>
+        <geom type="capsule" fromto="0 0 0 0.35 0 0" size="0.03" density="800"/>
+        <geom type="sphere" pos="0.35 0 0" size="0.07" density="800"/>
+      </body>
+    </body>
+    <body name="rail" pos="-0.8 0 0.2">
+      <geom type="box" size="0.4 0.02 0.02" rgba="0.6 0.6 0.65 1"/>
+      <body name="carriage" pos="0 0 0.06">
+        <joint name="slide" type="slide" axis="1 0 0" damping="0.5"/>
+        <geom type="box" size="0.06 0.05 0.04" density="600"/>
+      </body>
+    </body>
+    <body name="base" pos="0 0.9 0.5">
+      <geom type="sphere" size="0.05" rgba="0.6 0.6 0.65 1"/>
+      <body name="arm" pos="0 0 0">
+        <joint name="ball" type="ball" damping="0.02"/>
+        <geom type="capsule" fromto="0 0 0 0 0 -0.35" size="0.025" density="800"/>
+        <geom type="ellipsoid" pos="0 0 -0.4" size="0.08 0.05 0.04" density="800"/>
+      </body>
+    </body>
+  </worldbody>
+  <keyframe>
+    <key name="tossed" qpos="0 0 0.6 1 0 0 0  0.6  0.2  0.92 0.38 0 0" qvel="0.5 0 2 0 3 1  0  0  1 0 0"/>
+  </keyframe>
+</mujoco>

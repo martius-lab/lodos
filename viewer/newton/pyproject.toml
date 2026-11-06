@@ -1,0 +1,14 @@
+[project]
+name = "newton-baseline"
+version = "0.1.0"
+description = "Newton's own collision detection and solvers (MuJoCo Warp, Kamino) on Lodos's built-in scenes, in an environment of their own: nothing here imports lodos."
+requires-python = ">=3.12,<3.14"
+dependencies = [
+    "newton[sim]==1.7.0",  # with upstream mujoco-warp ~=3.15.0 and mujoco ~=3.15.0
+    "numpy",
+    "trimesh",  # Newton reads an MJCF's mesh files with it
+    "scipy",  # and computes some of its geometry with it
+]
+
+[tool.uv]
+package = false

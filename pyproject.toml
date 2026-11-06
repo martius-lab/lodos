@@ -1,0 +1,59 @@
+[project]
+name = "lodos"
+version = "0.2.0"
+description = "GPU-accelerated contact dynamics for robot simulation"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.13"
+# The simulator: Warp, and MuJoCo for MJCF and model constants. MJWarp's collision pipeline,
+# constraint assembly, the Newton solver and the prox solver are Lodos's own code, adapted
+# from MuJoCo Warp 3.14.0, whose matching MuJoCo release it keeps. The wheel also carries
+# `viewer/assets/`, every built-in scene's surfaces and meshes, inside the `viewer` package.
+dependencies = [
+    "warp-lang==1.16.0",
+    "mujoco==3.14.0",
+    "numpy>=2.2.6",
+    "scipy>=1.16.2",
+]
+
+[project.optional-dependencies]
+# The viewer (viewer/): Newton's OpenGL viewer, ImGui with ImGuizmo and ImPlot, and the
+# recording scripts.
+vis = ["newton==1.5.1", "imgui-bundle>=1.92.0", "pyglet>=2.1.6,<3", "matplotlib>=3.10.7", "mediapy>=1.2.4", "pillow>=11.3.0"]
+# Making new surfaces (lodos.col.sdf's io and serialize, the SDF tools; tools/mesh_processing/).
+# torch is only for the Hilbert/Morton vertex ordering; its CPU build is enough.
+mesh = ["torch>=2.8.0", "trimesh>=4.8.3", "tqdm>=4.67.1", "pyvista>=0.46.3"]
+# The tutorial notebooks in notebooks/.
+notebooks = ["jupyterlab>=4.2", "matplotlib>=3.10.7", "mediapy>=1.2.4"]
+
+[project.scripts]
+lodos-viewer = "viewer.__main__:main"
+
+[dependency-groups]
+vis = ["newton==1.5.1", "imgui-bundle>=1.92.0", "pyglet>=2.1.6,<3", "matplotlib>=3.10.7", "mediapy>=1.2.4", "pillow>=11.3.0"]
+mesh = ["torch>=2.8.0", "trimesh>=4.8.3", "tqdm>=4.67.1", "pyvista>=0.46.3"]
+notebooks = ["jupyterlab>=4.2"]
+
+[tool.uv]
+default-groups = ["vis", "mesh"]
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+warp-lang = { url = "https://github.com/NVIDIA/warp/releases/download/v1.16.0/warp_lang-1.16.0%2Bcu13-py3-none-manylinux_2_28_x86_64.whl" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build]
+# An editable install (`pip install -e .`, `uv sync`) puts the checkout's lodos and viewer on
+# sys.path, and reads viewer/assets/ where it is.
+dev-mode-dirs = ["."]
+
+[tool.hatch.build.targets.wheel]
+packages = ["lodos", "viewer"]

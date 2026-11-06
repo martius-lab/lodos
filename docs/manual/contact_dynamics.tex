@@ -1,0 +1,670 @@
+\input{preamble.tex}
+\begin{document}
+
+\manualtitle{Lodos v2: Contact Dynamics}{How the simulator turns contacts into motion: the problems, the solver and its options}{As of 2026-11-04. Its companion, \emph{Lodos v2: Collision Detection} (\code{docs/collision_detection.pdf}), says where the contacts come from. Both are built from \code{docs/manual/}.}
+
+\paragraph{About this document}
+Lodos v2 steps thousands of copies of one scene in lockstep on a GPU, the whole step in one CUDA graph. This manual covers everything after collision detection: the rigid-body dynamics, the contact problems the simulator can pose (the exact one and MuJoCo's soft one), the one solver that solves them, called the NLSP solver, the three ways Lodos's contacts can reach it (one by one, reduced, or gathered into contact groups), the two solves of its Newton system that Lodos adds and its Hessian summed in shared memory, every option and what it was measured to do, and how to use them. Theory comes first in each part, then where it lives in the code (boxes marked \emph{In the code}), then measurements, each dated and naming its settings where they differ from the defaults (\cref{sec:measured}). The notation is the contact tutorial's \cite{tutorial}: $\dot q$ and $\ddot q$ are the generalized velocity and acceleration, $v$ always a contact velocity, $G$ the Delassus matrix, $\gamma_n$ the stabilization and $\Gamma$ the de Saxc\'e correction. Where the tutorial derives a transcription, this manual cites it rather than repeating the derivation. Lodos carries the parts of MuJoCo Warp \cite{mjwarp} it uses as its own code, adapted from MuJoCo Warp 3.14.0: its model and data (\code{lodos.mjcf}), its collision pipeline (\code{lodos.col.prim}) and its constraint solve (\code{lodos.cd.solver}); ``MJWarp's'' in this manual names that code, Lodos's additions to it among them: the proximal solve and its \code{opt.prox_*} options, the contact groups' rows and the shared Hessian.
+
+\setcounter{tocdepth}{2}
+\tableofcontents
+
+\section{Contributions}\label{sec:contributions}
+
+The contact dynamics of Lodos v2 build on MuJoCo's model and solver \cite{mujoco,todorov2014} as MJWarp implements them \cite{mjwarp}, and on the exact contact problem and the proximal-point blueprint of the contact tutorial \cite{tutorial}. What they add:
+
+\begin{enumerate}
+\item \textbf{MJWarp's solve on Lodos's state} (\cref{sec:bridge}): MJWarp's constraint solve runs on the rigid-body state Lodos owns, bound into MJWarp's data with no copies, Lodos's mass matrix gathered into MuJoCo's layout and Lodos's vertex contacts exported into MJWarp's contact buffer beside its own, all inside the step's one CUDA graph. On MJCF scenes the step cost what MuJoCo Warp's own did, end to end (2026-10-22).
+\item \textbf{The exact mode} (\cref{sec:pcexact,sec:desaxce}): MJWarp's Newton method inside the proximal and de Saxc\'e fixed point of the tutorial's blueprint (a prox solver, \code{lodos.cd.solver.nlsp.solve_prox}), extended with MuJoCo's soft rows inside the loop, a compile-time switch for the de Saxc\'e term, its shift of MuJoCo's reference through the row damping, a Baumgarte slop, and an anchor-only convergence test; with the rule that no MuJoCo impedance reaches it (\cref{sec:impedance}) and a measured fix for the elliptic cone it would otherwise warp. At slop 0 it holds Newton's M20 nut on its seat in 95\% of jittered worlds (the 1\,mm nut) and passes the five FBF exactness scenes on polytopes.
+\item \textbf{Contact groups} (\cref{sec:groups}): a pair's contacts in one normal bin and moment sector solved as one MJWarp contact of a new type, \code{GROUP}, whose force acts through its members in proportion to their spring-damper normal forces: on a ray (one row, the ray of Lodos-v1's contact model \cite{lodosv1}, transcribed) or in a full friction cone (three rows, each member's friction along its own slip, its frame carried across steps by contact identity). Its Baumgarte bias and de Saxc\'e term are taken member by member. On the NIST threading replay under the mj mode, on MuJoCo's pyramidal cone, cone groups of three sectors ran 1.13$\times$ per contact, both fused.
+\item \textbf{Contact reduction for the solve} (\cref{sec:reduce}): Newton's reduction \cite{newton} of a pair's vertex contacts to at most 240 that hold it the same way, deterministic, on grouped pairs too: 4.4$\times$ (mj, on MuJoCo's pyramidal cone at solimp $d_{\min}$ 0) and 18.5$\times$ (exact, at slop 0) faster steps on the nut-bolt.
+\item \textbf{The fused Newton} (\cref{sec:fusednewton}): MJWarp's Newton solve and its proximal rounds in one kernel per world, for models of up to 16 dofs, the same iterates to rounding: 2.3$\times$ the exact step on the nut-bolt.
+\item \textbf{The row-space Newton} (\cref{sec:rowspace}): MJWarp's Newton system solved through the constraint rows with Lodos's per-tree factor of $M$, at a cost set by the rows rather than the dofs: ray groups 3.1$\times$ the per-contact exact step on a pile of twenty armadillos.
+\item \textbf{lodos.rbd} (\cref{sec:rbd}): a Warp port of MuJoCo's smooth dynamics with per-tree mass-matrix blocks, pull-based reverse passes that are bitwise reproducible, and tile-Cholesky factors for wide trees, captured with the rest of the step.
+\end{enumerate}
+
+Item 7, the spring-damper law that weighs a group's members and the ray a ray group transcribes come from Lodos-v1 \cite{lodosv1}; items 1--6 are Lodos v2's own, the exact mode after the contact tutorial's blueprint and the reduction after Newton's.
+
+\section{Overview}\label{sec:overview}
+
+\subsection{The step}\label{sec:step}
+
+A step of a \code{lodos.sim.Sim} (\code{lodos.step.step_sim}) is, with no host round trip anywhere (\cref{fig:step}):
+
+\begin{enumerate}
+\item \textbf{the rigid-body pass}, \code{lodos.rbd.forward.fwd_rbd}: kinematics, the mass matrix and its factor, the bias and passive forces, actuation, and the unconstrained acceleration $\ddot q_s$ (\code{qacc_smooth});
+\item \textbf{collision}: MJWarp's pipeline (\code{lodos.col.prim}) into \code{d.contact} and Lodos's (\code{lodos.col.sdf}) into \code{dcol} (the companion manual);
+\item \textbf{contact dynamics}, \code{SolverDriver.contact_dynamics} (\code{lodos.cd.driver}): Lodos's contacts exported into MJWarp's contact buffer (every one, the ones the reduction keeps, or their groups), Lodos's mass matrix gathered into MJWarp's, the constraint rows built (\code{make_constraint}) and MJWarp's solve run on them, which writes $\ddot q$ into the array Lodos's integrator reads;
+\item \textbf{integration}: semi-implicit Euler, $\dot q^+ = \dot q + \Delta t\,\ddot q$, then the positions from $\dot q^+$; or MuJoCo's implicitfast (\cref{sec:implicit}), where $\ddot q$ is implicit in the actuators' and the dofs' damping.
+\end{enumerate}
+
+\code{lodos.step.forward(sim)} is everything but the integrator, the way MuJoCo's \code{mj_forward} is; \code{make_step_graph(sim)} captures the whole step into a CUDA graph whose replay advances the state one step; it runs one eager step first, to load the kernels, so building the graph advances the state one step too. \code{fwd_step(sim)} steps eagerly.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{fig/fig_dyn_step.pdf}
+\caption{One step. Lodos's contacts join MJWarp's in MJWarp's contact buffer, one by one, reduced or gathered into groups; MJWarp's Newton solve, its system solved as MJWarp does, fused into one kernel per world or through the rows, writes the constrained acceleration directly into Lodos's state.}
+\label{fig:step}
+\end{figure}
+
+\subsection{One solver, three choices}\label{sec:solver}
+
+Every contact of both pipelines reaches one solver, MJWarp's constraint solve: Newton's method on MuJoCo's primal problem (\cref{sec:mj}), whose objective is a nonsmooth nonlinear least-squares one in the accelerations; under the exact mode a proximal minimization runs around it (\cref{sec:blueprint}), hence the solver's name, NLSP: nonlinear least squares with proximal minimization. Three choices configure it (\cref{tab:choices}): the problem it poses, its \emph{mode}; how Lodos's contacts reach it; and how its Newton system is solved. The mode decides the problem and the other two its cost; how Lodos's contacts reach the solve also decides how freely a pair's force is distributed: a reduced pair has fewer contacts, a grouped one a single force a group. \Cref{sec:pick} summarizes what the measurements say about choosing.
+
+\begin{table}[t]
+\centering
+\caption{The solver's three choices (\code{lodos.cd.driver.resolve_options}, and \code{make_sim}'s \code{contact_reduction}). The first of each is the default.}
+\label{tab:choices}
+\small
+\begin{tabularx}{\linewidth}{@{}L{26mm}L{44mm}Y@{}}
+\toprule
+choice & option & what it does \\
+\midrule
+the problem & \code{mode="exact"} & the exact problem, by a proximal loop around the Newton solve (\cref{sec:pcexact}) \\
+ & \code{mode="mj"} & MuJoCo's soft problem, solved as MJWarp solves it (\cref{sec:pcmj}) \\
+\addlinespace
+Lodos's contacts & every contact & one row set per penetrating vertex \\
+ & \code{contact_reduction=True} & at most 240 a pair segment, chosen to hold it the same way (\cref{sec:reduce}) \\
+ & \code{groups="ray"} or \code{"cone"} & a segment's contacts in a bin and sector as one contact of one or three rows (\cref{sec:groups}) \\
+\addlinespace
+the Newton system & MJWarp's & the dof-space Hessian $M + J^\top D J$, Cholesky-factored \\
+ & \code{fused_newton=True} & the whole solve in one kernel per world, at most 16 dofs (\cref{sec:fusednewton}) \\
+ & \code{row_space=True} & solved through the rows, at a cost set by their number (\cref{sec:rowspace}) \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Rigid-body dynamics}\label{sec:rbd}
+
+\code{lodos.rbd} is a Warp port of the smooth dynamics MuJoCo and MJWarp implement, for the model features below, so that the whole step lives on the device.
+
+\subsection{Model features}\label{sec:features}
+
+Supported: free, ball, slide and hinge joints; joint springs, dof damping and armature; gravity compensation; actuators with joint, joint-in-parent and site transmissions, affine gain and bias, activation dynamics (none, integrator, filter, exact filter), control and activation clamping; MuJoCo's spring and damper disable flags; semi-implicit Euler and implicitfast. \code{make_rbd_context} \emph{refuses} what it does not implement (tendons, equality constraints, flexes, mocap bodies, fluid forces, the implicit and Runge--Kutta integrators, and actuator features beyond those above), listing what is missing, because a port that ignored those fields would produce a plausible trajectory that is not the model's.
+
+Joint limits and dof friction loss are constraints, which MJWarp's solve has rows for: they are solved as MuJoCo's soft rows under either mode (the proximal loop solves contacts only). \code{make_sim(joint_constraints=False)} removes them, on a copy of the model.
+
+\subsection{The passes}\label{sec:passes}
+
+The equations of motion are MuJoCo's,
+\begin{equation}\label{eq:eom}
+M(q)\,\ddot q + b(q, \dot q) = \tau + J^\top f, \qquad \ddot q_s = M^{-1}(\tau - b),
+\end{equation}
+with $b$ the bias force (Coriolis, centrifugal and gravity, from recursive Newton--Euler), $\tau$ the passive and actuator forces, and $J^\top f$ the contact forces. \code{fwd_rbd} computes, in this order: kinematics (body, joint and site poses); the subtree centres of mass, body inertias and motion axes \code{cdof} about them; the mass matrix and its factor; actuator transmissions and velocities; body velocities and \code{cdof_dot}; passive forces; the bias force by RNE; actuation; \code{qfrc_smooth} and $\ddot q_s$.
+
+Tree passes run by level: \code{body_level_id} groups the bodies by depth, a forward pass launches once per level with every body reading the parent the previous launch wrote, and a reverse pass reads \emph{children} (\code{body_child_id}) rather than having children accumulate into their parent. A pull needs no atomics, so every reverse pass is bitwise reproducible. Quaternions are $(w, x, y, z)$ as in MuJoCo; spatial vectors are (angular, linear); every state array is batch-first, \code{(B, n)}.
+
+\subsection{The mass matrix}\label{sec:mass}
+
+$M$ is block diagonal over kinematic trees (a tree starts at every dof without a dof parent). Each tree's block is built by the composite rigid-body algorithm \cite{featherstone}, $M_{ij} = (I^c_{\text{body}(i)}\, \mathrm{cdof}_i)^\top \mathrm{cdof}_j$ for every $j$ on the dof path from $i$ to the root, plus armature, and factored $M = LL^\top$ per tree. Blocks are stored batch-last, \code{M_blk[blk_beg[t] + r n + c, b]}. Trees smaller than 13 dofs are factored by scalar Cholesky in one thread per (world, tree), a 6$\times$6 free body in registers; trees of 13 or more are built one dof per thread, gathered into batch-first tiles of 16--128 rows, factored and solved with Warp's tile Cholesky, and scattered back, which took a 27-dof humanoid from 0.75 to 0.21\,ms per step at 1024 worlds. The solve reads $M$ itself, gathered entry for entry into MuJoCo's CSR \code{d.M}, and MJWarp factors its own Newton Hessian (\cref{sec:bridge}); the row-space solve reads Lodos's factor $L$ instead (\cref{sec:rowspace}).
+
+\subsection{Integration and state}\label{sec:integrate}
+
+\code{lodos.rbd.integrate.integrate} is the step's integration, \code{symplectic_euler} under either integrator: it advances activations, then $\dot q^+ = \dot q + \Delta t\,\ddot q$, then the positions from $\dot q^+$, a ball or free joint's quaternion by the exponential map of $\Delta t\,\omega$ composed on the right and renormalized, then time. \code{lodos.rbd.io} puts states in and out without breaking captured graphs: \code{set_state(drbd, qpos=, qvel=, ctrl=, act=)} copies \code{(B, n)} host arrays into the existing buffers, \code{get_state} reads them back (synchronizing), and \code{save_state}/\code{restore_state} branch a trajectory on the device.
+
+\subsection{implicitfast}\label{sec:implicit}
+
+An MJCF's \code{integrator="implicitfast"}, or \code{make_sim(integrator="implicitfast")} in place of the MJCF's, selects MuJoCo's implicitfast (\code{lodos.rbd.implicit}, after MJWarp's \code{forward.implicit}). The step solves
+\begin{equation}\label{eq:implicitfast}
+(M - \Delta t\,D)\,\ddot q = \tau - b + J^\top f
+\end{equation}
+for the acceleration it integrates, where $D = \partial(\tau)/\partial \dot q$ without the bias force's derivative (implicitfast's choice, which keeps $D$ symmetric): each actuator's $\mathrm{moment}\,\mathrm{moment}^\top\, \partial f/\partial v$ (the affine bias's velocity coefficient, plus the affine gain's times the control or activation; none where the force is clamped) and $-$damping on the diagonal, on the mass matrix's own pattern. The entries of $D$ that can be nonzero, and the actuators reaching each, are found on the host; a step computes only those. A free body standing alone (its own tree of 6 dofs, nothing massive below) solves its own 6$\times$6 block instead, with its gyroscopic force's derivative added, as MuJoCo's \code{mjd_freeMhat} does; the block is not symmetric and is solved by LU. \code{make_sim(implicit_constraints=...)} picks the matrix the contact solve sees:
+\begin{itemize}
+\item \textbf{False (the default): $M$, as MuJoCo has it.} The solve runs as under Euler; from its acceleration $\ddot q$ the step integrates $(M - \Delta t\,D)^{-1} M \ddot q$, the free bodies by their own blocks, and leaves \code{qacc} the solve's, as MuJoCo leaves \code{d->qacc}. The mass matrix and the implicit one are both factored each step.
+\item \textbf{True: $M - \Delta t\,D$ throughout.} It replaces $M$ before the factorization, so $\ddot q_s$, the solve's gathered $M$ and the factor the row-space solve reads are the implicit matrix's, and the contact impulse sees the damping that acts in the same step. One factorization; the free bodies' gyroscopic term, which is not symmetric, is left out.
+\end{itemize}
+Without constraints the two are one step, the gyroscopic term apart. Cost, at each scene's tuned batch (2026-10-27): on the SHARPA piles 0.98$\times$ Euler's throughput in MuJoCo's form, which factors two matrices a step, and 1.02$\times$ throughout.
+
+\paragraph{Speed} Against MuJoCo Warp's own dynamics on the same model (unconstrained step and integrator, graph-replayed, 2026-10-22), Lodos's was, at 4096 worlds, 1.1$\times$ faster on twenty free cubes and 1.9$\times$ on twenty armadillos (MuJoCo Warp computes every geom pose in its kinematics; Lodos computes none), on par on the SHARPA hand (five trees, 22 dofs), and 1.5--2.1$\times$ slower on one and three humanoids (27-dof trees). Dynamics is under 2\% of a contact-rich step either way.
+
+\begin{codebox}
+\textbf{In the code.} \code{lodos/rbd/types.py} (\code{RbdModel}, \code{RbdData}, \code{make_rbd_context}, the validation), \code{forward.py} (\code{fwd_rbd} and its sub-passes), \code{smooth.py} (kinematics, \code{com_pos}, \code{com_vel}, \code{rne}, \code{factor_m}, \code{solve_m}, the tile path, \code{solve_M_tree} and \code{mul_M_tree}), \code{passive.py}, \code{integrate.py}, \code{implicit.py}, \code{io.py}; \code{lodos/utils/math.py} (quaternion and spatial algebra).
+\end{codebox}
+
+\section{The contact problem}\label{sec:problem}
+
+\subsection{Discrete-time contact dynamics}\label{sec:discrete}
+
+Each contact $i$ has a position $p_i$, a normal $n_i$ (a Lodos contact's out of the SDF geometry, towards the vertex geometry), a signed distance $d_i < 0$ and a friction coefficient $\mu_i$; its relative velocity is $v_i = J_i \dot q$, the vertex side's point velocity minus the SDF side's, and its force $f_i \in \mathbb R^3$ acts on the vertex side. With symplectic Euler, the end-of-step velocity and contact velocities are linear in the forces \cite{tutorial},
+\begin{equation}\label{eq:vplus}
+\dot q^+ = \dot q_f + \Delta t\, M^{-1} J^\top f, \qquad v^+ = v_f + G f \Delta t, \qquad G = J M^{-1} J^\top,
+\end{equation}
+with the free velocity $\dot q_f = \dot q + \Delta t\, \ddot q_s$ and $v_f = J \dot q_f$. MJWarp forms each contact's rows $J_i$ (\code{efc.J}, dense or sparse) on its two bodies' dof chains; a contact group's rows are sums over its members (\cref{sec:groupforce}).
+
+\subsection{The exact problem}\label{sec:exact}
+
+The exact contact problem is the Signorini--Coulomb conditions with maximal dissipation, equivalently the nonlinear cone complementarity problem \cite{desaxce} or, with the de Saxc\'e velocity $\sigma$ split off, the cascaded QCQP (the tutorial's C-QCQP):
+
+\begin{equationbox}{The exact problem (C-QCQP)}
+\begin{equation}\label{eq:cqcqp}
+\begin{aligned}
+&\text{find } \sigma, f^* \in \mathbb R^{3N}: \\
+&\sigma = v_f + G f^* \Delta t, \\
+&f^* = \arg\min_{f \in \mathcal K}\ \tfrac12 f^\top (G \Delta t) f + (v_f + \Gamma(\sigma) + \gamma)^\top f ,
+\end{aligned}
+\end{equation}
+\end{equationbox}
+
+with $\mathcal K$ the product of the friction cones $\{f_i : \lVert f_{i,t}\rVert \le \mu_i f_{i,n}\}$, the de Saxc\'e correction $\Gamma_i(\sigma) = \mu_i \lVert \sigma_{i,t}\rVert\, n_i$, and the stabilization $\gamma_i = \gamma_{n,i} n_i$. The exact mode's stabilization is Baumgarte's:
+\begin{equation}\label{eq:baumgarte}
+\gamma_{n,i} = \alpha \min\!\big(0, (d_i + s)/\Delta t\big) + \max(0, d_i/\Delta t), \qquad \alpha = 0.1,
+\end{equation}
+with the slop $s$ 0.2\,mm by default, which asks each contact for a normal velocity of at least $-\gamma_{n,i}$: a fraction $\alpha$ of a penetration deeper than the slop $s$ removed per step, a shallower one held where it is, a gap closed no faster than in one. Every Lodos contact penetrates, so only the first term fires for them. \code{baumgarte=False} sets $\gamma = 0$, the velocity-level target.
+
+The slop (\code{baumgarte_slop}; \code{lodos.cd.driver.BAUMGARTE_SLOP}) is there because a contact exists only while it penetrates. Without it ($s = 0$) a resting contact is pushed out toward zero depth, vanishes, its body drops for a step ($g\Delta t^2 \approx 0.04$\,mm) and the contact comes back, pushing out at about $\alpha g \Delta t \approx 2$\,mm/s: the contact flickers. On the walled pile of five SHARPA hands this kept the solver from rest, palms vibrating at 1--2\,mm/s and fingers at up to 2\,rad/s; with the slop its polytope piles come to an exact stop, and a resting body sits up to $s$ deep. A slop can also let a contact sink: the NIST scenes set it to 0 (\code{viewer.scenes.nist.OPTIONS}), since at the demo's $\mu$ = 0.75 a thread self-locks, and with the default slop a held M8 nut sank 0.26\,mm in 4\,s, tilting to 1.9$^\circ$, the solve's errors integrating into penetration that nothing corrects until a contact is 0.2\,mm deep; at 0 it settles 0.044\,mm and holds (2026-10-26 morning and 2026-10-27 evening).
+
+Dropping $\Gamma$ gives the convex relaxation, whose sliding contacts lift off with normal velocity $\mu\lVert v^+_t\rVert - \gamma_n$; with $\gamma = 0$ and no $\Gamma$ the objective is the end-of-step kinetic energy, $\tfrac12 f^\top(G\Delta t) f + v_f^\top f$ (the tutorial's kinetic-energy view), which \code{baumgarte=False, de_saxce=False} poses.
+
+\subsection{MuJoCo's problem}\label{sec:mj}
+
+MuJoCo regularizes and solves the primal problem in accelerations (the tutorial's NLS transcription) \cite{todorov2014}:
+\begin{equation}\label{eq:nls}
+\min_{\ddot q}\ \tfrac12 (\ddot q - \ddot q_s)^\top M (\ddot q - \ddot q_s) + \tfrac12 \sum_i \lVert \Pi_{\mathcal K_i}(a_{\text{ref},i} - J_i \ddot q)\rVert^2_{R_i^{-1}},
+\end{equation}
+equivalently the regularized QCQP $\min_{f\in\mathcal K} \tfrac12 f^\top (G + R) f + (J\ddot q_s - a_{\text{ref}})^\top f$. Each contact row carries a softness $R_i$ and a reference acceleration from its \code{solref} $= (\tau_c, \zeta)$ and \code{solimp} $= (d_{\min}, d_{\max}, \text{width}, \text{mid}, \text{power})$: a stiffness $k = 1/(d_{\max}^2 \tau_c^2 \zeta^2)$, a damping $b = 2/(d_{\max}\tau_c)$ and an impedance $\text{imp}(d) \in [d_{\min}, d_{\max}]$ rising with depth over \code{width}, giving
+\begin{equation}\label{eq:mjrow}
+R_i = w_i \frac{1 - \text{imp}}{\text{imp}}, \qquad a_{\text{ref},i} = k\, \text{imp}\, \lvert d_i\rvert\, n_i - b\, v_i ,
+\end{equation}
+with $w_i$ the contact's inverse weight. The regularization makes the problem strongly convex and lets sticking contacts creep; MuJoCo's frictional rows are further scaled by \code{impratio}, and its elliptic cone is written in residual space with the coefficient $\mu\sqrt{R_t/R_n}$. The objective is a least-squares one in the projected residuals: nonlinear, and nonsmooth wherever a row changes state.
+
+\subsection{The two modes}\label{sec:objectives}
+
+The solver takes \code{mode}:
+\begin{itemize}
+\item \code{"exact"} (the default): the exact problem, \cref{eq:cqcqp}, with the Baumgarte target \cref{eq:baumgarte} (\code{baumgarte}, \code{baumgarte_alpha}, \code{baumgarte_slop}) and the de Saxc\'e term (\code{de_saxce}, on by default); it reads only $\mu$, and on grouped pairs the spring-damper columns that weigh a group's members (\cref{sec:basis});
+\item \code{"mj"}: MuJoCo's problem, \cref{eq:nls}, with $R$ and $a_{\text{ref}}$ from solref and solimp: a Lodos pair's from the pair table (MuJoCo's defaults where a scene sets none, solref $(0.02, 1)$ and solimp $(0.9, 0.95, 0.001, 0.5, 2)$: \code{lodos.sim.default_pair_params}), an MJWarp contact's from the MJCF; it refuses \code{baumgarte}, \code{baumgarte_alpha} and \code{baumgarte_slop}, and takes the de Saxc\'e term only when asked (\cref{sec:pcmj}).
+\end{itemize}
+\code{lodos.sim.exact_mode(solver_kwargs)} says whether a configuration poses the exact problem.
+
+\subsection{The impedance rule}\label{sec:impedance}
+
+\begin{notebox}{The rule}
+No MuJoCo impedance reaches the exact mode: no solref, solimp or impratio. \code{make_sim} runs the exact mode's copy of the model at \code{impratio} 1, and the solve rewrites every contact row's weight and reference (\cref{sec:pcexact}).
+\end{notebox}
+
+The reason \code{impratio} needs the rule is MJWarp's elliptic cone. It is written in residual space with $\mu_r = \mu\sqrt{R_t/R_n}$, which MJWarp sets to $\mu/\sqrt{\text{impratio}}$ for every contact: the true cone under MuJoCo's own weights ($R_t = R_n/\text{impratio}$), but not under the exact rows' equal ones, where it must be $\mu$. At \code{impratio} 10 a sticking contact then holds at most a tenth of $\mu f_n$ and the cost jumps at the stick--slide boundary: on the SHARPA hands, whose MJCF sets \code{impratio} 10 (as the Shadow hand's grasp does), the exact solve went non-finite in 14 of 16 variants, and a box held on a slope crept at 1.5\,mm/s; at \code{impratio} 1 every hand scene stays finite and the box holds (2026-10-24 night, at slop 0). \code{make_sim}'s \code{overrides} cannot set \code{impratio} (they go to both MuJoCo's model and MJWarp's, and only the first has it), which is why \code{make_sim} edits its copy of the model.
+
+\subsection{The proximal blueprint}\label{sec:blueprint}
+
+The exact problem's QP is only positive semidefinite in general ($G$ is rank deficient), and its de Saxc\'e term depends on the solution. The tutorial's blueprint handles both with one outer loop \cite{tutorial,rockafellar}:
+
+\begin{algorithm}[h]
+\caption{Proximal minimization with the de Saxc\'e correction (the tutorial's blueprint)}
+\label{alg:blueprint}
+\begin{algorithmic}[1]
+\State choose $\rho > 0$ and a diagonal weight $D \succ 0$; $z \gets$ a warm start; $\sigma \gets v_f$
+\While{not converged}
+  \State $f^* \gets \arg\min_{f\in\mathcal K} \tfrac12 f^\top (G\Delta t) f + \tfrac\rho2 \lVert f - z\rVert_D^2 + (v_f + \Gamma(\sigma) + \gamma)^\top f$
+  \State $z \gets f^*$ \Comment{the proximal anchor}
+  \State $\sigma \gets v_f + G f^* \Delta t$ \Comment{the de Saxc\'e velocity}
+\EndWhile
+\end{algorithmic}
+\end{algorithm}
+
+Each inner problem is strongly convex, and at a fixed point the proximal term vanishes and the optimality condition is the exact problem's. The solver's exact mode runs this blueprint on MJWarp's rows, per contact or per group (\cref{sec:pcexact}).
+
+\section{The NLSP solver}\label{sec:nlsp}
+
+The solver is MJWarp's constraint solve run on Lodos's state (\cref{sec:bridge}) over both pipelines' contacts: \code{lodos.cd.driver.SolverDriver}, whose \code{contact_dynamics()} is the step's contact stage. Under the mj mode it solves MuJoCo's problem, \cref{eq:nls}, once; under the exact mode it runs the blueprint, each round one such problem on rewritten rows.
+
+\subsection{MJWarp's Newton solve}\label{sec:mjwsolver}
+
+\code{make_constraint} assembles the rows of every contact (3 at \code{condim} 3, the default, on the elliptic cone; 4 on MuJoCo's pyramidal cone, its default, which the plain mj mode keeps where a model has it: every built-in scene names the elliptic cone, and the viewer gives it to an MJCF file that names none) plus joint-limit and friction-loss rows, and \code{solve} runs MuJoCo's primal Newton solver on \cref{eq:nls}: Newton directions from the Hessian $M + J^\top D J$ over the active rows (with the elliptic cone's curvature on a contact in its middle zone), Cholesky-factored; an exact line search; a warm start from the previous step's acceleration. Its iteration budget and tolerance are the model's (\code{opt.iterations}, \code{opt.tolerance}), which \code{make_sim}'s \code{overrides} change (\code{"opt.iterations=50"}, \code{"opt.tolerance=1e-6"}). Lodos's contacts are rows like any other, with their pair's friction (and MuJoCo's default torsional and rolling coefficients, 0.005 and 0.0001, which matter only above \code{condim} 3), under mj its solref and solimp, and one \code{condim} for all of them, \code{make_sim(condim=3)}. The proximal loop supports \code{condim} up to 3 only, so a higher one is for the plain mj mode. The solver assumes MJWarp's Newton solver, the default: the proximal loop, the fused Newton and the row-space solve require it, the loop also no sleeping (it sets the elliptic cone itself).
+
+\subsection{The exact mode}\label{sec:pcexact}
+
+Under the exact mode the solver is the tutorial's blueprint (\cref{alg:blueprint}) with Newton's method on the NLS transcription as the inner solver: the prox solver, \code{lodos.cd.solver.nlsp.solve_prox}. It rewrites every contact row:
+\begin{equation}\label{eq:proxrows}
+D_i = \frac{1}{\hat\rho\, w_i}, \qquad
+a_{\text{ref},i,n} = -\frac{v_{i,n} + \gamma_{n,i} + \mu_i\lVert\sigma_{i,t}\rVert}{\Delta t} + \frac{z_{i,n}}{D_i}, \qquad
+a_{\text{ref},i,t} = -\frac{v_{i,t}}{\Delta t} + \frac{z_{i,t}}{D_i},
+\end{equation}
+the weight on all three rows, with $w_i$ the summed translational inverse weights of the two bodies (\code{body_invweight0}), $\hat\rho$ = \code{prox_rho} = 1, $z$ the proximal anchor and $\mu_i\lVert\sigma_{i,t}\rVert$ the de Saxc\'e term at the last de Saxc\'e velocity $\sigma$. Substituting into the NLS objective gives $\tfrac12 f^\top(G\Delta t) f + \tfrac{\Delta t}{2} (f - z)^\top R (f - z) + (v_f + \gamma + \Gamma)^\top f$ with $R = \hat\rho w$: \cref{alg:blueprint}'s inner problem exactly. The tangent rows carry no stabilization bias, since a tangential bias inside the exact de Saxc\'e complementarity misaligns the slip direction and can inject energy. A contact group's rows are rewritten the same way, its bias and term taken from its members (\cref{sec:groupexact}).
+
+The loop runs \code{prox_iters_per_qp} rounds (10), each a Newton solve to convergence on the current rows, then $z \gets f^*$. With \code{refresh_de_saxce_per_prox} (on by default) $\sigma \gets J(\dot q + \Delta t\,\ddot q)$ and $\Gamma$ are re-taken after every round, as MJWarp's \code{prox_outer_iterations} $\times$ \code{prox_inner_iterations} = 10 $\times$ 1; without, $\Gamma$ is taken once, from the warm start, 1 $\times$ 10. A world freezes once $\max\lvert f^* - z\rvert \le$ \code{prox_tol_z} $(1 + \max\lvert f^*\rvert)$ and, with the refresh, $\max\lvert\Delta\Gamma\rvert \le$ \code{prox_tol_sigma} $(1 + \max\Gamma)$ ($10^{-3}$ each); frozen worlds skip all later work, and rounds after the first are skipped on the device once every world is frozen (with MJWarp's \code{opt.graph_conditional}, on by default). The exact mode needs the loop, since its rows have no softness of their own: \code{prox_iters_per_qp=0} (or \code{prox_rho=0}) is refused. Its loop runs on the elliptic cone whatever the model says (\cref{sec:impedance} explains why at \code{impratio} 1). \code{d.solver_niter} counts a world's Newton iterations over all its rounds.
+
+\paragraph{The cross-step carry} With \code{warm_start} (on), the converged anchors are carried into the next step through a cache keyed by (world, geom pair), each new contact matched to the nearest cached contact of its pair within 0.3 of the smaller of the two geoms' bounding radii, rotated into the new contact frame and projected onto the cone (\code{opt.prox_z_carry} = 1). Lodos's contacts are typed \code{NOCARRY} and skipped, and so are contact groups: a Lodos pair holds dozens of vertex contacts under one geom pair, and the position match handed one cached force to many of them (300--650 iterations instead of about 33 on the mixed twenty-body scene, and non-finite runs at large batches). Their anchors start each step cold; the acceleration's warm start applies to them as to any row. \code{warm_start=False} starts every step cold, with MuJoCo's warm-start disable bit and no carry.
+
+\subsection{The de Saxc\'e term and the Baumgarte bias}\label{sec:desaxce}
+
+\paragraph{The de Saxc\'e term} Without $\Gamma$ the exact problem is its convex relaxation, and a sliding contact lifts off at $\mu$ times its slip (\cref{sec:exact}): a unit cube sliding down a 20$^\circ$ slope at $\mu$ = 0.2 hops, up to 14.8\,mm above the slope within 2\,s (\cref{fig:slope}b). With the term, the default, the normal row's target becomes $-(\gamma_n + \mu\lVert\sigma_t\rVert)$, and a slip that continues no longer lifts the contact: the same cube stays down, its highest point after landing 0.03\,mm below rest. The term is taken at $\sigma = J(\dot q + \Delta t\,\ddot q)$, the velocity the current iterate leaves. With \code{refresh_de_saxce_per_prox} it is re-taken after every proximal round, so that the loop converges on the term at the step's own result, the blueprint's fixed point; without, it is taken once, at the warm start's acceleration. On the armadillo pile and the nut's seat the term and its refresh barely mattered, moving the seat within its spread for 1--2\% of throughput: the thread's $\mu$ = 0.01 keeps the term small, and the slope is where it shows (2026-10-25 late night, at slop 0).
+
+\paragraph{The Baumgarte bias} The normal row's target is $-\gamma_n$, \cref{eq:baumgarte}: \code{baumgarte_alpha} (0.1) of a penetration deeper than \code{baumgarte_slop} (0.2\,mm) removed a step, a shallower one held. \code{baumgarte=False} removes it, the velocity-level target. The tangent rows take none. A group's bias and term are its members' (\cref{sec:groupexact}).
+
+\subsection{The mj mode}\label{sec:pcmj}
+
+Under \code{mode="mj"} with no loop and no term, the proximal path does not run at all: one Newton solve of MuJoCo's problem on the model's rows and cone, warm-started, exactly MJWarp's own solver. With a loop (\code{prox_iters_per_qp} $> 0$) or the term (\code{de_saxce=True}) the proximal path runs on \emph{MuJoCo's soft rows} (\code{opt.prox_soft}):
+\begin{equation}\label{eq:softrows}
+D'_i = \frac{1}{1/D_{\text{mj},i} + \rho_i}, \qquad
+a'_{\text{ref},i} = a_{\text{ref,mj},i} - b_i\,\Gamma_i + \rho_i z_i \ \text{(normal row)}, \qquad
+a_{\text{ref,mj},i} + \rho_i z_i \ \text{(tangent rows)},
+\end{equation}
+$\rho_i = \hat\rho w_i$, with $b_i$ the normal row's damping from the contact's solref and solimp (MJWarp's own \code{_contact_kbimp}). At the fixed point $z = f$ this is MuJoCo's soft solution, with the reference shifted by the de Saxc\'e term through the row damping; without a loop ($\rho_i = 0$) it is one solve of MuJoCo's problem with the shifted reference. Either way the proximal path runs on the elliptic cone, so on a model with MuJoCo's default pyramidal cone the fixed point is the elliptic cone's soft solution, not the model's own. At solimp $d_{\min}$ 0 the loop lands on MuJoCo's solution (the cube sliding at $\mu$ = 0.2 rides at the same height with it or without), and the term sinks that cube 0.44\,mm; at the pair table's default, $d_{\min}$ 0.9, the loop landed 0.12\,mm from the plain solve (2026-10-31). On the nut-bolt either one stuck the 0.5\,mm nut up the thread in every world and cost 2.8$\times$ (the term) and 9$\times$ (the loop) the step (2026-10-25 late night, at $d_{\min}$ 0, the plain mj mode timed on MuJoCo's pyramidal cone), which is why neither is on by default.
+
+\subsection{From options to MJWarp}\label{sec:pcoptions}
+
+\code{lodos.cd.driver.resolve_options} checks and completes the options and \code{lodos.cd.driver.overrides} turns them into MJWarp model overrides (\cref{tab:pcmap}); \code{make_sim} applies them before any of the caller's \code{overrides}, which can still change MJWarp's Newton settings. Three options select Lodos's code rather than MJWarp's settings: \code{groups} and its bins build \code{GROUP} contacts (\code{lodos.cd.groups}, and MJWarp's group arrays), \code{fused_newton} replaces MJWarp's \code{solve} with \code{lodos.cd.fused}'s kernel, and \code{row_space} hands MJWarp's Newton the row-space solve of its system (\code{nlsp.solve(m, d, newton_solve=...)}). \code{shared_hessian} is MJWarp's own, \code{opt.shared_hessian}: its sparse Hessian built in shared memory, which \code{make_sim} turns on, when the option is not given, wherever MJWarp can build it on a model of 64 padded dofs or more (\cref{sec:sharedhessian}).
+
+\begin{table}[t]
+\centering
+\caption{The options and the MJWarp overrides they come to. Nothing but the shared Hessian is overridden for MuJoCo's own problem (mj, no loop, no term).}
+\label{tab:pcmap}
+\small
+\begin{tabularx}{\linewidth}{@{}L{40mm}L{30mm}Y@{}}
+\toprule
+option & default & MJWarp \\
+\midrule
+\code{mode} & \code{"exact"} & \code{opt.prox_soft} false (exact rows) or true (mj); \code{opt.cone} elliptic; \code{opt.prox_enable} 1 \\
+\code{prox_rho} & 1.0 & \code{opt.prox_rho} (0 when there is no loop) \\
+\code{prox_iters_per_qp} & 10 exact, 0 mj & \code{opt.prox_outer_iterations} $\times$ \code{opt.prox_inner_iterations}: $N \times 1$ with the refresh, $1 \times N$ without \\
+\code{prox_tol_z} & $10^{-3}$ & \code{opt.prox_tol_z} \\
+\code{prox_tol_sigma} & $10^{-3}$ & \code{opt.prox_tol_sigma} \\
+\code{baumgarte}, \code{baumgarte_alpha}, \code{baumgarte_slop} & True, 0.1, 0.2\,mm (exact only) & \code{opt.prox_baumgarte}, \code{opt.prox_baumgarte_alpha}, \code{opt.prox_baumgarte_slop} \\
+\code{de_saxce} & on exact, off mj & \code{opt.prox_desaxce} \\
+\code{refresh_de_saxce_per_prox} & on where it applies & the outer/inner split above \\
+\code{warm_start} & True & MuJoCo's warm start (off: its disable bit, or-ed into the model's flags); \code{opt.prox_z_carry} 1 with a loop \\
+\code{shared_hessian} & None: on from 64 padded dofs where it builds & \code{opt.shared_hessian}: True as an override, None decided and set by \code{make_sim} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{sloppypar}
+\code{resolve_options} refuses, with \code{ValueError}, an unknown mode; \code{baumgarte}, \code{baumgarte_alpha} or \code{baumgarte_slop} under mj; a negative \code{baumgarte_slop}; \code{prox_iters_per_qp} $< 0$; the exact mode without a loop; \code{refresh_de_saxce_per_prox} without the term or without a loop; an unknown group kind; \code{normal_bins} or \code{moment_bins} without groups, or outside \code{lodos.cd.bins}' sets; \code{row_space} with \code{fused_newton}; \code{fused_newton} under mj with a loop or the term; \code{shared_hessian=True} with \code{fused_newton} or \code{row_space}, which form no such Hessian. An option the solver does not take raises \code{TypeError}. \code{make_sim} further refuses groups on a scene without Lodos surfaces, a list of per-pair kinds of the wrong length, and what the fused kernel, the row-space solve or a shared Hessian asked for cannot take (\cref{sec:fusednewton,sec:rowspace,sec:sharedhessian}). MJWarp's other prox options (\code{opt.prox_sigma_relax}, \code{opt.prox_host_convergence}) are reachable only through \code{overrides}.
+\end{sloppypar}
+
+\subsection{Lodos's state in MJWarp}\label{sec:bridge}
+
+\code{lodos.cd.driver.SolverDriver} makes MJWarp's solve run on Lodos's state without copies:
+
+\begin{itemize}
+\item \textbf{The state is shared.} \code{bind_state} rebinds \code{d.qpos}, \code{d.qvel}, \code{d.cdof}, \code{d.subtree_com}, \code{d.xpos}, \code{d.xmat}, \code{d.qfrc_smooth}, \code{d.qacc_smooth} and \code{d.qacc} to Lodos's arrays (the layouts agree: batch first, MuJoCo's quaternion order, \code{cdof} as [angular, linear]), so the solve writes the constrained acceleration straight into the array Lodos's integrator reads, and the step has no generalized force to apply afterwards.
+\item \textbf{The mass matrix is gathered}: MJWarp reads MuJoCo's CSR \code{M} (each row's ancestor dofs, then the diagonal); \code{gather_M} copies Lodos's per-tree blocks into it entry for entry through a precomputed map.
+\item \textbf{Lodos's contacts join MJWarp's}: \code{export_lodos} appends each with its pair's parameters and the MJCF geoms its surfaces are keyed to, SDF side first (MJWarp's normal points from its first geom to its second), typed \code{CONSTRAINT | NOCARRY}; with \code{make_sim(contact_reduction=True)} only the contacts the reduction keeps (\cref{sec:reduce}); a grouped pair's contacts are left to its groups, appended after them (\cref{sec:groups}). Symmetric pairs export both directions: the rows are constraints, and the solve distributes force among them.
+\end{itemize}
+
+\code{make_sim}'s MJWarp capacities: \code{nconmax} and \code{naconmax} (contacts a world and in all: MJWarp's, Lodos's and their groups; MJWarp's broadphase pairs share a buffer of the same size), \code{njmax} (rows), \code{nccdmax}, and \code{njmax_nnz}, the sparse Jacobian's nonzeros above 32 dofs, whose estimate, when it is left out, counts Lodos's pairs beside the MJCF's own (\code{lodos.mjcf.io.put_data}). MJWarp sizes its other defaults from the pairs it knows, and a Lodos pair is not one of them: a default capacity can drop Lodos's contacts without a word, and \code{lodos.utils.calibrate} sizes them (\cref{sec:using}). On MJCF scenes Lodos's step cost the same as MuJoCo Warp's end to end (0.98--1.02$\times$, 2026-10-22).
+
+\begin{codebox}
+\textbf{In the code.} \code{lodos/cd/driver.py}: \code{MODES}, \code{OPTIONS}, \code{BAUMGARTE_SLOP}, \code{resolve_options}, \code{prox_path}, \code{overrides}, \code{export_lodos}, \code{gather_M}, \code{csr_map}, \code{bind_state}, \code{SolverDriver}. \code{lodos/cd/solver/nlsp.py}: \code{solve}, and \code{solve_prox} with its kernels (\code{_prox_init}, \code{_prox_update}, \code{_prox_check}, the anchor cache, \code{_prox_cache_fill}); \code{lodos/cd/solver/constraint.py}: \code{make_constraint}, \code{_contact_kbimp}. \code{lodos/mjcf/types.py}, \code{io.py}: the \code{opt.prox_*} options, \code{put_model}, \code{put_data}, \code{override_model}.
+\end{codebox}
+
+\section{Contact groups}\label{sec:groups}
+
+A Lodos pair holds one contact per penetrating vertex: hundreds on a pile's bodies, thousands on a nut in its thread, each three rows of the solve. A \emph{contact group} gathers a pair segment's contacts in one normal bin and moment sector (\cref{sec:variables}) into one MJWarp contact, typed \code{GROUP}: one force for the group, shared among its members in fixed proportions. \code{groups} (off by default) chooses the treatment per Lodos pair: \code{None} or \code{"contact"}, every pair per contact; \code{"ray"} or \code{"cone"}, every pair grouped so; or a list of one kind per pair. Groups run under either mode, through MJWarp's solve, the fused kernel or the row-space solve, and on the contacts the reduction keeps when it is on; MJWarp's own contacts stay per contact. The design, with the problem each parameterization poses, is the Contact-Group Reparameterization section of the Lodos-v2 extended abstract \cite{lodosv2}.
+
+\subsection{A group and its force}\label{sec:groupforce}
+
+A group has members $i$, each with its point $p_i$, normal $n_i$, depth $d_i$, a frame $C_i = [n_i\ t_{1,i}\ t_{2,i}]$ and a weight $a_i \ge 0$, $\sum_i a_i = 1$ (\cref{sec:basis}). It takes one force $\lambda$, and its members receive
+\begin{equation}\label{eq:group}
+\text{cone (condim 3):}\ \ f_i = a_i\, C_i \lambda,\ \ \lambda \in \mathcal K_\mu = \{\lVert\lambda_t\rVert \le \mu\lambda_n\}; \qquad
+\text{ray (condim 1):}\ \ f_i = a_i \lambda\,(n_i - r_i t_{1,i}),\ \ \lambda \ge 0,
+\end{equation}
+$\lambda_n$ being the group's total normal force. Every member stays in its own friction cone ($r_i < \mu$ on a ray; on a cone each member's force is $\lambda$ in its own frame, scaled), and a cone cuts off no force its members' frames can express. MJWarp builds the group's rows from its members, $\sum_i a_i d_{ik}^\top J_i$ for each row direction $d_{ik}$ (the frame's rows on a cone, $n_i - r_i t_{1,i}$ on a ray): for a dof with spatial motion $(\omega, v)$ about its tree's root centre of mass $c$, a side's entry is $v^\top F_k + \omega^\top M_k(c)$, with $F_k = \sum_i a_i d_{ik}$ and $M_k(c) = \sum_i a_i (p_i - c) \times d_{ik}$, the SDF side's subtracted from the vertex side's: one force and one moment a row, so a group's assembly walks its members once. On MuJoCo's pyramidal cone a cone group's rows are the pyramid's edges $n \pm \mu t_k$. The group's own point, normal and depth in MJWarp's contact buffer are nominal, its members' weighted means: MJWarp reads the members.
+
+\subsection{The weights: the spring-damper law}\label{sec:basis}
+
+A group's members share its force in proportion to the normal force Lodos's spring-damper model gives each at the step's start (Lodos-v1's force law \cite{lodosv1}; \code{lodos.cd.params}):
+\begin{equation}\label{eq:sd}
+\bar f_{n,i} = D\!\left(\frac{v_{i,n}}{\delta}\right) k \max(-d_i, 0), \qquad a_i = \frac{\bar f_{n,i}}{\sum_{j} \bar f_{n,j}}, \qquad r_i = \mu\, \frac{\lVert v_{i,t}\rVert}{\sqrt{\varepsilon^2 + \lVert v_{i,t}\rVert^2}},
+\end{equation}
+with $v_i$ the member's relative velocity at the step's $\dot q$, the sum over the group's members, and the damping factor
+\begin{equation}\label{eq:damping}
+D(x) = \begin{cases} 1 - x, & x < 0 \ \text{(approaching)}, \\ (x - 2)^2/4, & 0 \le x < 2, \\ 0, & x \ge 2, \end{cases}
+\end{equation}
+which grows linearly as a contact approaches, decays quadratically as it separates and vanishes once it separates fast (\cref{fig:sd}). $r_i$ is a ray member's friction ratio, the spring-damper model's smooth stiction (\cref{sec:ray}). The parameters are the pair table's spring-damper columns: the stiffness $k$ (5000\,N/m by default), the sharpness (500, which cancels: $(k/s)\max(-ds, 0) = k\max(-d, 0)$), the dissipation velocity $\delta$ (1\,m/s) and the stiction velocity $\varepsilon$ (0.05\,m/s). A group's members share one pair, so $k$ cancels in the weights too: a member weighs by its depth and its damping factor. Since the list of contacts is exactly the penetrating ones, every member has $\bar f_{n,i} > 0$ unless it separates at $2\delta$ or faster; a group whose members all do carries no force: it is not exported, and neither are its contacts. The weights are fixed for the step: no solve adjusts how a group's force is split among its members.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{fig/fig_spring_damper.pdf}
+\caption{The spring-damper law of a group's members. (a) The damping factor $D$ of \cref{eq:damping}, which with the depth weighs a member, against its normal velocity in units of $\delta$. (b) A ray member's friction as a fraction of the Coulomb limit against its slip speed: smooth stiction, well inside the cone at low slip, where Coulomb's law allows any value up to the limit. (c) A member's de Saxc\'e term on a cone and on a ray (\cref{eq:desaxce}), for a slip that keeps its direction and speed through the step.}
+\label{fig:sd}
+\end{figure}
+
+\subsection{Bins and sectors}\label{sec:variables}
+
+By default a group is a whole pair segment, one direction of one pair (\code{normal_bins=1}, \code{moment_bins=1}). With \code{normal_bins} of 6, 12 or 20 a segment's contacts are split by the direction of their normals, the faces of a cube, dodecahedron or icosahedron turned so that $+z$ is a bin centre (so a floor's contacts share one bin); with \code{moment_bins} of 2, 3, 4 or 6 each normal bin is split further into sectors by the direction, in the bin's plane, of the contact's point relative to the vertex body's root centre of mass. Every (segment, bin, sector) with contacts in a world is one group, at most the grouped segments times \code{normal_bins} times \code{moment_bins} a world.
+
+Bins exist because one force cannot hold contacts whose reactions cancel. A nut's contacts on its thread, all round the axis, are one pair: as one group their radial reactions cancel inside it, and no solve can redistribute them, since the weights are fixed. On Isaac Lab's NIST M8 threading replay under the mj mode (\cref{sec:threading}; 2026-10-29, on MuJoCo's pyramidal cone, where a cone group's rows are the pyramid's edges), with every world's starting nut moved 0.1\,\micro m, cone groups of one bin and one sector kept the nut on the bolt in 70 of 256 worlds (76 under the row-space solve); two moment sectors kept it in 254, three and four in all 256, as did 6 $\times$ 4 and per contact. Three sectors are three 120$^\circ$ wedges of the thread about the nut's centre of mass. The M20 nut-bolt scene's binning when grouped, \code{viewer.scenes.nutbolt.GROUP_BINS}, is 6 $\times$ 4.
+
+\subsection{The ray}\label{sec:ray}
+
+A ray member's force lies on the ray through its spring-damper force, $n_i - r_i t_{1,i}$, with $t_{1,i}$ its slip direction at the step's start: the group chooses one magnitude, and every member's friction is the smooth stiction of \cref{eq:sd} whatever the solve picks. One row a group, the fewest rows any treatment gives: on the walled pile of twenty armadillos, 31 rows a world for 120 dofs, against 125 per contact (\cref{sec:rowspace}).
+
+The ray group transcribes the ray of Lodos-v1's contact model \cite{lodosv1}, which scales each pair's spring-damper forces by one factor: with one group a pair, that factor is the group's force over its members' summed spring-damper normal force, so Lodos-v1's QP over one factor a pair is the dual of MuJoCo's problem on one row a group (the ray substituted into the contact problem \cite{lodosv2}). With it comes the ray's weakness: at low slip its stiction is well inside the cone, so a body that should stick creeps. The cube held on a 20$^\circ$ slope at $\mu$ = 0.5 creeps 53\,mm in the last of three seconds under ray groups, where cone groups and contacts per contact hold it (\cref{fig:slope}a).
+
+Without the de Saxc\'e term a single active member's stationarity condition, $b^\top(v^+ + \gamma_n n) = 0$ with $b = n - r\hat s$, $\hat s$ the slip direction, is
+\begin{equation}\label{eq:raylift}
+v^+_n = r\, \hat s^\top v^+_t - \gamma_n ,
+\end{equation}
+the convex relaxation's lift-off with $r$ in $\mu$'s place: a sliding member separates at $r$ times its slip. The ray's de Saxc\'e term is therefore $r_i\, t_{1,i}^\top \sigma_i$, the slip along its own friction direction (\cref{sec:groupexact}).
+
+\subsection{The cone and its carried frames}\label{sec:cone}
+
+A cone group's force is anywhere in the friction cone, in coordinates whose $\lambda_n$ is the group's normal force: three rows, with MJWarp's elliptic cone on them as on any contact. Its members' frames decide where its friction acts. $t_{1,i}$ follows member $i$'s own slip and $t_{2,i} = n_i \times t_{1,i}$, so one $\lambda_{t_1} = -\mu\lambda_n$ puts friction against every member's own slip: the exact per-contact answer for a sliding group, whether it spins, translates or both. A rotation shared by all of a group's frames changes nothing (the cone is round and the weight isotropic), so where no slip decides a frame it need only agree with the group's others.
+
+Where the slip vanishes, the frame is carried in time. A contact keeps its identity from step to step as (world, segment, vertex): a segment lists its contacts in vertex order, so last step's record is found by bisection. A member's $t_1$ is last step's, turned with the vertex body's rotation and onto the new normal by the minimal rotation, then toward the slip: $t_1 = \mathrm{normalize}(v_t + \varepsilon_c \tilde t_1)$ with $\varepsilon_c = 10^{-4}$\,m/s, so that a sliding member follows its slip and a stopped one keeps the direction it last slid in. A contact new this step takes its bin's tangent, turned onto its normal. The frames live in two buffers, this step's and last step's, whose roles a counter on the device swaps every step: nothing is copied, and the step stays capturable; \code{Groups.forget()} drops them for a state that does not follow the last.
+
+A cone group slides by Coulomb: a cube on a slope of $\arctan(1/2)$ at $\mu$ = 0.3, its contacts one group, accelerates at $g(\sin\theta - \mu\cos\theta)$ to within 2\% under the exact mode (5\% under mj, whose soft friction lets it slip a little faster); held at $\mu$ = 0.5 on 20$^\circ$, the cube moves 0.013\,mm in the last of three seconds (\cref{fig:slope}a).
+
+\subsection{The two modes on a group}\label{sec:groupexact}
+
+A term that is linear in the members, or fixed during the step, enters as a group sum; the de Saxc\'e term, which is neither, is taken member by member.
+
+\paragraph{The exact mode} The group's Baumgarte bias is its members', $\sum_i a_i \gamma_n(d_i)$, each at its own depth, the slop included. Its de Saxc\'e term is taken at $\sigma_i$, member $i$'s relative velocity at $\dot q + \Delta t\,\ddot q$ from its two bodies' motion:
+\begin{equation}\label{eq:desaxce}
+\Gamma_g = \mu \sum_i a_i \lVert\sigma_{i,t}\rVert \ \ \text{(cone)}, \qquad \Gamma_g = \sum_i a_i\, r_i\, t_{1,i}^\top\sigma_i \ \ \text{(ray)}.
+\end{equation}
+A cone's term is its members' own Coulomb terms. A ray's cancels the friction part of the ray's row velocity, $\sum_i a_i(\sigma_{i,n} - r_i t_{1,i}^\top\sigma_i)$, so the ray holds its members' normal velocities, $\sum_i a_i(\sigma_{i,n} + \gamma_{n,i}) \ge 0$, however their slips turn within the step; at the step's start it is $r_i\lVert v_{i,t}\rVert$ (\cref{fig:sd}c). The norm form, $r_i\lVert\sigma_{i,t}\rVert$, lets a group sink by $r_i(\lVert\sigma_{i,t}\rVert - t_{1,i}^\top\sigma_i)$ wherever a slip turns: on the walled pile of twenty armadillos (one bin, 4\,s) its deepest contact reached 64\,mm and lingered at 16--45\,mm, where the linear form reached 20\,mm and settled at 1--4\,mm (2026-10-29 afternoon). The proximal weight is the per-contact one, from the two bodies' inverse weights, which the normalized weights make meaningful: a group whose members coincide is exactly a contact. A group's anchor starts each step cold: groups stay out of MJWarp's anchor cache.
+
+\paragraph{The mj mode} A group's rows are its members' rows restricted to its force: $\tilde R = \sum_i a_i^2\, d_i^\top R_i d_i$ and $\tilde a_{\text{ref}} = \sum_i a_i\, d_i^\top a_{\text{ref},i}$, each member's impedance at its own depth (a ray's direction meets its members' friction rows too).
+
+\begin{codebox}
+\textbf{In the code.} \code{lodos/cd/groups.py}: \code{KINDS}, \code{resolve_kinds}, \code{check_bins}, \code{Groups} (\code{before_export}, \code{export}, \code{forget}) and its kernels \code{group_contacts} (bins, weights, frames), \code{group_count}, \code{group_assign}, \code{group_place}, \code{export_groups}, \code{flip}. \code{lodos/cd/bins.py}: \code{NORMAL_BINS}, \code{MOMENT_BINS}, \code{bin_normals}, \code{bin_tangents}. \code{lodos/cd/params.py}: the pair table, \code{dissipation_fn}. MJWarp's side: \code{ContactType.GROUP} (\code{lodos/mjcf/types.py}), \code{alloc_contact_groups} (\code{lodos/cd/solver/io.py}), \code{constraint.py}'s \code{_contact_group_sums} and group rows, \code{nlsp.py}'s \code{_group_bias} and \code{_group_gamma}.
+\end{codebox}
+
+\section{Contact reduction}\label{sec:reduce}
+
+MJWarp makes rows of every contact it is handed, and a Lodos pair holds one contact per penetrating vertex: a nut on its bolt has about 2\,300 a world mid-thread and 4\,400 seated (0.5\,mm nut), where a few hundred placed well hold the same bodies. \code{make_sim(contact_reduction=True)} hands MJWarp only the contacts \code{lodos.cd.reduce} keeps: Newton's own reduction \cite{newton}, per (world, segment) instead of per shape pair,
+\begin{itemize}
+\item per normal bin (20, an icosahedron's faces), the deepest contact and the most extreme one in each of 6 directions 60$^\circ$ apart in the bin's plane, the corners of that patch;
+\item per cell of a grid over the vertex geometry's bounding box (at most 100 cells), the deepest contact, for cover inside a large patch;
+\end{itemize}
+at most 240 contacts a segment, each one Lodos found. A slot's winner is the atomic maximum of one 64-bit word, the score quantized at 0.1\,\micro m in its high half and the contact's index inverted in its low half, so which contacts are kept does not depend on thread order. A world's first 16 active segments are reduced, and one with more exports the rest whole: no contact is lost, the solve just sees more of them. A grouped pair is reduced like any other, and its groups are made of the contacts kept; a dropped contact's frame is still carried, for a step that keeps it. Newton lets only contacts within a depth threshold compete for the extremes, which keeps its speculative ones out; every Lodos contact penetrates, so all of them compete here.
+
+It made a nut-bolt step 4.4$\times$ faster under the mj mode (12.0 to 2.71\,ms at 1024 worlds) and 18.5$\times$ under the exact mode (151 to 8.15\,ms) (2026-10-24, the mj mode on MuJoCo's pyramidal cone at solimp $d_{\min}$ 0, the exact mode at slop 0); on the 1\,mm nut seated under the mj mode it keeps 64 of the 435 contacts the nut has on the bolt (the companion manual). On the NIST threading under mj, where few segments hold more than 240 contacts, it gained the groups 0--6\%, and it takes 0.27--0.30\,ms of a 4.5--6.2\,ms step at 8\,192 worlds (2026-10-29 evening, on MuJoCo's pyramidal cone). It is off by default; \emph{Performance Tuning} measures where it pays.
+
+\begin{codebox}
+\textbf{In the code.} \code{lodos/cd/reduce.py}: \code{make_reduce_context}, \code{reduce}, and the kernels \code{assign_rows}, \code{score_contacts} (a thread walks 16 consecutive contacts, bidding only when its bin or voxel changes) and \code{mark_winners}; \code{lodos.cd.driver.export_lodos} and \code{lodos.cd.groups} read its \code{keep} flags.
+\end{codebox}
+
+\section{The fused Newton}\label{sec:fusednewton}
+
+MJWarp's Newton solver takes about ten launches an iteration (the line search, the constraint update, the gradient, the Hessian, dense in global memory, the elliptic cone's curvature, the factorization, the convergence test) under a graph-conditional loop, and the proximal rounds wrap it in a few more. On a small model that is its cost: on the nut-bolt (12 dofs, about 140 rows a world) a Newton iteration takes about 0.2\,ms at 2\,048 worlds, nearly all of it launches and memory traffic, for a problem one block of threads solves in microseconds. \code{fused_newton=True} (off by default) runs the same solve as one kernel, one block a world (\code{lodos.cd.fused.FusedNewton}):
+\begin{itemize}
+\item the world's rows and dof vectors live in shared memory for the whole solve, the threads taking the rows in turn; the constraint Jacobian is read from MJWarp's \code{efc.J}, where L1 holds it;
+\item the line search is MJWarp's: its row functions, the same Newton step, the same bracketing and tolerance; its sums over rows are the warps' shuffles;
+\item the constraint update is MJWarp's;
+\item the Hessian $M + S^\top S$, $S$ the rows scaled by their curvature (none, one, or two on an elliptic contact in the cone's middle zone), is summed by the block from $S$'s rows staged in shared memory, and one thread factors it and solves for the search direction;
+\item the convergence test is MJWarp's: the improvement, the gradient or half the Newton decrement below the tolerance, or the budget spent;
+\item under the exact mode its rounds are MJWarp's proximal rounds, MJWarp's own initialization before the kernel and its anchor cache after; a contact group is solved as the contact its rows make, its de Saxc\'e term its members' (MJWarp's \code{_group_gamma} at the round's $\dot q + \Delta t\,\ddot q$).
+\end{itemize}
+
+One warp a world when the row capacity \code{njmax} is at most 128, two above. It takes Newton (not CG), a dense model of at most 16 dofs, no sleeping, elliptic contacts of \code{condim} 3 at most, a world's rows within 48\,KB of shared memory, and under the exact mode its exact rows at \code{impratio} 1; under mj it takes MuJoCo's problem as it stands, without a loop or the term. \code{FusedNewton} refuses the rest (\code{ValueError}); at a scene's untuned row capacity (thousands of rows) it does not fit, so it wants a tuned \code{njmax}. The problem is strictly convex, so the two solves reach the same acceleration and their iterates differ by rounding alone: on the nut-bolt the same Newton iterations in 98.8--100\% of worlds, the accelerations within $1$--$2\times10^{-6}$ (median, relative).
+
+Measured on the 1\,mm nut-bolt at 2\,048 worlds (2026-10-29 night, the kernel holding $J$ in shared memory, as \code{FusedNewton(jshared=True)} does, with four warps a world above 128 rows on the elliptic cone and two on the pyramidal; the mj mode at solimp $d_{\min}$ 0): the solve alone took 2.9 against 8.9--9.0\,ms under the exact mode and 0.40--0.50 against 0.94--1.12\,ms under mj, on the pyramidal and the elliptic cone; the whole step went from 194k to 448k world-steps/s under the exact mode (2.3$\times$) and from 799k to 943k under mj on the pyramidal cone (1.18$\times$; collision is about 40\% of that step). The tuning tools' artifact guard passed it under both modes, its metrics equal to the third digit; at each scene's tuned settings the exact step ran 2.34$\times$ on Painlev\'e's box, 1.73$\times$ on the incline and 2.17$\times$ on the 0.5\,mm nut. With cone groups on the NIST threading under mj it is the fastest setting measured (\cref{sec:threading}).
+
+\begin{codebox}
+\textbf{In the code.} \code{lodos/cd/fused.py}: \code{FusedNewton} (\code{solve}), \code{newton_kernel}, \code{shared_layout}, \code{dense_M_entries}; \code{WARPS}, \code{NV_MAX}, \code{SHARED_MAX}.
+\end{codebox}
+
+\section{The row-space Newton}\label{sec:rowspace}
+
+MJWarp's Newton forms, every iteration, the dof-space Hessian $H = M + J^\top C J$, $C$ the rows' curvature, and factors it, $n_v \times n_v$ a world whatever the number of rows. On the piles (120--140 dofs) that was most of the solve (78\% of the armadillo pile's, 2026-10-28), so taking rows away, as groups do, could not shorten it. \code{row_space=True} (off by default) solves the same system through the rows (\code{lodos.cd.rowspace.RowSpaceNewton}). With the curvature written $S^\top S$, $S = WJ$ ($S$'s rows those of the fused kernel), and Lodos's factor of each tree's block, $M = LL^\top$, the Woodbury identity gives
+\begin{equation}\label{eq:woodbury}
+\begin{aligned}
+&H^{-1}g = L^{-\top}(w - Zq), \qquad q = W^\top z, \qquad w = L^{-1}g, \\
+&(I + WGW^\top)\,z = WZ^\top w, \qquad g^\top H^{-1} g = w^\top w - (WZ^\top w)^\top z,
+\end{aligned}
+\end{equation}
+with $Z = L^{-1}J^\top$ and $G = Z^\top Z = JM^{-1}J^\top$ formed once a step (the rows do not change within it, in any proximal round), $G$ only where two rows share a kinematic tree. Each iteration builds $A = I + WGW^\top$ over the world's rows, rounded up to blocks of 16, and factors it with MJWarp's blocked Cholesky. Everything else (the gradient, the line search, the constraint update, the convergence test, the proximal rounds) is MJWarp's, which calls the row-space solve in place of forming $H$. The iterates are MJWarp's: the same Newton iteration counts and accelerations to $10^{-7}$--$3\times10^{-6}$ relative, per contact and grouped, under both modes.
+
+Its memory grows with the row capacity: $Z$ takes rows $\times\, n_v$ floats a world and $G$, $A$ and the factor rows$^2$ each, rows being \code{njmax} $+ 1$ rounded up to 16, at most 1\,024, so a large batch wants a tuned \code{njmax}. A world past it takes $M^{-1}g$ for that iteration, a descent direction the line search still makes safe, and sets the solve's \code{overflow} flag. It takes Newton, no sleeping and elliptic contacts of \code{condim} 3 at most, and not \code{fused_newton}.
+
+\begin{table}[t]
+\centering
+\caption{The row-space solve on the piles (2026-10-29 afternoon): the walled pile of twenty armadillos (120 dofs, 4\,096 worlds) and of five SHARPA hands (140 dofs, 2\,048 worlds), from a snapshot of the pile, its warm start the snapshot's (the previous step's solution); the mj mode at solimp $d_{\min}$ 0; two interleaved rounds, each run its own process, the faster round; no overflow.}
+\label{tab:rowspace}
+\small
+\begin{tabularx}{\linewidth}{@{}L{22mm}L{11mm}YR{19mm}R{14mm}R{17mm}@{}}
+\toprule
+scene & mode & configuration & rows a world & ms a step & vs per contact \\
+\midrule
+armadillos & exact & per contact & 125 & 79.1 & 1.00 \\
+ & & ray groups & 31 & 58.0 & 1.37 \\
+ & & ray groups, \code{row_space} & 31 & 25.2 & 3.14 \\
+ & & cone groups & 94 & 73.7 & 1.07 \\
+ & & cone groups, \code{row_space} & 94 & 89.3 & 0.89 \\
+ & mj & per contact & 125 & 17.3 & 1.00 \\
+ & & ray groups, \code{row_space} & 31 & 8.0 & 2.15 \\
+hands & exact & per contact & 178 & 62.3 & 1.00 \\
+ & & ray groups & 28 & 44.1 & 1.41 \\
+ & & ray groups, \code{row_space} & 28 & 23.7 & 2.62 \\
+ & & cone groups, \code{row_space} & 83 & 54.1 & 1.15 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+It pays where the rows are fewer than the dofs (\cref{tab:rowspace}): ray groups (31 rows for 120 dofs) run 3.1$\times$ per contact on the armadillo pile and 2.6$\times$ on the hands; cone groups (94 rows, nearly a row a dof) gain nothing there, their dense row system costing what the Hessian does. At 3 proximal iterations the pile's exact step takes 33.9\,ms per contact and 13.2\,ms with ray groups in the row space. Against the number of worlds (2 proximal iterations under the exact mode), ray groups in the row space peaked at 406.7k world-steps/s (16\,384 worlds) against per contact's 152.3k (4\,096), and under mj (at solimp $d_{\min}$ 0) at 556.3k against 245.8k (16\,384 both); 32\,768 worlds ran out of the 16\,GB. At 15 dofs it cannot gain: on the NIST threading its 24-row system is larger than the Hessian (\cref{sec:threading}).
+
+\begin{codebox}
+\textbf{In the code.} \code{lodos/cd/rowspace.py}: \code{RowSpaceNewton} (\code{prepare}, once the rows are assembled; called by MJWarp for each search direction), its kernels, \code{ROWS_MAX}. \code{lodos/cd/solver/nlsp.py}: \code{solve}'s \code{newton_solve} argument.
+\end{codebox}
+
+\section{The shared Hessian}\label{sec:sharedhessian}
+
+Above 32 dofs MJWarp takes the sparse path: the constraint Jacobian is stored by rows, and the Newton Hessian $H = M + J^\top C J$ is assembled densely in global memory, $n_v^{\mathrm{pad}} \times n_v^{\mathrm{pad}}$ a world ($n_v + 1$ rounded up to MJWarp's tile of 16: 128 for the armadillo pile's 120 dofs, 144 for the hands' 140). Under the elliptic cone it is rebuilt every iteration, in two launches: \code{_update_gradient_init_h_sparse} writes $M$ into it, one thread for each of the $(n_v^{\mathrm{pad}})^2$ entries of every world, and \code{_JTDACJ_sparse} adds each constraint group's $J^\top D J$ and the cone's curvature by atomic adds to global memory. On the armadillo pile the two took 35 of the exact solve's 77\,ms (2026-10-29), more than the blocked Cholesky that factors $H$.
+
+The solver's \code{shared_hessian} sets MJWarp's \code{opt.shared_hessian}, which sums the same $H$ in one kernel, one block of 512 threads a world, in shared memory: $M$'s entries, a thread each; then a warp for each constraint group (the rows sharing one sparse support, as \code{_JTDACJ_sparse} takes them), its lanes splitting the group's entries so that a warp never collides with itself, the elliptic cone's curvature from MJWarp's own formula; then the upper triangle written to global memory once, four columns a store. MJWarp's blocked Cholesky, the line search and everything else are unchanged. The sums run in another order, so $H$ is MJWarp's to rounding: the same Newton iterations, and the same accelerations to within $10^{-6}$ of the largest (0 to $6.2\times10^{-7}$ over the cases tested, 2026-10-30). Under the pyramidal cone MJWarp builds $H$ once a solve and then updates it for the rows that change state; only that first build is replaced.
+
+By default it is on wherever MJWarp can build it on a model of 64 padded dofs or more, 48 dofs: \code{shared_hessian=None}, the default, is decided on MJWarp's model when the sim is built (\code{lodos.cd.driver.shared_hessian_default}, its threshold \code{SHARED_HESSIAN_MIN_NV_PAD}; where it can be built, \code{shared_hessian_refusal}), and \code{sim.options} records what was decided; \code{True} asks for it at any size, and is refused where it cannot be built; \code{False} turns it off. MJWarp's model has it off (\code{lodos.mjcf.io.put_model}), and an \code{opt.shared_hessian} in \code{make_sim}'s \code{overrides} is left as given.
+
+The triangle, $n_v^{\mathrm{pad}}(n_v^{\mathrm{pad}}+1)/2$ floats, must fit the 48\,KB of shared memory a block holds: up to 144 padded dofs, which takes the piles and not the house of cards (240 dofs, 256 padded). It takes Newton on the sparse path (more than 32 dofs, or \code{jacobian="sparse"}), elliptic contacts of \code{condim} 3 at most (MJWarp's and Lodos's, whose \code{condim} MJWarp's model does not count), no sleeping's compacted solve, and neither \code{fused_newton} nor \code{row_space}, which form no such Hessian. The default leaves it off there; asked for, MJWarp's \code{solve} and \code{SolverDriver} refuse it (\code{ValueError}).
+
+\begin{table}[t]
+\centering
+\caption{The shared Hessian on the piles (2026-10-30, 512 threads a world, the mj mode at solimp $d_{\min}$ 0): the walled pile of twenty armadillos (120 dofs, 4\,096 worlds) and of five SHARPA hands (140 dofs, 2\,048 worlds; under mj 4\,096, at the file tuned under mj), each at its tuning file, its worlds drawn from its state set; the step replayed 200 times after 100 untimed steps, and the contact-dynamics stage alone replayed on the state reached; two interleaved rounds, each run its own process, their mean; no overflow. Each cell but the gain is off $\to$ on.}
+\label{tab:sharedhessian}
+\small
+\begin{tabularx}{\linewidth}{@{}L{20mm}L{10mm}YR{10mm}R{34mm}R{28mm}@{}}
+\toprule
+scene & mode & world-steps/s & gain & contact dynamics (ms) & Newton iterations \\
+\midrule
+armadillos & exact & 48.7k $\to$ 58.8k & +21\% & 80.6 $\to$ 65.1 & 20.0 $\to$ 20.0 \\
+armadillos & mj & 221.4k $\to$ 274.4k & +24\% & 12.9 $\to$ 9.6 & 3.2 $\to$ 3.2 \\
+hands & exact & 31.9k $\to$ 36.5k & +14\% & 56.6 $\to$ 49.3 & 18.6 $\to$ 18.6 \\
+hands & mj & 79.1k $\to$ 86.1k & +9\% & 28.9 $\to$ 25.2 & 1.3 $\to$ 1.3 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+On the piles it is the same solve, faster (\cref{tab:sharedhessian}): the step 21\% faster on the armadillos under the exact mode and 24\% under mj, 14\% on the hands under the exact mode and 9\% under mj, at the same Newton iterations. The hands under mj run at a file tuned under mj (\emph{Performance Tuning}): their contacts, three times the exact mode's, outgrew the exact file's capacities within four steps. On the 26 tuned scenes it can be built on (2026-10-30), the exact step ran from 4\% slower to 45\% faster, median 14\% faster: the one slower is the smallest, six armadillos in a box (36 dofs, 48 padded), which at 256 threads a world ran 10\% faster instead; under mj, the Lodos pairs at solimp $d_{\min}$ 0, the 11 scenes whose exact-mode tuning files held the mj mode's contacts ran 12--31\% faster. Below 64 padded dofs it measured slower, each run in its own process (2026-10-30 and 2026-11-03, the exact mode): 4--8\% on the Shadow hand's grasp (34 dofs) and 4\% on the six armadillos in a box, both 48 padded; from 64 up it was faster, 13--14\% on two SHARPA hands as polytopes (56 dofs, 64 padded), level with surfaces, and 3--45\% on the piles of 120 and 140 dofs: hence the default's threshold.
+
+The block is 512 threads a world, a GPU-specific tuning parameter (\code{_SHARED_HESSIAN_THREADS} in \code{lodos/cd/solver/nlsp.py}), 512 for every model, chosen on the RTX 4080 every number here comes from (100\,KB of shared memory and 1\,536 threads a multiprocessor). There two 42\,KB blocks fit a multiprocessor at 144 padded dofs, which with 256 threads a block left 16 warps a multiprocessor, and the walled hands under mj (at solimp $d_{\min}$ 0), 224 contacts a world, stepped 5--8\% slower than with MJWarp's own assembly; at 512 threads they stepped 8--9\% faster, the exact hands gained a point or two, the armadillo pile lost two. A warp a contiguous run of groups, rather than every sixteenth, was slower everywhere, and 1\,024 threads ask for more registers than a block may hold. A GPU with more shared memory a multiprocessor holds more blocks and may prefer another size, and whether the shared Hessian beats MJWarp's assembly there is unmeasured: before relying on it on another GPU, time it there (2026-10-30).
+
+\begin{codebox}
+\textbf{In the code.} \code{lodos/mjcf/types.py}, \code{io.py}: \code{opt.shared_hessian}. \code{lodos/cd/solver/nlsp.py}: \code{shared_hessian_refusal}, \code{_shared_hessian} (the kernel) and \code{_shared_hessian_build}, called from \code{_newton_hessian_solve}; \code{_SHARED_HESSIAN_THREADS}. \code{lodos/cd/driver.py}: the option, its refusals (\code{shared_hessian_refusal}), its default (\code{shared_hessian_default}, \code{SHARED_HESSIAN_MIN_NV_PAD}) and \code{SolverDriver}'s check.
+\end{codebox}
+
+\section{The options in one place}\label{sec:axes}
+
+\begin{table}[t]
+\centering
+\caption{The solver's options, \code{lodos.cd.driver.OPTIONS}, completed by \code{resolve_options}: their defaults under each mode. ``--'' means the mode refuses the option.}
+\label{tab:axes}
+\small
+\begin{tabularx}{\linewidth}{@{}L{36mm}L{19mm}L{12mm}Y@{}}
+\toprule
+option & exact & mj & what it does \\
+\midrule
+\code{mode} & \code{"exact"} & \code{"mj"} & the problem: \cref{eq:cqcqp} by a proximal loop, or MuJoCo's \cref{eq:nls} (\cref{sec:objectives}) \\
+\code{prox_rho} & 1.0 & 1.0 & $\hat\rho$, the proximal weight relative to a contact's translational inverse weight \\
+\code{prox_iters_per_qp} & 10 & 0 & the proximal rounds a step; the exact mode needs at least one \\
+\code{prox_tol_z} & $10^{-3}$ & $10^{-3}$ & the loop's relative tolerance on the anchor \\
+\code{prox_tol_sigma} & $10^{-3}$ & $10^{-3}$ & its relative tolerance on the de Saxc\'e term \\
+\code{baumgarte} & True & -- & the Baumgarte bias in the normal target \\
+\code{baumgarte_alpha} & 0.1 & -- & its gain $\alpha$ \\
+\code{baumgarte_slop} & 0.2\,mm & -- & the penetration it leaves alone \\
+\code{de_saxce} & True & False & the de Saxc\'e term (under mj, $-b\Gamma$ through the row damping) \\
+\code{refresh_de_saxce_per_prox} & True & False & the term re-taken after every round; needs the term and a loop \\
+\code{warm_start} & True & True & MuJoCo's warm start of $\ddot q$; with a loop the carried anchors \\
+\code{fused_newton} & False & False & the solve in one kernel per world, at most 16 dofs (\cref{sec:fusednewton}) \\
+\code{groups} & None & None & \code{"contact"}, \code{"ray"}, \code{"cone"}, or one per Lodos pair (\cref{sec:groups}) \\
+\code{normal_bins}, \code{moment_bins} & 1, 1 & 1, 1 & a group's bins and sectors; need \code{groups} (\cref{sec:variables}) \\
+\code{row_space} & False & False & the Newton system through the rows (\cref{sec:rowspace}) \\
+\code{shared_hessian} & None & None & MJWarp's sparse Hessian summed per world in shared memory; None: on from 64 padded dofs, wherever MJWarp can build it (\cref{sec:sharedhessian}) \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\Cref{tab:axes} lists the solver's options; they are passed as \code{make_sim(..., solver_kwargs=...)}. \code{make_sim}'s own arguments shape the solve too: \code{contact_reduction} (off, unless a tuning file turns it on; \cref{sec:reduce}), \code{condim} (3, Lodos's contacts), MJWarp's capacities (\code{nconmax}, \code{njmax}, \code{naconmax}, \code{nccdmax}, \code{njmax_nnz}; \cref{sec:bridge}), \code{joint_constraints} (True), \code{integrator} and \code{implicit_constraints} (\cref{sec:implicit}), \code{overrides} (MJWarp model overrides after the options' own, among them MuJoCo's iterations and tolerance, which are otherwise the MJCF's) and \code{tuning} (a tuning file's settings for whatever is not given; \emph{Performance Tuning}).
+
+\needspace{18\baselineskip}
+\begin{lstlisting}
+from lodos import sim
+# the exact mode, every contact; then the same on reduced contacts
+sim.make_sim(mjm, B, surfaces=surf)
+sim.make_sim(mjm, B, surfaces=surf, contact_reduction=True, nconmax=768, njmax=3072)
+# MuJoCo's problem; then at MuJoCo's tolerance 1e-5
+sim.make_sim(mjm, B, surfaces=surf, solver_kwargs=dict(mode="mj"))
+sim.make_sim(mjm, B, surfaces=surf, solver_kwargs=dict(mode="mj"),
+             overrides=("opt.tolerance=1e-5",))
+# nv <= 16: one kernel a world, a world's rows (njmax, tuned) in shared memory
+sim.make_sim(mjm, B, surfaces=surf, njmax=128, solver_kwargs=dict(fused_newton=True))
+# a pile: ray groups, the Newton system through the rows
+sim.make_sim(mjm, B, surfaces=surf, solver_kwargs=dict(groups="ray", row_space=True))
+# MJWarp's sparse Hessian in global memory, as upstream builds it (shared where it can be, by default)
+sim.make_sim(mjm, B, surfaces=surf, solver_kwargs=dict(shared_hessian=False))
+# a thread: cone groups of one normal bin and three moment sectors, reduced
+sim.make_sim(mjm, B, surfaces=surf, contact_reduction=True,
+             solver_kwargs=dict(groups="cone", moment_bins=3))
+\end{lstlisting}
+
+\section{Measured behaviour}\label{sec:measured}
+
+All measurements are on an RTX 4080 with Warp 1.16, graph-replayed. Each is dated, or comes from the data under \code{docs/manual/data/}, and is reproducible with the scripts named. Each names its settings where they differ from the defaults: the exact mode at slop 0, the mj mode with the pair table's solimp at $d_{\min}$ 0 rather than its default 0.9 (the NIST Franka scenes set Isaac Lab's own, $d_{\min}$ 0.9), or the plain mj mode on MuJoCo's pyramidal cone rather than the elliptic one the built-in scenes name. The exact mode always runs the elliptic cone.
+
+\subsection{A cube on a slope}\label{sec:slope}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{fig/fig_slope.pdf}
+\caption{A 1\,m cube on a 20$^\circ$ slope, one world per configuration of the solver, its defaults unless named (\code{docs/manual/make_data.py slope}, 2026-11-04). (a) At $\mu$ = 0.5 it should stay put: a ray group's smooth stiction creeps, MuJoCo's soft problem creeps more slowly; the exact mode, with or without the de Saxc\'e term, and a cone group hold. (b) At $\mu$ = 0.2 it slides: without the de Saxc\'e term the exact problem is the convex relaxation, and the cube hops off the slope; with it the exact mode, per contact or grouped, does not lift the cube off, and MuJoCo's soft problem, which takes no such term by default, lets it ride up to about a millimetre above rest (the inset, from 0.5\,s on, at its own scale).}
+\label{fig:slope}
+\end{figure}
+
+The tutorial's two worked examples, creep and lift-off, on this simulator (\cref{fig:slope}). Held at $\mu$ = 0.5 for 3\,s, the cube moves in the last second 0.007\,mm under the exact mode, 0.009\,mm without the de Saxc\'e term and 0.013\,mm with its contacts in a cone group; MuJoCo's soft problem lets it creep at 1.0\,mm/s, and a ray group's smooth stiction at 53\,mm/s. Sliding at $\mu$ = 0.2, the exact mode without the de Saxc\'e term is the convex relaxation, and the cube hops, up to 14.8\,mm above the slope by 2\,s; with the term the exact mode does not lift it off: after landing its highest point is 0.03\,mm below rest, and 0.13--0.16\,mm under the groups. MuJoCo's soft contacts, without the term, let it ride up to 1.1\,mm above rest, and sink it deepest (0.25\,mm).
+
+\subsection{The piles}\label{sec:pile}
+
+Five armadillos dropped on a plane from 64 random stacks, 8\,s; the fastest body's rms speed over the last 2\,s, the median and 90th percentile over worlds (\cref{tab:pile}). No configuration brings every pile fully to rest. MuJoCo's soft contacts sit about 60$\times$ deeper than the exact mode's on average, and under mj the de Saxc\'e term lets the deepest contact reach 32\,mm; the exact mode's median body rocks faster than mj's (46 against 7.6\,mm/s), with the same 90th percentile.
+
+\begin{table}[t]
+\centering
+\caption{The armadillo pile, 64 worlds (2026-10-25 late night; the exact mode at slop 0, the mj mode at $d_{\min}$ 0 and, without a loop or the term, on MuJoCo's pyramidal cone).}
+\label{tab:pile}
+\small
+\begin{tabularx}{\linewidth}{@{}YL{37mm}L{30mm}@{}}
+\toprule
+configuration & fastest body, median / 90th pct (mm/s) & contact depth, mean / max (mm) \\
+\midrule
+exact (the defaults) & 46.4 / 61.0 & 0.010 / 0.62 \\
+exact, the term not refreshed & 46.6 / 80.1 & 0.006 / 0.09 \\
+exact, no de Saxc\'e term & 47.3 / 67.9 & 0.005 / 0.07 \\
+mj (the defaults) & 7.6 / 62.5 & 0.584 / 0.85 \\
+mj, the de Saxc\'e term & 8.9 / 100.1 & 0.741 / 32.2 \\
+mj, 10 proximal rounds & 10.7 / 53.4 & 0.652 / 0.92 \\
+mj, 10 rounds and the term & 7.1 / 88.5 & 0.920 / 36.8 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+On the walled pile of five SHARPA hands (2026-10-26 morning, three stacks, the slop on), the exact mode's polytope piles stop completely, fingers included. Its SDF piles keep a slow creep, palms at 0.2--0.7\,mm/s, because Lodos's contacts start each step's proximal loop cold: 20 proximal iterations cut their drift 3--5$\times$, at about 1.8$\times$ the step.
+
+\subsection{Newton's nut-bolt}\label{sec:nutbolt}
+
+IsaacGymEnvs' M20 nut dropped onto its bolt 41\,mm above the seat, turned $\pi$/8, to screw itself down under gravity at $\mu$ = 0.01 on the thread (\code{viewer.scenes.nutbolt}, $\Delta t$ = 1/480\,s). The screw law predicts a constant acceleration down the thread, 6.64\,mm/s$^2$. Under the mj mode the nut threaded at 2.484\,mm a turn (the pitch is 2.5) and descended 32\% short of the law with the 1\,mm nut and 41\% with the 0.5\,mm one (medians over 64 jittered worlds, 2026-10-24, on MuJoCo's pyramidal cone at $d_{\min}$ 0); Newton's own SDF example crept down at a constant 2.5\,mm/s instead. Under the exact mode per contact the meshed threads first catch on each other's mismatch, 0.1\,mm in the first second, and then the nut picks up; its descent has not been fitted to the law. The seat, where the nut wedges at the thread runout, is the hard part (\cref{tab:nut}): the exact mode (at slop 0) brings 95\% of the 1\,mm worlds and 69\% of the 0.5\,mm ones to rest, its deepest nut contacts 0.04--0.1\,mm deep, and MuJoCo's soft contacts (on the pyramidal cone at $d_{\min}$ 0) every world, 0.39\,mm deep.
+
+\begin{table}[t]
+\centering
+\caption{The nut-bolt, its contacts reduced: the share of 64 jittered worlds at rest on the seat after 12\,s (nut rms speed under 0.1\,mm/s) and their deepest nut contact, median (2026-10-25 late night; $^\dagger$ at slop 0); the descent against the screw law, median of 64 jittered worlds, and failures of 4\,096 jittered worlds on the 0.5\,mm nut, non-finite, off the seat or tilted past 10$^\circ$ (2026-10-24). The mj mode ran MuJoCo's pyramidal cone at $d_{\min}$ 0.}
+\label{tab:nut}
+\small
+\begin{tabularx}{\linewidth}{@{}YL{29mm}L{24mm}L{25mm}L{17mm}@{}}
+\toprule
+configuration & at rest, 1\,mm / 0.5\,mm & deepest contact & screw law & failures \\
+\midrule
+exact, per contact & 95\% / 69\%$^\dagger$ & 99 / 40\,\micro m$^\dagger$ & not fitted & not counted \\
+mj, per contact & 100\% / 100\% & 386 / 386\,\micro m & $-32$\% / $-41$\% & 0 \\
+Newton's SDF example & does not reach its seat in 5\,s & -- & creeps at 2.5\,mm/s & -- \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{fig/fig_throughput.pdf}
+\caption{Throughput on the 1\,mm nut at 4\,096 worlds, all starting alike, in simulated seconds per wall-clock second summed over the worlds: 0.5\,s untimed, then 4.5\,s timed, Newton's 600-frame window (contacts reduced, \code{nconmax} 768, \code{njmax} 3\,072, every configuration on the elliptic cone; \code{docs/manual/data/nutbolt_throughput.csv}, 2026-11-04). The mean of two interleaved rounds, each run its own process, within 2.6\% of each other; no capacity overflowed. Groups are the scene's 6 $\times$ 4 bins. The configurations do not all time the same motion: under the exact mode per contact the nut was still threading at the window's end, 29.6\,mm above its seat, where every other configuration had seated it. Starting alike, a configuration's worlds ended within 0.6--4.5\,mm of each other: the solve is not bit-deterministic across worlds. Newton 1.7.0's SDF example runs unmodified but for its contact buffer, sized per world here, which as shipped overflows silently past about a thousand worlds; none of its worlds failed.}
+\label{fig:throughput}
+\end{figure}
+
+Throughput on the 1\,mm nut at 4\,096 worlds (\cref{fig:throughput}, 2026-11-04, every configuration on the elliptic cone): 322 world-s/s under the exact mode per contact and 1\,088 under mj, against 386 for Newton 1.7.0's own SDF example; with the scene's 6 $\times$ 4 groups, 559 (ray) and 487 (cone) under the exact mode, 1\,218 and 1\,081 under mj, all through MJWarp's Newton. The exact mode per contact timed a nut still in mid-thread, the others a seated one, so its ratios to the rest (mj per contact ran 3.4$\times$ its throughput) are not like for like. Grouped, a world held 15--17 MJWarp contacts and at most 19--66 rows at the window's end, against 40 contacts and 237 rows (exact) and 78 and 279 (mj) per contact.
+
+\subsection{Isaac Lab's NIST threading}\label{sec:threading}
+
+Isaac Lab's NIST assembly demo threads an M8 nut onto its bolt with a Franka arm under a learned policy. \code{viewer.scenes.nist} replays that threading (the viewer's \code{nist_threading_m8}): the recorded state at the threading's start and 620 ticks of recorded drive targets, 10\,ms a tick of 8 steps of 1.25\,ms, colliding at every step, the arm following Isaac Lab's recorded path and its fingers their recorded positions. Every world threads unless said.
+
+\paragraph{Lodos and Newton} (2026-10-28, Lodos's mj mode on MuJoCo's pyramidal cone, each configuration's capacities at 1.5$\times$ the peaks its own replay measured, each batch one run, repeated runs within about 1\%, the configurations not interleaved; \code{bench/lodos_mjwarp/} compares the mj mode with MuJoCo Warp under Newton on this replay and fourteen piles and grasps, on the elliptic cone, in its report). At its best batch the solver ran 217\,925 world-ticks/s under mj with the demo's contact parameters and MuJoCo's tolerance $10^{-5}$, 2\,179$\times$ real time and 28$\times$ Newton colliding at every substep as Lodos does (7\,696); under the exact mode (MuJoCo's tolerance $10^{-8}$, slop 0) it ran 49\,864 at 2 proximal iterations and 38\,350 at the default 10. Newton colliding once a tick, as the demo does, ran 51\,222. The nut ends within $-0.06$ to $+0.23$\,mm of where Isaac Lab's did under mj, and within $-0.27$ to $+0.78$ and $-1.06$ to $-0.04$\,mm under the exact mode at 2 and 10 iterations.
+
+\paragraph{Cone groups under mj} (2026-10-29 evening; MuJoCo's pyramidal cone, where a cone group's rows are the pyramid's edges; implicitfast with implicit constraints, MuJoCo's tolerance $10^{-5}$, contacts reduced). One normal bin and three moment sectors, the coarsest binning that kept every jittered world's nut (\cref{sec:variables}), give 24 rows a world against about 420 per contact. In the fused kernel they run 269.7k world-ticks/s at their best batch (16\,384 worlds), 1.13$\times$ the per-contact fused solve's 238.4k (8\,192); under MJWarp's Newton 262.0k, and in the row space 211.6k, whose 24-row system is larger than the 15-dof Hessian. At 8\,192 worlds a step takes 4.53\,ms grouped and fused against 5.26 per contact fused: the solve 0.46 against 1.18\,ms and the rows 0.20 against 0.37, for 0.26\,ms of group kernels; collision, the rigid bodies and the integration take 3.1--3.2\,ms under every setting, 60--70\% of the step. Over the timed runs the 1 $\times$ 3 groups lost a nut in about one world-run in 20\,000--50\,000, per contact none in 131\,072.
+
+\subsection{The FBF exactness scenes}\label{sec:fbf}
+
+Song, Fan, Ascher and Pai's exactness scenes \cite{fbf} (\code{viewer.scenes.fbf}), one world each, measured on 2026-10-24, the exact mode at slop 0. \textbf{The exact mode on polytopes passes all five}: the incline slides at 0.885\,m/s after 2\,s (exact: 0.877), the backspin ball rolls back at $-11.44$\,m/s on the ground (exact: $-11.43$), Painlev\'e's box slides 1.60\,m upright (exact: 1.63), the house of 40 cards stands and the masonry arch stands. MuJoCo's convex problem, the mj mode, throws the ball and tips the box, as FBF predicts of a convex relaxation; it holds the arch and drops the cards. Vertex-sampled surfaces cannot follow the backspin ball (200\,rad/s at 60\,Hz turns it 190$^\circ$ a step) under either mode.
+
+\subsection{What to pick}\label{sec:pick}
+
+\begin{itemize}
+\item \textbf{Exact contact} (the default): the exact mode, every contact, with \code{contact_reduction=True} on Lodos surfaces with dense patches. It holds a body on a slope, brings most nuts to rest on their seat and polytope piles to a stop, and is the slowest configuration.
+\item \textbf{MuJoCo's model}: \code{mode="mj"}; soft contacts, creep on slopes, MuJoCo's speed.
+\item \textbf{A small model} (16 dofs or fewer: a nut on its bolt, a part in a gripper): \code{fused_newton=True}, the same solve, 2.3$\times$ the exact step on the nut-bolt; it wants a tuned row capacity.
+\item \textbf{A pile of many dofs}: ray groups with \code{row_space=True}, 3.1$\times$ the per-contact exact step on the armadillo pile, at the price of the ray's smooth stiction, which creeps where a body should stick. Per contact, the shared Hessian, on by default from 64 to 144 padded dofs, already runs the armadillo pile's step 21\% faster under the exact mode and 24\% under mj (at solimp $d_{\min}$ 0) than MJWarp's own assembly.
+\item \textbf{Coulomb friction on fewer rows}: cone groups, binned fine enough that no group holds contacts whose reactions cancel (1 $\times$ 3 on the NIST thread, 6 $\times$ 4 on the M20 nut), fused on a small model.
+\item \textbf{A tighter budget}: fewer proximal iterations under the exact mode (\code{prox_iters_per_qp} 2--3): 2 instead of 10 ran the NIST threading 1.3$\times$ faster at its best batch, and 3 the armadillo pile's per-contact step 2.3$\times$. The tuning tools' artifact guard says whether a scene affords it (\emph{Performance Tuning}).
+\end{itemize}
+
+\section{Using it}\label{sec:using}
+
+The guide \emph{Performance Tuning} (\code{docs/performance_tuning.pdf}) measures the solver's speed on every built-in scene, before and after tuning, and says which budgets each can afford under an artifact guard.
+
+\begin{sloppypar}
+\paragraph{Building and stepping} \code{lodos.sim.make_sim(mjm, B, surfaces=..., qpos=..., solver_kwargs=..., ...)}, every argument after \code{B} by keyword, builds every context; \code{lodos.step.make_step_graph(sim)} captures a step; \code{lodos.step.fwd_step(sim)} steps eagerly. The scene builders of \code{viewer.scenes} take the solver's options and \code{make_sim}'s: \code{armadillo.build(solver_options=, **sim_kwargs)}, and the \code{build(..., solver_kwargs=, **sim_kwargs)} of \code{mixed}, \code{nutbolt}, \code{representations}, \code{fbf}, \code{sharpa}, \code{sharpa_armadillo} and \code{nist}; \code{viewer.scenes.drop.scene_and_q0(scene, nworld)} returns an MJCF and starting positions for \code{make_sim}. The pair table goes in \code{Surfaces(params=...)}, a \code{(len(pairs), 13)} array (the companion manual): the solve reads $\mu$, the mj mode solref and solimp, and contact groups the spring-damper columns.
+\end{sloppypar}
+
+\paragraph{Diagnostics} MJWarp's \code{d.solver_niter} counts a world's Newton iterations, summed over the proximal rounds; \code{d.prox_rounds} and \code{d.prox_converged} say how many proximal rounds a world ran and whether its loop met its tolerances; \code{lodos.utils.calibrate.peaks(sim, n)} (which advances the state) and \code{suggest(report)} size MJWarp's contacts (whose buffer holds its broadphase's pairs too) and rows, and \code{lodos.utils.calibrate.Tracker} keeps the peaks on the device, inside the step's graph; the groups keep the most groups a world had (\code{sim.solver.groups.gd.peak}) and whether one found no MJWarp contact (\code{gd.overflow}), and the row-space solve whether a world outgrew its rows (\code{sim.solver.rowspace.overflow}); Lodos's collision capacities have tools of their own (the companion manual). All synchronize.
+
+\paragraph{The viewer} \code{python -m viewer SCENE --sim lodos} (\code{lodos-viewer} when installed with the \code{vis} extra) opens one world of any of its 71 built-in scenes or any MJCF, lets you change the mode, every option above and MuJoCo's iterations and tolerance at any frame, and draws both pipelines' contacts and forces in one convention, each member's share of a group's force included (\code{docs/visualizer.pdf}). \code{--sim mjwarp} and \code{--sim kamino} run Newton's \code{SolverMuJoCo} and \code{SolverKamino} on the same scene, where \code{viewer/newton/}'s environment is installed.
+
+\paragraph{Notebooks and benchmarks} \code{notebooks/01}--\code{05}: a quick start, building a scene, the modes on a slope, batched rollouts on the nut-bolt, and a surface made from a mesh. \code{bench/lodos_mjwarp/} and \code{bench/lodos_kamino/} compare the mj mode with MuJoCo Warp and the exact mode with Kamino, both under Newton, each with its report.
+
+\section{Limitations and open decisions}\label{sec:limits}
+
+\begin{itemize}
+\item Joint-limit and friction-loss rows stay MuJoCo's soft rows under the exact mode. Whether to make them exact in the prox solver is open, as is a two-row-per-contact exact transcription there.
+\item Lodos's contacts' and groups' proximal anchors start each step cold (\code{NOCARRY}); carrying them would need a cache keyed by vertex. On the SHARPA piles made of Lodos surfaces that leaves a creep of 0.2--0.7\,mm/s, which 20 proximal iterations cut 3--5$\times$.
+\item A group's force is split among its members by weights no solve adjusts, so a group whose contacts' reactions cancel cannot hold them: one group a pair loses a threaded nut, and on the NIST threading the 1 $\times$ 3 cone groups still lost about one nut in 20\,000--50\,000 world-runs, where per contact lost none in 131\,072 (2026-10-29 evening, under mj on MuJoCo's pyramidal cone). Whether to accept 1 $\times$ 3 there, or to time and count 1 $\times$ 4, is open.
+\item By construction, a cone group's frames are taken at the step's start and lag a slip pattern that changes within it; a group at rest holds the friction pattern it last moved in, so a body that came to rest spinning meets a sideways push with no friction until its slip turns the frames; and bins and sectors are fixed in the world, so a contact that migrates between groups carries its share of force across with a jump.
+\item A ray group's friction is smooth stiction, so it creeps wherever a body should stick (53\,mm/s on the slope).
+\item MJWarp sizes its default capacities for the pairs it knows: they can drop Lodos's contacts without a word. Calibrate (\code{lodos.utils.calibrate}), and keep a run that overflowed out of any measurement.
+\item MJWarp's solve is not bit-reproducible: it accumulates with float atomics, so worlds that start alike drift apart (0.6--4.5\,mm on the nut-bolt by 5\,s) and reruns differ once contacts start.
+\item A Lodos pair at $\mu$ = 0 carries no force: it exports a degenerate friction cone (\code{condim} 3, $\mu$ 0), which the solve leaves out, where MuJoCo clamps its own friction to \code{mjMINMU}. Whether to clamp Lodos's exported friction too is open (2026-10-27 evening).
+\item The solver fills MJWarp's \code{d.M} but not its mass factor; an MJCF selecting MJWarp's CG solver under the plain mj mode would read an unfilled factor in CG's preconditioner (found by review, not run).
+\item The shared Hessian's block, 512 threads a world, and its default's threshold, 64 padded dofs, were chosen on an RTX 4080; on another GPU, time it before relying on either (\cref{sec:sharedhessian}).
+\item Open (2026-10-29 afternoon): the proximal iterations with groups (3 doubles the pile's exact throughput; whether the solution stays accurate enough is for the tuning tools' measures); cone groups on the piles, which gain only with a factorization that uses the contact graph's sparsity; the ray's de Saxc\'e term in its linear form, as built, or the norm form.
+\item \code{lodos.rbd} has no tendons, equality constraints, or integrators beyond Euler and implicitfast, and was 1.5--2.1$\times$ slower than MuJoCo Warp's dynamics on deep trees (2026-10-22).
+\end{itemize}
+
+\begin{thebibliography}{99}
+\bibitem{tutorial} O.~Beker et al. Cone complementarity based models of contact dynamics: a self-contained tutorial for roboticists. Coming soon as \code{papers/contact_tutorial.pdf}, 2026.
+\bibitem{lodosv1} O.~Beker, A.~R.~Geist, G.~Martius. LODOS: a lightweight simulator designed for contact-rich interactions with detailed meshes. \code{papers/lodos_v1.pdf}, 2026.
+\bibitem{lodosv2} Lodos-v2: an exact and efficient primal-form solver for cone complementarity-based contact dynamics. \code{papers/lodos_v2.pdf}, 2026.
+\bibitem{mujoco} E.~Todorov, T.~Erez, Y.~Tassa. MuJoCo: a physics engine for model-based control. IROS, 2012.
+\bibitem{todorov2014} E.~Todorov. Convex and analytically-invertible dynamics with contacts and constraints: theory and implementation in MuJoCo. ICRA, 2014.
+\bibitem{mjwarp} Google DeepMind and NVIDIA. MuJoCo Warp (MJWarp). \url{https://github.com/google-deepmind/mujoco_warp}, 2025.
+\bibitem{newton} Newton physics engine. \url{https://github.com/newton-physics/newton}, 2025.
+\bibitem{desaxce} G.~De~Saxc\'e, Z.-Q.~Feng. New inequality and functional for contact with friction: the implicit standard material approach. Mechanics of Structures and Machines 19(3), 1991.
+\bibitem{rockafellar} R.~T.~Rockafellar. Monotone operators and the proximal point algorithm. SIAM Journal on Control and Optimization 14(5), 1976.
+\bibitem{featherstone} R.~Featherstone. Rigid Body Dynamics Algorithms. Springer, 2008.
+\bibitem{fbf} Song, Fan, Ascher, Pai. A splitting architecture for exact reduced Coulomb friction. SCA, 2026.
+\end{thebibliography}
+
+\end{document}

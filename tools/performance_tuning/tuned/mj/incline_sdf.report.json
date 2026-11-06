@@ -1,0 +1,144 @@
+{
+ "scene": "incline_sdf",
+ "B": 8192,
+ "states": 973,
+ "baseline": {
+  "B": 4096,
+  "settings": {
+   "collision": {},
+   "runtime": {
+    "nconmax": 4096,
+    "njmax": 16384
+   },
+   "sim": {},
+   "solver_kwargs": {}
+  },
+  "error_at_B": null,
+  "throughput": {
+   "world_steps_per_s": 467453.08001337835,
+   "ms_per_step": 8.76237674994627,
+   "B": 4096,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.0012918949154690116,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 10202.581344604492
+  },
+  "artifacts": {
+   "nan": 0,
+   "escaped": 324,
+   "deep_mean": 0.0007745030699879863,
+   "deep_p99": 0.02704899653792389,
+   "creep": 3.0623190035116252,
+   "rest_speed": 28.449799358844757,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "guard_B": 512
+ },
+ "capacities": {
+  "throughput": {
+   "world_steps_per_s": 3865669.148533361,
+   "ms_per_step": 2.1191673899738817,
+   "B": 8192,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.0024792850011578866,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 765.6263656616211
+  },
+  "rounds": 1
+ },
+ "noise": {
+  "deep_mean": 2.3037880600895754e-05,
+  "deep_p99": 0.001856313496827841,
+  "creep": 0.029418007324978124,
+  "rest_speed": 0.8968968689441681,
+  "path": 19.841415421300486
+ },
+ "compacted": {
+  "world_steps_per_s": 3865417.7063292167,
+  "ms_per_step": 2.1193052400485612,
+  "B": 8192,
+  "steps": 100,
+  "reps": 3,
+  "spread": 0.0044253606481057355,
+  "overflowed": false,
+  "overflow": [],
+  "mempool_mb": 765.0476722717285
+ },
+ "budgets": [
+  {
+   "candidate": {
+    "contact_reduction": true
+   },
+   "throughput": 5034530.47525538,
+   "artifacts": {
+    "nan": 0,
+    "escaped": 327,
+    "deep_mean": 0.0007028491774690338,
+    "deep_p99": 0.024576045274734636,
+    "creep": 3.2463827440996327,
+    "rest_speed": 30.6906386166811,
+    "rest_nan": 0,
+    "overflow": []
+   },
+   "ok": false,
+   "why": "327 escaped worlds (baseline 324)"
+  }
+ ],
+ "batch": [
+  {
+   "B": 8192,
+   "world_steps_per_s": 3865669.148533361
+  },
+  {
+   "B": 16384,
+   "world_steps_per_s": 4835858.9234775165,
+   "error": null
+  },
+  {
+   "B": 32768,
+   "world_steps_per_s": 5501474.549024451,
+   "error": null
+  },
+  {
+   "B": 65536,
+   "world_steps_per_s": 5869233.830276987,
+   "error": null
+  },
+  {
+   "B": 131072,
+   "world_steps_per_s": null,
+   "error": "RuntimeError: Failed to allocate 4630511616 bytes on device 'cuda:0'"
+  }
+ ],
+ "tuned": {
+  "B": 65536,
+  "world_steps_per_s": 5869233.830276987,
+  "settings": {
+   "collision": {
+    "capacity_tile": 0.04825469970703125,
+    "capacity2": 0.35363912042600015,
+    "tile_size": {
+     "default": 8,
+     "0,1": 16
+    }
+   },
+   "runtime": {
+    "naconmax": 447345,
+    "nconmax": 7,
+    "njmax": 891
+   },
+   "sim": {},
+   "solver_kwargs": {},
+   "B": 65536
+  },
+  "artifacts_ok": false,
+  "why": "326 escaped worlds (baseline 324)"
+ },
+ "speedup": 12.555771009379189,
+ "seconds": 152.0282335281372
+}

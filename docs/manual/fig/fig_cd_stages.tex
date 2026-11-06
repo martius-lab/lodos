@@ -1,0 +1,35 @@
+\documentclass[tikz,border=4pt]{standalone}
+\input{fig/common.tex}
+\begin{document}
+\begin{tikzpicture}[font=\small,
+    st/.style={draw=ourblue, fill=ourblue!10, rounded corners=2pt, minimum height=8.5mm, align=center, font=\small\sffamily, inner sep=3pt},
+    cp/.style={draw=ourgray2, fill=white, rounded corners=2pt, minimum height=6mm, font=\footnotesize\ttfamily, inner sep=2pt},
+    sp/.style={font=\footnotesize, text=ourgray, anchor=east, align=right},
+    ts/.style={font=\footnotesize, anchor=west, align=left}]
+  \def\y{0}
+  \node[st, minimum width=118mm] (s0) at (0, 0) {\texttt{compute\_T\_w}, \texttt{compute\_T\_rel}: geometry poses, one relative pose per pair};
+  \node[st, minimum width=118mm] (s1) at (0, -1.25) {\texttt{obb\_filter}: 15-axis separating-axis test of the two boxes (a plane: the box below it?)};
+  \node[st, minimum width=100mm] (s2) at (0, -2.5) {\texttt{gen\_weights}: per generator, its tiles (a super-tile only if its sphere survives)};
+  \node[cp] (c2) at (0, -3.45) {compact\_nTb (only if capacity1 < 1)};
+  \node[st, minimum width=82mm] (s3) at (0, -4.4) {\texttt{tile\_filter}: one gather per tile, $S_{\mathrm{vox}}(c) < R + 3r$};
+  \node[cp] (c3) at (0, -5.35) {compact\_nTa: scan over generators};
+  \node[st, minimum width=64mm] (s4) at (0, -6.3) {\texttt{tiled\_sdf\_filter}: $S_{\mathrm{vox}}(p) - \rho < r$};
+  \node[cp] (c4) at (0, -7.25) {compact\_nCa2: scan over tile counts};
+  \node[st, minimum width=50mm] (s5) at (0, -8.2) {\texttt{nsdf\_kernel}: $S_{\mathrm{c2}}(p) - \rho < 0$};
+  \node[cp] (c5) at (0, -9.15) {compact\_nCa3};
+  \node[st, minimum width=40mm] (s6) at (0, -10.1) {\texttt{contact\_kernel}: $p, n, d$};
+  \foreach \a/\b in {s0/s1, s1/s2, s2/c2, c2/s3, s3/c3, c3/s4, s4/c4, c4/s5, s5/c5, c5/s6} { \draw[flow] (\a) -- (\b); }
+  % index spaces, left
+  \node[sp] at (-6.15, 0) {$B \times$ \texttt{nB}, $B \times$ \texttt{nCPR}};
+  \node[sp] at (-6.15, -1.25) {$B \times$ \texttt{nCPR} $\to$ \texttt{cpr\_active}};
+  \node[sp] at (-6.15, -2.5) {$B \times$ \texttt{nG\_world}};
+  \node[sp] at (-6.15, -4.4) {tiles: all, or \texttt{nTb}};
+  \node[sp] at (-6.15, -6.3) {\texttt{nCa1} = \texttt{nTa} $\times$ \texttt{tile\_size}\\(grid-strided)};
+  \node[sp] at (-6.15, -8.2) {\texttt{nCa2}};
+  \node[sp] at (-6.15, -10.1) {\texttt{nCa3}};
+  % the functions of collide, right
+  \draw[decorate, decoration={brace, amplitude=5pt}, ourgray] (6.15, 0.35) -- (6.15, -5.6) node[midway, right=6pt, font=\footnotesize\sffamily, text=ourgray] {\texttt{broadphase\_bbox}};
+  \draw[decorate, decoration={brace, amplitude=5pt}, ourgray] (6.15, -5.85) -- (6.15, -7.5) node[midway, right=6pt, font=\footnotesize\sffamily, text=ourgray] {\texttt{broadphase\_sdf}};
+  \draw[decorate, decoration={brace, amplitude=5pt}, ourgray] (6.15, -7.75) -- (6.15, -10.45) node[midway, right=6pt, font=\footnotesize\sffamily, text=ourgray] {\texttt{narrowphase\_sdf}};
+\end{tikzpicture}
+\end{document}

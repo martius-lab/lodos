@@ -1,0 +1,188 @@
+\input{preamble.tex}
+\begin{document}
+
+\manualtitle{Lodos v2: Reading Guide}{Every source file, and every kernel one step launches, in order}{Lodos v2 as of 2026-11-04, for someone about to read the code. The kernel lists were recorded from captured steps (\cref{sec:step}). Why each part is as it is: the Development Guide (\code{docs/development_guide.pdf}) and the two manuals.}
+
+\section{The layout, and where to start}\label{sec:layout}
+
+Lodos v2 is two layers. \code{lodos/} is the simulator: rigid-body dynamics (\code{rbd}), collision (\code{col}), contact dynamics (\code{cd}), the step that runs them, the MJCF model on the device (\code{mjcf}) and the helpers they share (\code{utils}). It carries the parts of MuJoCo Warp (MJWarp) it runs as its own code, adapted from MuJoCo Warp 3.14.0: the collision Lodos runs on the MJCF's geoms (\code{col/prim}), the constraint solve it runs on every contact, with a proximal loop around the Newton solve for the exact mode (\code{cd/solver}), and the model and data the two share (\code{mjcf}). \code{viewer/} is the live viewer, with the scene builders and their assets; the simulator imports nothing from it. The benchmarks and tools are in \cref{sec:tools}. In the order a step runs the code:
+
+\begin{enumerate}[nosep]
+\item \code{lodos/sim.py}: \code{make_sim} builds every context of a scene once; its docstring is the overview.
+\item \code{lodos/step/__init__.py}: the step, and the CUDA graph that captures it.
+\item \code{lodos/rbd/forward.py}, then \code{smooth.py}: the rigid-body pass.
+\item \code{lodos/col/prim/driver.py}: MJWarp's collision on Lodos's poses, with the exact hull narrowphase.
+\item \code{lodos/col/sdf/collide.py}, and \code{make_collision_context}'s docstring in \code{types.py}: Lodos's collision.
+\item \code{lodos/cd/driver.py}: Lodos's contacts in MJWarp's solve; \code{resolve_options} documents every option.
+\item \code{lodos/cd/solver/constraint.py}, then \code{nlsp.py}: the solve itself, its rows, then Newton's method and the proximal loop around it.
+\item \code{viewer/session.py} and \code{viewer/scenes/catalog.py}: how the viewer builds and runs a scene.
+\end{enumerate}
+
+\section{One step, kernel by kernel}\label{sec:step}
+
+\code{lodos.step.step_sim(sim)} is \code{forward(sim)} --- the rigid-body pass, MJWarp's collision, Lodos's collision and the contact solve --- and then the integrator; \code{make_step_graph} captures it into one CUDA graph. \Cref{tab:kernels} lists every kernel it launches, in order, as recorded by wrapping Warp's \code{launch} during that capture: the default options (the exact mode) on \code{arm_box_6}, a scene with both pipelines, at one world, 361 launches, where a loop body counts once; besides them the step calls CUB twice, a scan (row 19) and a sort (row 35). $L$ is the depth of the kinematic trees: a level-by-level kernel launches once a level. Rows in brackets launch only for the scenes or options they name; \cref{tab:variants} gathers the options that add or replace kernels.
+
+\begingroup\footnotesize
+\begin{longtable}{@{}L{4mm}L{27mm}L{54mm}L{63mm}@{}}
+\caption{The kernels of one step, in launch order. File paths are under \code{lodos/}.}\label{tab:kernels}\\
+\toprule
+\# & call & kernels & what they do \\
+\midrule
+\endfirsthead
+\toprule
+\# & call & kernels & what they do \\
+\midrule
+\endhead
+& \textbf{Rigid-body pass} & \code{rbd/forward.py}: \code{fwd_rbd} & \\
+1 & \code{smooth.kinematics} & \code{_kinematics_level} $\times L$ [\code{_site_poses}] & each body's world pose and its joints' anchors and axes, a launch a tree level; [the sites' frames] \\
+2 & \code{smooth.com_pos} & \code{_subtree_init}, \code{_subtree_acc} $\times L$, \code{_subtree_div}, \code{_cinert}, \code{_cdof} & subtree centres of mass; each body's inertia about its root's centre of mass; each dof's motion axis \\
+3 & \code{smooth.build_m} & \code{_crb_acc} $\times L$, \code{_build_M} [\code{_zero_big}, \code{_build_M_rows}] & composite rigid-body inertias, then each tree's block of $M$ with armature; [trees of 13 dofs or more: a dof a thread] \\
+4 & \code{smooth.factor_blocks} & \code{_factor_M} [\code{_gather_big}, tile \code{factor}, \code{_scatter_big}] & $M = LL^\top$, one thread a tree; [large trees: Warp's tile Cholesky] \\
+5 & [actuators] \code{smooth.transmission}, \code{actuator_velocity} & \code{_length}, \code{_moment}, \code{_actuator_velocity} & each actuator's length, its moment $\partial l / \partial \dot q$, and its rate \\
+6 & \code{smooth.com_vel} & \code{_com_vel_level} $\times L$ & body velocities, and the motion axes' rates \\
+7 & \code{passive.passive} & \code{_spring_damper} & joint springs and dof damping, and gravity compensation \\
+8 & \code{smooth.rne} & \code{_cacc_level} $\times L$, \code{_cfrc_local}, \code{_cfrc_acc} $\times L$, \code{_qfrc_bias} & Newton--Euler at $\ddot q = 0$: bias accelerations, gravity as the world's; body forces summed up the trees, on the dofs \\
+9 & [actuators] \code{forward.actuation} & \code{_actuator_force}, \code{_qfrc_actuator} & each actuator's force from its clamped control, on the dofs \\
+10 & \code{forward.fwd_acceleration} & \code{_qfrc_smooth} & every non-constraint force, summed \\
+11 & \code{smooth.solve_m} & \code{_solve_qacc_smooth} [\code{_gather_rhs_big}, tile \code{solve}, \code{_scatter_qacc_big}] & $\ddot q_\mathrm{smooth} = M^{-1} f_\mathrm{smooth}$ from the factor \\
+12 & [implicitfast] \code{implicit.prepare} & \code{_factor_M} & the factor of $M - hD$, for the integrator \\
+& \textbf{MJWarp's collision} & \code{col/prim/driver.py}: \code{PrimCollision} & where the MJCF's geoms have pairs to collide \\
+13 & \code{poses} & \code{geom_kinematics} & each pairable geom's world pose, from its body's \\
+14 & \code{collision_driver.nxn_broadphase} & \code{_nxn_broadphase} & MJWarp's candidate pairs, tested by bounding volumes; the overlapping ones queued \\
+15 & \code{collision_primitive.primitive_narrowphase} & \code{_primitive_narrowphase} & analytic contacts of primitive pairs (planes, spheres, capsules, boxes), into \code{d.contact} \\
+16 & \code{hybrid/pipeline.py}: \code{launch} & \code{clear_cache_kernel}, \code{warm_kernel}, \code{gjk_kernel}, \code{epa_warp_kernel} (\code{epa_kernel} at large batches), \code{manifold_kernel}, \code{plane_kernel}, \code{flip_cache_kernel} & hull pairs (meshes, boxes) and plane--mesh, exactly: last step's features re-checked by a certificate; GJK on the rest; EPA on the penetrating, decoded into hull features; a quadrangle-clipped manifold; the floor's contacts; the cache's halves swapped \\
+17 & \code{collide} & \code{export_kernel} & the hybrid's contacts appended to \code{d.contact} \\
+& \textbf{Lodos's collision} & \code{col/sdf/collide.py}: \code{collide} & where there are Lodos pairs \\
+18 & \code{broadphase_bbox} & \code{compute_T_w}, \code{compute_T_rel}, \code{obb_filter}, \code{gen_weights}, \code{tile_filter} & world poses; each pair's vertex body in its SDF body's frame; a 15-axis SAT between the pair's boxes; tiles per generator; a box test a tile \\
+19 & \code{compact_nTa} & CUB's scan, \code{set_ct_nTa}, \code{scatter_nTa}, \code{build_ul_nCa1_tiled} & the surviving tiles compacted, by a scan over their generators, and each segment's bounds \\
+20 & \code{broadphase_sdf} & \code{zero_tcnt}, \code{tiled_sdf_filter} & the voxel prefilter over each surviving tile's vertices \\
+21 & \code{scan} & \code{_scan_top} & the survivors' exclusive scan, its length read on the device \\
+22 & \code{compact_nCa2} & \code{set_ct_nCa2_tiled}, \code{scatter_nCa2_tiled}, \code{build_ul_nCa2_tiled} & the candidate vertices compacted \\
+23 & \code{narrowphase_sdf} & \code{compute_nsdf} & the spline SDF at each candidate (tricubic, or trilinear by choice) \\
+24 & \code{scan} & \code{_reduce}, \code{_scan_top}, \code{_scan_add} & the penetrating ones' scan, over several blocks \\
+25 & \code{compact_nCa3} & \code{set_ct_nCa3}, \code{scatter_nCa3}, \code{build_ul_nCa3} & the contacts compacted, sorted by (world, segment) \\
+26 & \code{narrowphase_sdf} & \code{gather_contacts} & each contact's world point, normal and gap \\
+& \textbf{The contact solve} & \code{cd/driver.py}: \code{SolverDriver.contact_dynamics} & \\
+27 & [\code{contact_reduction}] \code{reduce.reduce} & \code{assign_rows}, \code{score_contacts}, \code{mark_winners} & Newton's reduction: at most 240 contacts a segment, kept by their bins' corners and depth \\
+28 & [\code{groups}] \code{groups.before_export} & \code{group_contacts}, \code{group_count}, \code{group_assign}, \code{group_place}, \code{flip} & each grouped contact's bin, weight and carried frame; the groups and their members; the frames' buffers swapped \\
+29 & \code{contact_dynamics} & \code{export_lodos} [\code{export_groups}], \code{gather_M} & Lodos's contacts [and groups] appended to \code{d.contact}; $M$ from Lodos's tree blocks into MJWarp's sparse \code{d.M} \\
+30 & \code{constraint.make_constraint} & \code{_zero_constraint_counts}, \code{_equality_connect}, \code{_equality_weld}, \code{_equality_joint}, \code{_equality_tendon}, \code{_friction_dof}, \code{_friction_tendon}, \code{_limit_ball}, \code{_limit_slide_hinge}, \code{_limit_tendon}, \code{_efc_contact_init}, \code{_efc_contact_jac_sparse}, \code{_efc_contact_update} [\code{_contact_group_sums}] & the constraint rows: equalities, friction loss and limits (each kernel launches whether or not there are rows of its kind); then the contacts' rows, their Jacobian and their weights and references \\
+31 & \code{nlsp.solve_prox}, before the rounds & \code{_solve_init_dof}, \code{_prox_jaref_kernel}, \code{_prox_init}, \code{_fill_contact_impratio}, \code{_solve_init_efc}, \code{_solve_init_jaref_kernel}, \code{mul_m}, \code{_update_constraint_efc}, \code{_zero_qfrc_constraint_sparse}, \code{_update_constraint_init_qfrc_constraint_sparse}, \code{_update_gradient_zero_grad_dot}, \code{_update_gradient_grad}, \code{_update_gradient_init_h_sparse}, \code{_JTDACJ_sparse}, \code{_padding_h}, \code{_update_gradient_cholesky_blocked} & $\ddot q$ from the warm start; $J\ddot q - a_\mathrm{ref}$; each contact's anchor, Baumgarte bias and de Saxcé term; the worlds' solver state reset; $M\ddot q$; the rows' states and the constraint force; the gradient; the Hessian $M + J^\top D J$ with the elliptic cone's curvature, $M$ densified and the rows' terms added; its Cholesky factor and the first direction \\
+32 & round 1: Newton, under \code{capture_while} & \code{mul_m}, \code{_linesearch_jv_fused_kernel}, \code{_linesearch_iterative_kernel}, the update, gradient and Hessian kernels of row 31, \code{_solve_done} & a Newton iteration of every unconverged world: $J$ times the direction, the exact line search, the new state, gradient, Hessian and direction, the convergence test; repeated on the device until every world is done \\
+33 & round 1: the prox update & \code{_prox_zero_residuals}, \code{_prox_update}, \code{_prox_check}, \code{_prox_solve_init_efc}, \code{_prox_jaref_kernel}, and the update, gradient and Hessian kernels & new anchors and de Saxcé terms from the converged forces; each world's fixed-point test; the next round's Newton state \\
+34 & rounds 2--10, each under \code{capture_if} & as rows 32 and 33 & skipped once every world's fixed point holds: \code{prox_iters_per_qp} (10) rounds in all \\
+35 & after the rounds & \code{_prox_cache_fill}, CUB's radix sort & the converged anchors into the cross-step cache, sorted by key: MJWarp's contacts only, as Lodos's are \code{NOCARRY} \\
+& \textbf{Integration} & \code{rbd/integrate.py}: \code{integrate} & \\
+36 & [implicitfast] \code{implicit.correct} & \code{_implicit_qacc}, \code{_free_bodies} & MuJoCo's form: $(M - hD)^{-1} M \ddot q$ per tree, a lone free body by its own $6\times6$ with its gyroscopic derivative \\
+37 & \code{symplectic_euler} & \code{_integrate_vel}, \code{_integrate_pos}, \code{_advance_time} & $\dot q \mathrel{+}= h\ddot q$; $q$ from the new $\dot q$, quaternions by the exponential map; the clock \\
+\bottomrule
+\end{longtable}
+\endgroup
+
+Two things launch outside the step. \code{make_sim} builds every context once, with its own kernels and host work (hull tables, the map from Lodos's $M$ blocks to MJWarp's \code{d.M}). The viewer captures \code{forward}, the integrator and the whole step as three graphs, \code{forward}'s and the step's with the kernels of \code{lodos.utils.calibrate.Tracker}, which keep the largest demand on every capacity; a recorded step runs \code{forward}, reads a frame on the host (\code{viewer/collect.py}), then runs the integrator. It launches no kernel of its own.
+
+\begingroup\footnotesize
+\begin{longtable}{@{}L{36mm}L{120mm}@{}}
+\caption{What options and models add to \cref{tab:kernels}, or replace in it. Launch counts are as captured.}\label{tab:variants}\\
+\toprule
+option or model & kernels \\
+\midrule
+\endfirsthead
+\toprule
+option or model & kernels \\
+\midrule
+\endhead
+\code{mode="mj"} & MJWarp's own Newton solve (\code{nlsp.py}: \code{_solve}) replaces rows 31--35: row 31's kernels without the \code{_prox} ones, then one \code{capture_while} of row 32; no rounds, no cache. 101 launches on \code{arm_box_6}. \\
+\code{row_space} & \code{rowspace.prepare} once a solve: \code{_rows_kernel} ($Z = L^{-1}J^\top$, with Lodos's per-tree factor), \code{_gram_rows} ($Z^\top Z$). In place of the Hessian and its Cholesky, each Newton system by \code{_forward}, \code{_stage_kernel}, \code{_system}, \code{_cholesky_kernel}, \code{_scatter}, \code{_lift}, \code{_back}, \code{_finish}: Woodbury over the rows. \\
+\code{shared_hessian} & \code{_shared_hessian}, a block of 512 threads a world, sums the Hessian in shared memory in place of \code{_update_gradient_init_h_sparse} and \code{_JTDACJ_sparse}, wherever they launch. By default (\code{None}) on where it can be built from 64 padded dofs, a model of 48 dofs or more: on \code{sharpa_5_sdf} (140), not on \code{arm_box_6} (36). \\
+\code{fused_newton} ($n_v \le 16$) & \code{fused.solve}: \code{newton_kernel}, a block a world, replaces rows 31--34, every round included, but for the four of row 31 that set the rows up, \code{_fill_contact_impratio}, \code{_solve_init_dof}, \code{_prox_jaref_kernel} and \code{_prox_init}, which launch before it; row 35 follows it. 67 launches on \code{incline_sdf}, its \code{njmax} cut to 960 so that a world's rows fit in shared memory. \\
+\code{contact_reduction}, \code{groups} & rows 27 and 28, \code{export_groups} and \code{_contact_group_sums}. \\
+a dense model ($n_v \le 32$) & \code{_efc_contact_jac_dense}, \code{_update_constraint_init_qfrc_constraint_dense}; the Hessian by \code{_update_gradient_JTDAJ_dense_tiled} and, for an elliptic cone, \code{_update_gradient_JTCJ_dense}; \code{_update_gradient_cholesky} on one tile. \\
+trees of 13 dofs or more & the bracketed kernels of rows 3, 4 and 11; with actuators and sites, rows 5 and 9 and \code{_site_poses}. 375 launches on \code{sharpa_5_sdf}, with its shared Hessian. \\
+\code{integrator="implicitfast"} & rows 12 and 36. \\
+\bottomrule
+\end{longtable}
+\endgroup
+
+\section{The source files}\label{sec:files}
+
+\begingroup\footnotesize
+\begin{longtable}{@{}L{44mm}L{112mm}@{}}
+\caption{\code{lodos/}, the simulator.}\label{tab:lodos}\\
+\toprule
+file & what it holds \\
+\midrule
+\endfirsthead
+\toprule
+file & what it holds \\
+\midrule
+\endhead
+\code{sim.py} & \code{make_sim}, every context of a scene built once; \code{Surfaces}, \code{Sim}, \code{default_pair_params}; the impedance rule \\
+\code{step/__init__.py} & \code{forward}, \code{step_sim}, \code{make_step_graph} \\
+\code{rbd/types.py} & the rigid-body model and state (\code{make_rbd_context}); refuses what it does not model \\
+\code{rbd/forward.py} & \code{fwd_rbd}, rows 1--12 of \cref{tab:kernels}; actuation \\
+\code{rbd/smooth.py} & kinematics, centres of mass, $M$ and its factor (serial, or tiled for large trees), velocities, Newton--Euler, transmissions, solves with $M$ \\
+\code{rbd/passive.py}, \code{integrate.py}, \code{implicit.py}, \code{io.py} & springs, damping and gravity compensation; semi-implicit Euler; implicitfast; states in and out without breaking a graph \\
+\code{col/sdf/types.py} & Lodos collision's model and data, every capacity and option (\code{make_collision_context}) \\
+\code{col/sdf/collide.py} & the pipeline's stages (rows 18--26); counts, contacts, overflow and capacity tools \\
+\code{col/sdf/broadphase.py}, \code{compact.py}, \code{narrowphase.py} & the pose, box, tile and voxel-filter kernels; the compaction between stages; the SDF at the candidates and the contact gather \\
+\code{col/sdf/__init__.py} & surface data: \code{SurfaceData}, \code{PlaneSurface}, \code{load_surface_data}, \code{load_surface_file}, \code{scale_surface}, \code{write_surface_obj} \\
+\code{col/sdf/spline/c2.py}, \code{c0.py}, \code{implicit.py} & the tricubic (C2 field, C1 normals) and trilinear (C0 field, normals discontinuous across cell faces) SDFs, and a bake's per-surface evaluator \\
+\code{col/sdf/io.py}, \code{serialize.py} & making surfaces: quantizing, Hilbert or Morton vertex order (the \code{mesh} extra, loaded on first use) \\
+\code{col/prim/driver.py} & \code{PrimCollision}: MJWarp's collision on Lodos's poses (rows 13--17) \\
+\code{col/prim/collision_driver.py}, \code{collision_primitive.py}, \code{collision_convex.py}, \code{collision_gjk.py}, \code{collision_core.py}, \code{types.py} & MJWarp's collision, adapted: its broadphase (row 14); its primitive narrowphase (row 15); its convex one, GJK and EPA, which the hybrid replaces for pairs of hulls and whose types it reuses; the contacts' parameters and writes; the types and constants they share \\
+\code{col/prim/hybrid/} & the exact hull narrowphase: \code{pipeline.py} its host side, \code{kernels.py} its stages, \code{ccd.py} GJK and EPA on Gauss-map cell supports, \code{epa_warp.py} EPA a warp a pair, \code{meshdata.py} the hulls' topology, \code{truth.py} float64 depths, to adjudicate a pair by hand \\
+\code{cd/driver.py} & \code{SolverDriver}, the solve over every contact (rows 27--35); \code{resolve_options}, \code{overrides}; the modes; the exact mode's Baumgarte slop; the shared Hessian's default \\
+\code{cd/solver/constraint.py}, \code{nlsp.py} & MJWarp's constraint solve, adapted: the constraint rows (\code{make_constraint}, row 30); nonlinear least squares with proximal minimization, MJWarp's Newton solve with the proximal loop around it (\code{solve}, rows 31--35) \\
+\code{cd/solver/block_cholesky.py}, \code{io.py}, \code{types.py} & the blocked Cholesky factorization the Newton solve and \code{row_space} use; the contact groups' arrays; the solver's contexts and the constraints' types and states \\
+\code{cd/params.py} & the pairs' 13-column parameters; the spring-damper law that weighs group members \\
+\code{cd/reduce.py}, \code{groups.py}, \code{bins.py} & contact reduction (row 27); contact groups (row 28), and their normal bins and moment sectors \\
+\code{cd/rowspace.py}, \code{fused.py} & the Newton system through the rows (\code{row_space}); the whole solve as one kernel a world (\code{fused_newton}) \\
+\code{mjcf/types.py}, \code{io.py} & MJWarp's model and data on the device, adapted, which its collision and the solve share: \code{Model}, \code{Data}, \code{Option}, the contact types (\code{GROUP}, \code{NOCARRY}); \code{put_model}, \code{put_data}, \code{override_model}, the capacity estimates \\
+\code{utils/math.py}, \code{kernels.py}, \code{scan.py} & quaternion and spatial algebra, MuJoCo's \code{MINVAL}, and MJWarp's helpers; the kernel cache and timed scopes MJWarp's code uses; the scan whose length lives on the device (rows 21 and 24) \\
+\code{utils/states.py}, \code{calibrate.py}, \code{tuning.py} & state sets, the starts the tuning tools run from; the demand on every capacity (\code{Tracker}); tuning files, their fingerprints and staleness \\
+\bottomrule
+\end{longtable}
+\endgroup
+
+\begingroup\footnotesize
+\begin{longtable}{@{}L{44mm}L{112mm}@{}}
+\caption{\code{viewer/}, the live viewer, its scenes and their assets.}\label{tab:viewer}\\
+\toprule
+file & what it holds \\
+\midrule
+\endfirsthead
+\toprule
+file & what it holds \\
+\midrule
+\endhead
+\code{__main__.py}, \code{app.py} & the command line; the window, ImGui panels on Newton's OpenGL viewer \\
+\code{session.py} & a session: a scene's builds per configuration, its takes, the sims it ran under; the options' speed arrows (\code{FASTER}) \\
+\code{collect.py}, \code{trajectory.py} & a frame read off a one-world \code{Sim} on the host; a recorded run, frames on the host \\
+\code{draw.py}, \code{geometry.py} & the drawing (\code{TrajectoryViewer}); both pipelines' geometry as one scene \\
+\code{joints.py}, \code{performance.py} & editing a state joint by joint; the Performance panel \\
+\code{pairs.py} & the Collision pairs folder: friction, solref and solimp per pair, and a Lodos pair one- or two-sided \\
+\code{newton_link.py} & Newton's sims, MuJoCo Warp and Kamino, in a process of their own, for comparison \\
+\code{newton/} & that process's side, a uv project of its own (Newton 1.7.0) that imports no \code{lodos}: \code{newton_scene.py}, a scene in Newton; \code{runner.py}, which answers \code{newton_link} \\
+\code{scenes/catalog.py} & the panel's scenes in order (\code{PANEL}), those loaded by name (\code{BUILTIN}), annotated MJCF files \\
+\code{scenes/assets.py} & where the shipped assets are; shipped surfaces by name (\code{load_surface}) \\
+\code{scenes/drop.py}, \code{representations.py}, \code{armadillo.py}, \code{mixed.py} & stacked drops of armadillos or cubes, as surfaces or polytopes, on a floor or walled; the armadillo drop; both pipelines in one pile \\
+\code{scenes/sharpa.py}, \code{shadow.py} & SHARPA and Shadow hand piles, five in a stack or twenty in four \\
+\code{scenes/sharpa_armadillo.py}, \code{shadow_kong.py} & the SHARPA hand holding an armadillo; the Shadow hand's grasp of the Kong toy \\
+\code{scenes/fbf.py}, \code{nutbolt.py}, \code{nist.py}, \code{franka.py} & the FBF paper's exactness scenes; Newton's nut-bolt; Isaac Lab's NIST parts, board, driven nuts and threading; the Franka \\
+\code{scenes/data/}, \code{assets/} & recorded controls and starts; the scenes' meshes, surfaces, hulls, MJCFs and licences \\
+\bottomrule
+\end{longtable}
+\endgroup
+
+\subsection{Benchmarks and tools}\label{sec:tools}
+
+\begin{itemize}[nosep,leftmargin=*]
+\small
+\item \code{bench/}: \code{lodos_mjwarp/} and \code{lodos_kamino/}, the batched-throughput comparisons of Lodos's mj mode with MuJoCo Warp and of its exact mode with Kamino, each as Newton runs it, and \code{lodos_setting.py}, how both set Lodos up
+\item \code{tools/performance_tuning/}: \code{tune.py}, one scene end to end, and \code{tune_all.py}; its steps \code{explore.py} (state sets), \code{calibrate.py} (capacities), \code{tile_tuner.py} (tiles), with \code{sweep.py}, \code{time_variant.py}, \code{profile_scene.py} and \code{common.py}; \code{summarize.py}, which writes \code{tuned/README.md}; \code{migrate_formats.py}, which brings files of an older stored format to the current one; \code{tuned/} and \code{tuned/mj/}, every scene's tuning file under the exact and the mj mode
+\item \code{tools/mesh_processing/}: the pipeline from an MJCF to baked surfaces, \code{run_pipeline.py}: \code{fuse_meshes_by_body.py}, \code{calibrate_cp_decomp.py}, \code{interactive_remesh.py}, \code{fix_nonmanifold_meshes.py}, \code{create_surface_data.py} (the bake); \code{pack_spheres.py}, a baked surface's inner spheres; their helpers \code{mjcf.py}, \code{topology.py}, \code{instant_meshes.py}, \code{pamo_driver.py}, \code{pamo_worker.py}, \code{mesh_viewer.py}; \code{scene_surfaces.py} (boxes and spheres); \code{nutbolt/}, \code{nist/} (those parts' surfaces)
+\item \code{notebooks/}, \code{docs/}: five tutorial notebooks, the fifth making a surface from a mesh; the manuals and guides, their LaTeX in \code{docs/manual/}
+\end{itemize}
+
+\end{document}

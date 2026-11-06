@@ -1,0 +1,1144 @@
+{
+ "format": "lodos-tuning/2",
+ "scene": "house_of_cards_sdf",
+ "B": 2048,
+ "layout": "independent",
+ "fingerprint": {
+  "model": {
+   "nq": 280,
+   "nv": 240,
+   "nu": 0,
+   "na": 0,
+   "structure": "f7344240af007c56"
+  },
+  "geometry": "311e58cc8eadc572",
+  "timestep": 0.004166666666666667,
+  "hulls": {
+   "hulls": 0
+  },
+  "surfaces": [
+   {
+    "kind": "surface",
+    "vertices": 676,
+    "faces": 1348,
+    "grid_N": [
+     24,
+     145,
+     270
+    ],
+    "voxel_h": [
+     0.009999999776482582,
+     0.009999999776482582,
+     0.009999999776482582
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04,
+     1.25,
+     2.5
+    ],
+    "sha": "30020e5d15896195",
+    "file": "viewer/assets/surfaces/card_0.04x1.25x2.5/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 676,
+    "faces": 1348,
+    "grid_N": [
+     24,
+     145,
+     270
+    ],
+    "voxel_h": [
+     0.009999999776482582,
+     0.009999999776482582,
+     0.009999999776482582
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04,
+     1.25,
+     2.5
+    ],
+    "sha": "30020e5d15896195",
+    "file": "viewer/assets/surfaces/card_0.04x1.25x2.5/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 676,
+    "faces": 1348,
+    "grid_N": [
+     24,
+     145,
+     270
+    ],
+    "voxel_h": [
+     0.009999999776482582,
+     0.009999999776482582,
+     0.009999999776482582
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04,
+     1.25,
+     2.5
+    ],
+    "sha": "30020e5d15896195",
+    "file": "viewer/assets/surfaces/card_0.04x1.25x2.5/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 676,
+    "faces": 1348,
+    "grid_N": [
+     24,
+     145,
+     270
+    ],
+    "voxel_h": [
+     0.009999999776482582,
+     0.009999999776482582,
+     0.009999999776482582
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04,
+     1.25,
+     2.5
+    ],
+    "sha": "30020e5d15896195",
+    "file": "viewer/assets/surfaces/card_0.04x1.25x2.5/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 676,
+    "faces": 1348,
+    "grid_N": [
+     24,
+     145,
+     270
+    ],
+    "voxel_h": [
+     0.009999999776482582,
+     0.009999999776482582,
+     0.009999999776482582
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04,
+     1.25,
+     2.5
+    ],
+    "sha": "30020e5d15896195",
+    "file": "viewer/assets/surfaces/card_0.04x1.25x2.5/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 676,
+    "faces": 1348,
+    "grid_N": [
+     24,
+     145,
+     270
+    ],
+    "voxel_h": [
+     0.009999999776482582,
+     0.009999999776482582,
+     0.009999999776482582
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04,
+     1.25,
+     2.5
+    ],
+    "sha": "30020e5d15896195",
+    "file": "viewer/assets/surfaces/card_0.04x1.25x2.5/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 676,
+    "faces": 1348,
+    "grid_N": [
+     24,
+     145,
+     270
+    ],
+    "voxel_h": [
+     0.009999999776482582,
+     0.009999999776482582,
+     0.009999999776482582
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04,
+     1.25,
+     2.5
+    ],
+    "sha": "30020e5d15896195",
+    "file": "viewer/assets/surfaces/card_0.04x1.25x2.5/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 676,
+    "faces": 1348,
+    "grid_N": [
+     24,
+     145,
+     270
+    ],
+    "voxel_h": [
+     0.009999999776482582,
+     0.009999999776482582,
+     0.009999999776482582
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04,
+     1.25,
+     2.5
+    ],
+    "sha": "30020e5d15896195",
+    "file": "viewer/assets/surfaces/card_0.04x1.25x2.5/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 676,
+    "faces": 1348,
+    "grid_N": [
+     24,
+     145,
+     270
+    ],
+    "voxel_h": [
+     0.009999999776482582,
+     0.009999999776482582,
+     0.009999999776482582
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04,
+     1.25,
+     2.5
+    ],
+    "sha": "30020e5d15896195",
+    "file": "viewer/assets/surfaces/card_0.04x1.25x2.5/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 676,
+    "faces": 1348,
+    "grid_N": [
+     24,
+     145,
+     270
+    ],
+    "voxel_h": [
+     0.009999999776482582,
+     0.009999999776482582,
+     0.009999999776482582
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04,
+     1.25,
+     2.5
+    ],
+    "sha": "30020e5d15896195",
+    "file": "viewer/assets/surfaces/card_0.04x1.25x2.5/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 676,
+    "faces": 1348,
+    "grid_N": [
+     24,
+     145,
+     270
+    ],
+    "voxel_h": [
+     0.009999999776482582,
+     0.009999999776482582,
+     0.009999999776482582
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04,
+     1.25,
+     2.5
+    ],
+    "sha": "30020e5d15896195",
+    "file": "viewer/assets/surfaces/card_0.04x1.25x2.5/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 676,
+    "faces": 1348,
+    "grid_N": [
+     24,
+     145,
+     270
+    ],
+    "voxel_h": [
+     0.009999999776482582,
+     0.009999999776482582,
+     0.009999999776482582
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04,
+     1.25,
+     2.5
+    ],
+    "sha": "30020e5d15896195",
+    "file": "viewer/assets/surfaces/card_0.04x1.25x2.5/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 676,
+    "faces": 1348,
+    "grid_N": [
+     24,
+     145,
+     270
+    ],
+    "voxel_h": [
+     0.009999999776482582,
+     0.009999999776482582,
+     0.009999999776482582
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04,
+     1.25,
+     2.5
+    ],
+    "sha": "30020e5d15896195",
+    "file": "viewer/assets/surfaces/card_0.04x1.25x2.5/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 676,
+    "faces": 1348,
+    "grid_N": [
+     24,
+     145,
+     270
+    ],
+    "voxel_h": [
+     0.009999999776482582,
+     0.009999999776482582,
+     0.009999999776482582
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04,
+     1.25,
+     2.5
+    ],
+    "sha": "30020e5d15896195",
+    "file": "viewer/assets/surfaces/card_0.04x1.25x2.5/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 676,
+    "faces": 1348,
+    "grid_N": [
+     24,
+     145,
+     270
+    ],
+    "voxel_h": [
+     0.009999999776482582,
+     0.009999999776482582,
+     0.009999999776482582
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04,
+     1.25,
+     2.5
+    ],
+    "sha": "30020e5d15896195",
+    "file": "viewer/assets/surfaces/card_0.04x1.25x2.5/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 676,
+    "faces": 1348,
+    "grid_N": [
+     24,
+     145,
+     270
+    ],
+    "voxel_h": [
+     0.009999999776482582,
+     0.009999999776482582,
+     0.009999999776482582
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04,
+     1.25,
+     2.5
+    ],
+    "sha": "30020e5d15896195",
+    "file": "viewer/assets/surfaces/card_0.04x1.25x2.5/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 676,
+    "faces": 1348,
+    "grid_N": [
+     24,
+     145,
+     270
+    ],
+    "voxel_h": [
+     0.009999999776482582,
+     0.009999999776482582,
+     0.009999999776482582
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04,
+     1.25,
+     2.5
+    ],
+    "sha": "30020e5d15896195",
+    "file": "viewer/assets/surfaces/card_0.04x1.25x2.5/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 676,
+    "faces": 1348,
+    "grid_N": [
+     24,
+     145,
+     270
+    ],
+    "voxel_h": [
+     0.009999999776482582,
+     0.009999999776482582,
+     0.009999999776482582
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04,
+     1.25,
+     2.5
+    ],
+    "sha": "30020e5d15896195",
+    "file": "viewer/assets/surfaces/card_0.04x1.25x2.5/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 676,
+    "faces": 1348,
+    "grid_N": [
+     24,
+     145,
+     270
+    ],
+    "voxel_h": [
+     0.009999999776482582,
+     0.009999999776482582,
+     0.009999999776482582
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04,
+     1.25,
+     2.5
+    ],
+    "sha": "30020e5d15896195",
+    "file": "viewer/assets/surfaces/card_0.04x1.25x2.5/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 676,
+    "faces": 1348,
+    "grid_N": [
+     24,
+     145,
+     270
+    ],
+    "voxel_h": [
+     0.009999999776482582,
+     0.009999999776482582,
+     0.009999999776482582
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04,
+     1.25,
+     2.5
+    ],
+    "sha": "30020e5d15896195",
+    "file": "viewer/assets/surfaces/card_0.04x1.25x2.5/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 676,
+    "faces": 1348,
+    "grid_N": [
+     24,
+     145,
+     270
+    ],
+    "voxel_h": [
+     0.009999999776482582,
+     0.009999999776482582,
+     0.009999999776482582
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04,
+     1.25,
+     2.5
+    ],
+    "sha": "30020e5d15896195",
+    "file": "viewer/assets/surfaces/card_0.04x1.25x2.5/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 676,
+    "faces": 1348,
+    "grid_N": [
+     24,
+     145,
+     270
+    ],
+    "voxel_h": [
+     0.009999999776482582,
+     0.009999999776482582,
+     0.009999999776482582
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04,
+     1.25,
+     2.5
+    ],
+    "sha": "30020e5d15896195",
+    "file": "viewer/assets/surfaces/card_0.04x1.25x2.5/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 676,
+    "faces": 1348,
+    "grid_N": [
+     24,
+     145,
+     270
+    ],
+    "voxel_h": [
+     0.009999999776482582,
+     0.009999999776482582,
+     0.009999999776482582
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04,
+     1.25,
+     2.5
+    ],
+    "sha": "30020e5d15896195",
+    "file": "viewer/assets/surfaces/card_0.04x1.25x2.5/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 676,
+    "faces": 1348,
+    "grid_N": [
+     24,
+     145,
+     270
+    ],
+    "voxel_h": [
+     0.009999999776482582,
+     0.009999999776482582,
+     0.009999999776482582
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04,
+     1.25,
+     2.5
+    ],
+    "sha": "30020e5d15896195",
+    "file": "viewer/assets/surfaces/card_0.04x1.25x2.5/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 676,
+    "faces": 1348,
+    "grid_N": [
+     24,
+     145,
+     270
+    ],
+    "voxel_h": [
+     0.009999999776482582,
+     0.009999999776482582,
+     0.009999999776482582
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04,
+     1.25,
+     2.5
+    ],
+    "sha": "30020e5d15896195",
+    "file": "viewer/assets/surfaces/card_0.04x1.25x2.5/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 676,
+    "faces": 1348,
+    "grid_N": [
+     24,
+     145,
+     270
+    ],
+    "voxel_h": [
+     0.009999999776482582,
+     0.009999999776482582,
+     0.009999999776482582
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04,
+     1.25,
+     2.5
+    ],
+    "sha": "30020e5d15896195",
+    "file": "viewer/assets/surfaces/card_0.04x1.25x2.5/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 676,
+    "faces": 1348,
+    "grid_N": [
+     24,
+     145,
+     270
+    ],
+    "voxel_h": [
+     0.009999999776482582,
+     0.009999999776482582,
+     0.009999999776482582
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04,
+     1.25,
+     2.5
+    ],
+    "sha": "30020e5d15896195",
+    "file": "viewer/assets/surfaces/card_0.04x1.25x2.5/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 676,
+    "faces": 1348,
+    "grid_N": [
+     24,
+     145,
+     270
+    ],
+    "voxel_h": [
+     0.009999999776482582,
+     0.009999999776482582,
+     0.009999999776482582
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04,
+     1.25,
+     2.5
+    ],
+    "sha": "30020e5d15896195",
+    "file": "viewer/assets/surfaces/card_0.04x1.25x2.5/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 676,
+    "faces": 1348,
+    "grid_N": [
+     24,
+     145,
+     270
+    ],
+    "voxel_h": [
+     0.009999999776482582,
+     0.009999999776482582,
+     0.009999999776482582
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04,
+     1.25,
+     2.5
+    ],
+    "sha": "30020e5d15896195",
+    "file": "viewer/assets/surfaces/card_0.04x1.25x2.5/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 676,
+    "faces": 1348,
+    "grid_N": [
+     24,
+     145,
+     270
+    ],
+    "voxel_h": [
+     0.009999999776482582,
+     0.009999999776482582,
+     0.009999999776482582
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04,
+     1.25,
+     2.5
+    ],
+    "sha": "30020e5d15896195",
+    "file": "viewer/assets/surfaces/card_0.04x1.25x2.5/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 676,
+    "faces": 1348,
+    "grid_N": [
+     24,
+     145,
+     270
+    ],
+    "voxel_h": [
+     0.009999999776482582,
+     0.009999999776482582,
+     0.009999999776482582
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04,
+     1.25,
+     2.5
+    ],
+    "sha": "30020e5d15896195",
+    "file": "viewer/assets/surfaces/card_0.04x1.25x2.5/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 676,
+    "faces": 1348,
+    "grid_N": [
+     24,
+     145,
+     270
+    ],
+    "voxel_h": [
+     0.009999999776482582,
+     0.009999999776482582,
+     0.009999999776482582
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04,
+     1.25,
+     2.5
+    ],
+    "sha": "30020e5d15896195",
+    "file": "viewer/assets/surfaces/card_0.04x1.25x2.5/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 676,
+    "faces": 1348,
+    "grid_N": [
+     24,
+     145,
+     270
+    ],
+    "voxel_h": [
+     0.009999999776482582,
+     0.009999999776482582,
+     0.009999999776482582
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04,
+     1.25,
+     2.5
+    ],
+    "sha": "30020e5d15896195",
+    "file": "viewer/assets/surfaces/card_0.04x1.25x2.5/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 676,
+    "faces": 1348,
+    "grid_N": [
+     24,
+     145,
+     270
+    ],
+    "voxel_h": [
+     0.009999999776482582,
+     0.009999999776482582,
+     0.009999999776482582
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04,
+     1.25,
+     2.5
+    ],
+    "sha": "30020e5d15896195",
+    "file": "viewer/assets/surfaces/card_0.04x1.25x2.5/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 676,
+    "faces": 1348,
+    "grid_N": [
+     24,
+     145,
+     270
+    ],
+    "voxel_h": [
+     0.009999999776482582,
+     0.009999999776482582,
+     0.009999999776482582
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04,
+     1.25,
+     2.5
+    ],
+    "sha": "30020e5d15896195",
+    "file": "viewer/assets/surfaces/card_0.04x1.25x2.5/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 676,
+    "faces": 1348,
+    "grid_N": [
+     24,
+     145,
+     270
+    ],
+    "voxel_h": [
+     0.009999999776482582,
+     0.009999999776482582,
+     0.009999999776482582
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04,
+     1.25,
+     2.5
+    ],
+    "sha": "30020e5d15896195",
+    "file": "viewer/assets/surfaces/card_0.04x1.25x2.5/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 676,
+    "faces": 1348,
+    "grid_N": [
+     24,
+     145,
+     270
+    ],
+    "voxel_h": [
+     0.009999999776482582,
+     0.009999999776482582,
+     0.009999999776482582
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04,
+     1.25,
+     2.5
+    ],
+    "sha": "30020e5d15896195",
+    "file": "viewer/assets/surfaces/card_0.04x1.25x2.5/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 676,
+    "faces": 1348,
+    "grid_N": [
+     24,
+     145,
+     270
+    ],
+    "voxel_h": [
+     0.009999999776482582,
+     0.009999999776482582,
+     0.009999999776482582
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04,
+     1.25,
+     2.5
+    ],
+    "sha": "30020e5d15896195",
+    "file": "viewer/assets/surfaces/card_0.04x1.25x2.5/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 676,
+    "faces": 1348,
+    "grid_N": [
+     24,
+     145,
+     270
+    ],
+    "voxel_h": [
+     0.009999999776482582,
+     0.009999999776482582,
+     0.009999999776482582
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04,
+     1.25,
+     2.5
+    ],
+    "sha": "30020e5d15896195",
+    "file": "viewer/assets/surfaces/card_0.04x1.25x2.5/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 676,
+    "faces": 1348,
+    "grid_N": [
+     24,
+     145,
+     270
+    ],
+    "voxel_h": [
+     0.009999999776482582,
+     0.009999999776482582,
+     0.009999999776482582
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     0.04,
+     1.25,
+     2.5
+    ],
+    "sha": "30020e5d15896195",
+    "file": "viewer/assets/surfaces/card_0.04x1.25x2.5/surface_data.npz"
+   },
+   {
+    "kind": "plane"
+   }
+  ],
+  "pairs": 1600
+ },
+ "states": {
+  "path": "results/tuning/states/mj/house_of_cards_sdf.states.npz",
+  "digest": "25c4fbe38335ecfa",
+  "size": 347,
+  "source": {
+   "kind": "explore",
+   "scene": "house_of_cards_sdf",
+   "strategy": [
+    "initial",
+    "perturb"
+   ],
+   "starts": 32,
+   "horizon": 1500,
+   "stride": 50,
+   "seed": 0,
+   "jitter": 0.0005,
+   "sigma": 0.5,
+   "max_depth": 0.01,
+   "dropped_nonfinite": 0,
+   "dropped_deep": 643
+  },
+  "horizon": 200,
+  "controls": {
+   "kind": "hold"
+  }
+ },
+ "safety": 1.5,
+ "created": "2026-11-01T09:25:33",
+ "commit": null,
+ "device": "NVIDIA GeForce RTX 4080",
+ "collision": {
+  "capacity_tile": 0.10051624253216912,
+  "capacity2": 0.02446912682716908
+ },
+ "runtime": {
+  "naconmax": 3343274,
+  "nconmax": 1633,
+  "njmax": 6975
+ },
+ "sim": {},
+ "solver_kwargs": {
+  "mode": "mj"
+ },
+ "tiles": {
+  "error": "RuntimeError: Failed to allocate 1114112000 bytes on device 'cuda:0'"
+ },
+ "baseline": {
+  "B": 128,
+  "settings": {
+   "collision": {},
+   "runtime": {
+    "nconmax": 4096,
+    "njmax": 16384
+   },
+   "sim": {},
+   "solver_kwargs": {}
+  },
+  "throughput": {
+   "world_steps_per_s": 7183.100185054261,
+   "ms_per_step": 17.819603890020517,
+   "B": 128,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.005788392414315329,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 11175.57255077362
+  },
+  "artifacts": {
+   "nan": 0,
+   "escaped": 0,
+   "deep_mean": 0.0085768819482837,
+   "deep_p99": 0.019994397573173048,
+   "creep": 0.0453596061740745,
+   "rest_speed": 0.11867771895049373,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "guard_B": 128
+ },
+ "peaks": {
+  "B": 2048,
+  "runtime": {
+   "nacon": 2228849,
+   "ncollision": 0,
+   "naconmax": 4547904,
+   "contacts_per_world": 1550,
+   "overflow": false,
+   "nefc_per_world": 4650,
+   "njmax": 9198,
+   "efc_overflow": false
+  },
+  "lodos_col": {
+   "peak": {
+    "nCa1": 149315136,
+    "nCa2": 3653611,
+    "nCa3": 2228849,
+    "nTa": 18664392,
+    "nTb": 0
+   },
+   "allocated": {
+    "nCa1": 300510208,
+    "nCa2": 7343040,
+    "nCa3": 7343040,
+    "nTa": 37563776,
+    "nTb": 278528000
+   },
+   "overflow": {
+    "nCa1": false,
+    "nCa2": false,
+    "nCa3": false,
+    "nTa": false,
+    "nTb": false
+   },
+   "tile_slots": 278528000,
+   "slots_per_world": 1088000,
+   "uniform_K": 1,
+   "tile_K": 8,
+   "compacts": 0,
+   "contacts_per_world": 1550
+  },
+  "overflowed": false,
+  "layout": "independent",
+  "horizon": 200,
+  "batches": 1,
+  "states": 347,
+  "controls": {
+   "kind": "hold"
+  }
+ },
+ "throughput": {
+  "world_steps_per_s": 17084.744869515536,
+  "B": 2048
+ },
+ "artifacts": {
+  "tuned": {
+   "nan": 0,
+   "escaped": 0,
+   "deep_mean": 0.008694137678139669,
+   "deep_p99": 0.019995820950716735,
+   "creep": 0.03798170420905895,
+   "rest_speed": 0.07838711436488666,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "baseline": {
+   "nan": 0,
+   "escaped": 0,
+   "deep_mean": 0.0085768819482837,
+   "deep_p99": 0.019994397573173048,
+   "creep": 0.0453596061740745,
+   "rest_speed": 0.11867771895049373,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "ok": true,
+  "why": ""
+ }
+}

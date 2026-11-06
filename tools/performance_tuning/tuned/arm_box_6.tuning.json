@@ -1,0 +1,333 @@
+{
+ "format": "lodos-tuning/2",
+ "scene": "arm_box_6",
+ "B": 4096,
+ "layout": "independent",
+ "fingerprint": {
+  "model": {
+   "nq": 42,
+   "nv": 36,
+   "nu": 0,
+   "na": 0,
+   "structure": "9173454d36a633e0"
+  },
+  "geometry": "65b22326f18496f4",
+  "timestep": 0.002,
+  "hulls": {
+   "hulls": 102,
+   "vertices": 16764,
+   "max_vertices": 896,
+   "bodies": 3,
+   "hulls_per_body_max": 34,
+   "sha": "65e14bc5036dd173"
+  },
+  "surfaces": [
+   {
+    "kind": "surface",
+    "vertices": 451,
+    "faces": 898,
+    "grid_N": [
+     85,
+     76,
+     100
+    ],
+    "voxel_h": [
+     0.03278534114360809,
+     0.03278534114360809,
+     0.03278534114360809
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     1.3772549,
+     1.229692,
+     1.639267
+    ],
+    "sha": "079adb9906bc5b25",
+    "file": "viewer/assets/surfaces/armadillo/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 451,
+    "faces": 898,
+    "grid_N": [
+     85,
+     76,
+     100
+    ],
+    "voxel_h": [
+     0.03278534114360809,
+     0.03278534114360809,
+     0.03278534114360809
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     1.3772549,
+     1.229692,
+     1.639267
+    ],
+    "sha": "079adb9906bc5b25",
+    "file": "viewer/assets/surfaces/armadillo/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 451,
+    "faces": 898,
+    "grid_N": [
+     85,
+     76,
+     100
+    ],
+    "voxel_h": [
+     0.03278534114360809,
+     0.03278534114360809,
+     0.03278534114360809
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     1.3772549,
+     1.229692,
+     1.639267
+    ],
+    "sha": "079adb9906bc5b25",
+    "file": "viewer/assets/surfaces/armadillo/surface_data.npz"
+   },
+   {
+    "kind": "plane"
+   }
+  ],
+  "pairs": 9
+ },
+ "states": {
+  "path": "results/tuning/states/arm_box_6.states.npz",
+  "digest": "2488eb7debdadacf",
+  "size": 2558,
+  "source": {
+   "kind": "explore",
+   "scene": "arm_box_6",
+   "strategy": [
+    "scatter"
+   ],
+   "starts": 64,
+   "horizon": 2000,
+   "stride": 50,
+   "solver": "pc",
+   "seed": 0,
+   "jitter": 0.01,
+   "sigma": 0.5,
+   "max_depth": 0.01,
+   "dropped_nonfinite": 0,
+   "dropped_deep": 2
+  },
+  "horizon": 200,
+  "controls": {
+   "kind": "hold"
+  }
+ },
+ "safety": 1.5,
+ "created": "2026-11-01T08:46:26",
+ "commit": null,
+ "device": "NVIDIA GeForce RTX 4080",
+ "collision": {
+  "capacity_tile": 0.1404179801717836,
+  "capacity2": 0.025269824404429035
+ },
+ "runtime": {
+  "naconmax": 272147,
+  "nconmax": 67,
+  "njmax": 113,
+  "nccdmax": 11
+ },
+ "sim": {},
+ "solver_kwargs": {},
+ "tiles": {
+  "groups": {
+   "079adb9906bc5b25|079adb9906bc5b25": 6,
+   "079adb9906bc5b25|plane": 3
+  },
+  "trials": [
+   {
+    "sizes": {
+     "079adb9906bc5b25|079adb9906bc5b25": 8,
+     "079adb9906bc5b25|plane": 8
+    },
+    "ms": 0.08837825007503852
+   },
+   {
+    "sizes": {
+     "079adb9906bc5b25|079adb9906bc5b25": 4,
+     "079adb9906bc5b25|plane": 8
+    },
+    "ms": 0.11953034991165623,
+    "error": null
+   },
+   {
+    "sizes": {
+     "079adb9906bc5b25|079adb9906bc5b25": 16,
+     "079adb9906bc5b25|plane": 8
+    },
+    "ms": 0.10477545001776889,
+    "error": null
+   },
+   {
+    "sizes": {
+     "079adb9906bc5b25|079adb9906bc5b25": 32,
+     "079adb9906bc5b25|plane": 8
+    },
+    "ms": 0.11536704987520352,
+    "error": null
+   },
+   {
+    "sizes": {
+     "079adb9906bc5b25|079adb9906bc5b25": 8,
+     "079adb9906bc5b25|plane": 4
+    },
+    "ms": 0.11323354992782697,
+    "error": null
+   },
+   {
+    "sizes": {
+     "079adb9906bc5b25|079adb9906bc5b25": 8,
+     "079adb9906bc5b25|plane": 16
+    },
+    "ms": 0.10578709989204071,
+    "error": null
+   },
+   {
+    "sizes": {
+     "079adb9906bc5b25|079adb9906bc5b25": 8,
+     "079adb9906bc5b25|plane": 32
+    },
+    "ms": 0.11101060008513741,
+    "error": null
+   }
+  ],
+  "base_ms": 0.08837825007503852,
+  "best_ms": 0.08837825007503852,
+  "sizes": {
+   "079adb9906bc5b25|079adb9906bc5b25": 8,
+   "079adb9906bc5b25|plane": 8
+  }
+ },
+ "baseline": {
+  "B": 1024,
+  "settings": {
+   "collision": {},
+   "runtime": {
+    "nconmax": 2048,
+    "njmax": 2048
+   },
+   "sim": {},
+   "solver_kwargs": {}
+  },
+  "throughput": {
+   "world_steps_per_s": 122928.42701473976,
+   "ms_per_step": 8.330050459990161,
+   "B": 1024,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.0023089139806953354,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 12138.358501434326
+  },
+  "artifacts": {
+   "nan": 0,
+   "escaped": 0,
+   "deep_mean": 0.0005766549652847286,
+   "deep_p99": 0.005505601167678833,
+   "creep": 0.004477865077434395,
+   "rest_speed": 0.011233520982564471,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "guard_B": 512
+ },
+ "peaks": {
+  "B": 4096,
+  "runtime": {
+   "nacon": 55739,
+   "ncollision": 181431,
+   "naconmax": 341888,
+   "contacts_per_world": 25,
+   "overflow": false,
+   "nefc_per_world": 75,
+   "njmax": 138,
+   "efc_overflow": false,
+   "ccd": {
+    "epa": 25125,
+    "manifold": 28997,
+    "contacts": 36512,
+    "naccdmax": 61440,
+    "overflow": false
+   }
+  },
+  "lodos_col": {
+   "peak": {
+    "nCa1": 1573616,
+    "nCa2": 39765,
+    "nCa3": 11116,
+    "nTa": 196702,
+    "nTb": 0
+   },
+   "allocated": {
+    "nCa1": 2785280,
+    "nCa2": 65920,
+    "nCa3": 65920,
+    "nTa": 348160,
+    "nTb": 2101248
+   },
+   "overflow": {
+    "nCa1": false,
+    "nCa2": false,
+    "nCa3": false,
+    "nTa": false,
+    "nTb": false
+   },
+   "tile_slots": 2101248,
+   "slots_per_world": 4104,
+   "uniform_K": 1,
+   "tile_K": 8,
+   "compacts": 0,
+   "contacts_per_world": 9
+  },
+  "overflowed": false,
+  "layout": "independent",
+  "horizon": 200,
+  "batches": 1,
+  "states": 2558,
+  "controls": {
+   "kind": "hold"
+  }
+ },
+ "throughput": {
+  "world_steps_per_s": 244448.5109074471,
+  "B": 4096
+ },
+ "artifacts": {
+  "tuned": {
+   "nan": 0,
+   "escaped": 0,
+   "deep_mean": 0.0005714389548360788,
+   "deep_p99": 0.005361460149288179,
+   "creep": 0.0044782447600609215,
+   "rest_speed": 0.011351438588576457,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "baseline": {
+   "nan": 0,
+   "escaped": 0,
+   "deep_mean": 0.0005766549652847286,
+   "deep_p99": 0.005505601167678833,
+   "creep": 0.004477865077434395,
+   "rest_speed": 0.011233520982564471,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "ok": true,
+  "why": ""
+ }
+}

@@ -1,0 +1,107 @@
+{
+ "scene": "shadow_walled_5_polytope",
+ "B": 512,
+ "states": 856,
+ "baseline": {
+  "B": 512,
+  "settings": {
+   "collision": {},
+   "runtime": {
+    "nconmax": 2560,
+    "njmax": 10240
+   },
+   "sim": {},
+   "solver_kwargs": {}
+  },
+  "error_at_B": null,
+  "throughput": {
+   "world_steps_per_s": 31687.98487080497,
+   "ms_per_step": 16.157543690060265,
+   "B": 512,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.01068428118156293,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 9453.376987457275
+  },
+  "artifacts": {
+   "nan": 0,
+   "escaped": 0,
+   "deep_mean": 0.0030979760071268457,
+   "deep_p99": 0.018633770383894455,
+   "creep": 0.0007214878835642322,
+   "rest_speed": 0.017091841687943088,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "guard_B": 512
+ },
+ "capacities": {
+  "throughput": {
+   "world_steps_per_s": 40678.692974796766,
+   "ms_per_step": 12.586441759995068,
+   "B": 512,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.0007884666842469504,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 742.4780540466309
+  },
+  "rounds": 1
+ },
+ "noise": {
+  "deep_mean": 1.5286710159049394e-06,
+  "deep_p99": 1.6112755984058758e-05,
+  "creep": 3.90842981327715e-07,
+  "rest_speed": 0.0004775000434165122
+ },
+ "budgets": [],
+ "batch": [
+  {
+   "B": 512,
+   "world_steps_per_s": 40678.692974796766
+  },
+  {
+   "B": 1024,
+   "world_steps_per_s": 57934.21540999172,
+   "error": null
+  },
+  {
+   "B": 2048,
+   "world_steps_per_s": 73293.28194503616,
+   "error": null
+  },
+  {
+   "B": 4096,
+   "world_steps_per_s": 86594.73140003328,
+   "error": null
+  },
+  {
+   "B": 8192,
+   "world_steps_per_s": null,
+   "error": "RuntimeError: Failed to allocate 154664960 bytes on device 'cuda:0'"
+  }
+ ],
+ "tuned": {
+  "B": 4096,
+  "world_steps_per_s": 86594.73140003328,
+  "settings": {
+   "collision": {},
+   "runtime": {
+    "naconmax": 2210634,
+    "nconmax": 540,
+    "njmax": 3194,
+    "nccdmax": 40
+   },
+   "sim": {},
+   "solver_kwargs": {},
+   "B": 4096
+  },
+  "artifacts_ok": true,
+  "why": ""
+ },
+ "speedup": 2.732730773291155,
+ "seconds": 170.38819289207458
+}

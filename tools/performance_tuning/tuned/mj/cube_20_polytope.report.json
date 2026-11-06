@@ -1,0 +1,102 @@
+{
+ "scene": "cube_20_polytope",
+ "B": 2048,
+ "states": 1032,
+ "baseline": {
+  "B": 2048,
+  "settings": {
+   "collision": {},
+   "runtime": {
+    "nconmax": 1024,
+    "njmax": 768
+   },
+   "sim": {},
+   "solver_kwargs": {}
+  },
+  "error_at_B": null,
+  "throughput": {
+   "world_steps_per_s": 343756.84544768726,
+   "ms_per_step": 5.957699540012982,
+   "B": 2048,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.0017130219551742534,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 11824.467206954956
+  },
+  "artifacts": {
+   "nan": 0,
+   "escaped": 0,
+   "deep_mean": 0.005516739670883908,
+   "deep_p99": 0.05393511801958084,
+   "creep": 0.0024803824275118967,
+   "rest_speed": 0.006857311612861849,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "guard_B": 512
+ },
+ "capacities": {
+  "throughput": {
+   "world_steps_per_s": 383727.16159762023,
+   "ms_per_step": 5.33712544995069,
+   "B": 2048,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.0003580766578789062,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 431.5764217376709
+  },
+  "rounds": 1
+ },
+ "noise": {
+  "deep_mean": 3.1660861850467056e-06,
+  "deep_p99": 5.559235811238711e-05,
+  "creep": 3.941508320507575e-08,
+  "rest_speed": 3.853903503170386e-05
+ },
+ "budgets": [],
+ "batch": [
+  {
+   "B": 2048,
+   "world_steps_per_s": 383727.16159762023
+  },
+  {
+   "B": 4096,
+   "world_steps_per_s": 438121.4852471168,
+   "error": null
+  },
+  {
+   "B": 8192,
+   "world_steps_per_s": 464265.24061712995,
+   "error": null
+  },
+  {
+   "B": 16384,
+   "world_steps_per_s": 481318.6884114782,
+   "error": null
+  }
+ ],
+ "tuned": {
+  "B": 8192,
+  "world_steps_per_s": 464265.24061712995,
+  "settings": {
+   "collision": {},
+   "runtime": {
+    "naconmax": 793689,
+    "nconmax": 97,
+    "njmax": 378,
+    "nccdmax": 8
+   },
+   "sim": {},
+   "solver_kwargs": {},
+   "B": 8192
+  },
+  "artifacts_ok": true,
+  "why": ""
+ },
+ "speedup": 1.3505628957366658,
+ "seconds": 73.46063947677612
+}

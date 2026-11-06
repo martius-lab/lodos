@@ -1,0 +1,64 @@
+{
+ "source": "viewer/assets/nist/usd/nut_m8.usd",
+ "body": "/factory_nut_m8_hex/factory_nut_m8_hex",
+ "meters_per_unit": 1.0,
+ "y_up_turned": false,
+ "authored_mass": 0.05000000074505806,
+ "meshes": {
+  "collision": {
+   "prims": [
+    "/factory_nut_m8_hex/factory_nut_m8_hex/collision"
+   ],
+   "approximation": [
+    "sdf"
+   ],
+   "prim_scale": [
+    [
+     1.0,
+     1.0,
+     1.0
+    ]
+   ],
+   "vertices": 529,
+   "triangles": 1058,
+   "bbox_min": [
+    -0.00651716161519289,
+    -0.007422000635415316,
+    0.009337803348898888
+   ],
+   "bbox_max": [
+    0.006486331112682819,
+    0.007589005399495363,
+    0.015842482447624207
+   ]
+  },
+  "visual": {
+   "prims": [
+    "/factory_nut_m8_hex/factory_nut_m8_hex/visual"
+   ],
+   "approximation": [
+    null
+   ],
+   "prim_scale": [
+    [
+     1.0,
+     1.0,
+     1.0
+    ]
+   ],
+   "vertices": 4741,
+   "triangles": 9482,
+   "bbox_min": [
+    -0.006515999790281057,
+    -0.007422000169754028,
+    0.009340000338852406
+   ],
+   "bbox_max": [
+    0.006484000012278557,
+    0.0075889998115599155,
+    0.01583999954164028
+   ]
+  }
+ },
+ "visual_is_collision": false
+}

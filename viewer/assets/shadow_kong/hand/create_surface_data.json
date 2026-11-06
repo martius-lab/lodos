@@ -1,0 +1,317 @@
+[
+  {
+    "body": "rh_ffdistal",
+    "v": 68,
+    "e": 198,
+    "N": [
+      67,
+      57,
+      100
+    ],
+    "h_mm": 0.5039,
+    "sdf_error_h": 0.0793,
+    "bytes": 3258000,
+    "watertight": true,
+    "recommended_depth": 9
+  },
+  {
+    "body": "rh_ffknuckle",
+    "v": 36,
+    "e": 102,
+    "N": [
+      74,
+      99,
+      100
+    ],
+    "h_mm": 0.3266,
+    "sdf_error_h": 0.1092,
+    "bytes": 6166248,
+    "watertight": true,
+    "recommended_depth": 9
+  },
+  {
+    "body": "rh_ffmiddle",
+    "v": 87,
+    "e": 255,
+    "N": [
+      45,
+      42,
+      100
+    ],
+    "h_mm": 0.7915,
+    "sdf_error_h": 0.068,
+    "bytes": 1645920,
+    "watertight": true,
+    "recommended_depth": 9
+  },
+  {
+    "body": "rh_ffproximal",
+    "v": 113,
+    "e": 333,
+    "N": [
+      36,
+      32,
+      100
+    ],
+    "h_mm": 1.1278,
+    "sdf_error_h": 0.0825,
+    "bytes": 1023180,
+    "watertight": true,
+    "recommended_depth": 11
+  },
+  {
+    "body": "rh_lfdistal",
+    "v": 65,
+    "e": 189,
+    "N": [
+      66,
+      55,
+      100
+    ],
+    "h_mm": 0.5227,
+    "sdf_error_h": 0.0824,
+    "bytes": 3100824,
+    "watertight": true,
+    "recommended_depth": 9
+  },
+  {
+    "body": "rh_lfknuckle",
+    "v": 36,
+    "e": 102,
+    "N": [
+      69,
+      82,
+      100
+    ],
+    "h_mm": 0.3525,
+    "sdf_error_h": 0.1104,
+    "bytes": 4784640,
+    "watertight": true,
+    "recommended_depth": 9
+  },
+  {
+    "body": "rh_lfmetacarpal",
+    "v": 241,
+    "e": 717,
+    "N": [
+      56,
+      35,
+      100
+    ],
+    "h_mm": 1.3212,
+    "sdf_error_h": 0.0622,
+    "bytes": 1707704,
+    "watertight": true,
+    "recommended_depth": 11
+  },
+  {
+    "body": "rh_lfmiddle",
+    "v": 91,
+    "e": 267,
+    "N": [
+      46,
+      43,
+      100
+    ],
+    "h_mm": 0.7871,
+    "sdf_error_h": 0.0662,
+    "bytes": 1719848,
+    "watertight": true,
+    "recommended_depth": 10
+  },
+  {
+    "body": "rh_lfproximal",
+    "v": 121,
+    "e": 357,
+    "N": [
+      37,
+      33,
+      100
+    ],
+    "h_mm": 1.1011,
+    "sdf_error_h": 0.0826,
+    "bytes": 1081680,
+    "watertight": true,
+    "recommended_depth": 11
+  },
+  {
+    "body": "rh_mfdistal",
+    "v": 66,
+    "e": 192,
+    "N": [
+      64,
+      55,
+      100
+    ],
+    "h_mm": 0.525,
+    "sdf_error_h": 0.0779,
+    "bytes": 3009032,
+    "watertight": true,
+    "recommended_depth": 9
+  },
+  {
+    "body": "rh_mfknuckle",
+    "v": 33,
+    "e": 93,
+    "N": [
+      85,
+      97,
+      100
+    ],
+    "h_mm": 0.2859,
+    "sdf_error_h": 0.1124,
+    "bytes": 6923600,
+    "watertight": true,
+    "recommended_depth": 9
+  },
+  {
+    "body": "rh_mfmiddle",
+    "v": 88,
+    "e": 258,
+    "N": [
+      46,
+      43,
+      100
+    ],
+    "h_mm": 0.7897,
+    "sdf_error_h": 0.0697,
+    "bytes": 1719848,
+    "watertight": true,
+    "recommended_depth": 9
+  },
+  {
+    "body": "rh_mfproximal",
+    "v": 130,
+    "e": 384,
+    "N": [
+      37,
+      33,
+      100
+    ],
+    "h_mm": 1.1086,
+    "sdf_error_h": 0.0785,
+    "bytes": 1081680,
+    "watertight": true,
+    "recommended_depth": 13
+  },
+  {
+    "body": "rh_palm",
+    "v": 679,
+    "e": 2031,
+    "N": [
+      71,
+      36,
+      100
+    ],
+    "h_mm": 2.3918,
+    "sdf_error_h": 0.0462,
+    "bytes": 2211432,
+    "watertight": true,
+    "recommended_depth": 12
+  },
+  {
+    "body": "rh_rfdistal",
+    "v": 67,
+    "e": 195,
+    "N": [
+      67,
+      56,
+      100
+    ],
+    "h_mm": 0.5145,
+    "sdf_error_h": 0.0767,
+    "bytes": 3202360,
+    "watertight": true,
+    "recommended_depth": 9
+  },
+  {
+    "body": "rh_rfknuckle",
+    "v": 39,
+    "e": 111,
+    "N": [
+      70,
+      96,
+      100
+    ],
+    "h_mm": 0.3463,
+    "sdf_error_h": 0.1036,
+    "bytes": 5665524,
+    "watertight": true,
+    "recommended_depth": 9
+  },
+  {
+    "body": "rh_rfmiddle",
+    "v": 83,
+    "e": 243,
+    "N": [
+      46,
+      42,
+      100
+    ],
+    "h_mm": 0.7932,
+    "sdf_error_h": 0.0695,
+    "bytes": 1681260,
+    "watertight": true,
+    "recommended_depth": 9
+  },
+  {
+    "body": "rh_rfproximal",
+    "v": 119,
+    "e": 351,
+    "N": [
+      37,
+      33,
+      100
+    ],
+    "h_mm": 1.1068,
+    "sdf_error_h": 0.0762,
+    "bytes": 1081680,
+    "watertight": true,
+    "recommended_depth": 12
+  },
+  {
+    "body": "rh_thdistal",
+    "v": 90,
+    "e": 264,
+    "N": [
+      72,
+      62,
+      100
+    ],
+    "h_mm": 0.5859,
+    "sdf_error_h": 0.0704,
+    "bytes": 3794100,
+    "watertight": true,
+    "recommended_depth": 10
+  },
+  {
+    "body": "rh_thmiddle",
+    "v": 109,
+    "e": 321,
+    "N": [
+      43,
+      44,
+      100
+    ],
+    "h_mm": 1.0165,
+    "sdf_error_h": 0.0625,
+    "bytes": 1647544,
+    "watertight": true,
+    "recommended_depth": 10
+  },
+  {
+    "body": "rh_thproximal",
+    "v": 141,
+    "e": 417,
+    "N": [
+      41,
+      42,
+      100
+    ],
+    "h_mm": 1.2031,
+    "sdf_error_h": 0.0558,
+    "bytes": 1504560,
+    "watertight": true,
+    "recommended_depth": 10
+  }
+]

@@ -1,0 +1,29 @@
+\paragraph{What the tuning found}
+
+\begin{itemize}
+\item \textbf{Capacities sized for one world.} The viewer sizes MJWarp's capacities for its single world: 4\,096 contacts and 12\,288 rows per world for five armadillos as surfaces, every Lodos collision fraction at 1.0. On the 38 scenes whose own capacities fit at the family's batch size, calibrated capacities alone made the exact step 1.02--8.2$\times$ faster at that batch size (median 1.9$\times$; 3.4$\times$ on the five-armadillo drop, 2.8--3.5$\times$ on the nut-bolts, 4.9--8.2$\times$ on the NIST nut-bolts and driven nuts): several of MJWarp's kernels launch over \code{njmax} and \code{naconmax}. On the other 29 the scene's own capacities did not fit in 16\,GiB at the family's batch size, and the baseline ran at the largest batch that did, 128--512 worlds on the heavy scenes and 1\,024--2\,048 on the rest: that is the rest of their ratios in \cref{tab:builtin}.
+\item \textbf{The batch size.} Under the exact mode throughput stopped growing at 2\,048--4\,096 worlds in 45 of the 67 scenes. It went further on the single bodies of the exactness scenes (the incline, the backspin ball, Painlev\'e's box), to 8\,192--32\,768, and to 8\,192 on 12 more, the driven nuts and five of the NIST nut-bolts among them; the twenty-hand piles stopped at 1\,024. Under mj the incline went on to 65\,536.
+\item \textbf{Tile sizes per pair} sped up the collision pipeline on 23 scenes under the exact mode, and on the largest of them most:
+  \begin{itemize}
+  \item 32 for every armadillo pair of the twenty-armadillo pile (1.19 to 0.83\,ms a step), and 16 in the walled one, against its planes too (1.43 to 0.99\,ms);
+  \item 32 for the twenty cubes' pairs (1.80 to 1.01\,ms), and 16 in the walled box, against its planes too (2.15 to 1.39\,ms);
+  \item 16--32 for the minor link pairs of the hand piles as surfaces, 20--36\,\% off: 1.55 to 1.02\,ms for five SHARPA hands, 0.49 to 0.34\,ms for two, 1.04 to 0.83\,ms for five Shadow hands;
+  \item 16 for the nut against its bolt and the floor on nine of the NIST nut-bolts and driven nuts, 8--40\,\% off, the densest nuts most (5.44 to 3.27\,ms on the M12 nut whose vertices are 0.175\,mm apart), and 32 against the floor alone on a tenth;
+  \item 16--32 for the bodies against the planes in three scenes (the walled five-armadillo and five-cube piles, the backspin ball), 7--9\,\% off.
+  \end{itemize}
+  The default of 8 held for the five-armadillo drop it was chosen on, the nut-bolts and the grasps.
+\item \textbf{The budgets, under the guard.}
+  \begin{itemize}
+  \item The guard passed 5 proximal iterations in 42 of the 67 scenes, and 3 in 25. They failed mostly on creep at rest, on these scenes:
+    \begin{itemize}
+    \item 8 of the 18 armadillo and cube piles;
+    \item the hand piles as surfaces but the two open SHARPA hands, and the SHARPA grasp as surfaces;
+    \item the nut-bolts, the NIST M8 nut-bolt, the arch, the cards and the backspin ball.
+    \end{itemize}
+    The walled five-armadillo pile crept at 15\,mm/s with 5 iterations, against 6.6\,mm/s with 10. Five iterations passed on every scene with hulls for hands and on every NIST scene but the M8 nut-bolt; three on the NIST scenes but that one and the three densest nuts, which kept five. On the threading, whose own budget is 2 iterations, both passed and ran slower.
+  \item Two budgets passed the guard's rollout and then failed the final check, which ran out of memory: 5 iterations on the twenty armadillos as hulls, open and walled. Both scenes kept the solver's own budget.
+  \item Contact reduction passed the guard in 22 of the 23 scenes it was tried on: every scene with Lodos surfaces but the nut-bolts and the NIST scenes, which ship with it on. On the backspin ball as a surface it moved the ball's path. It was kept where it was faster, on dense contact patches: the cubes as lattice surfaces (3.1$\times$ on five cubes, 2.6$\times$ in the walled box) and, of the single-body exactness scenes, the incline and Painlev\'e's box as surfaces.
+  \end{itemize}
+\item \textbf{The trilinear field.} $S_{\mathrm{c0}}$ took the 0.5\,mm nut's collision pipeline from 1.29 to 0.72\,ms a step at 1\,024 worlds, and the 1\,mm nut's from 0.55 to 0.38\,ms. The tuned exact steps were slower with it all the same: 145k against 177k world-steps/s on the 0.5\,mm nut, and 182k against 199k on the 1\,mm nut, at 2\,048 worlds. Under mj they were faster with it: 398k against 344k, and 630k against 557k.
+\item \textbf{Under mj} the tuning made the step 1.2--20.5$\times$ faster (median 3.2$\times$). With no proximal loop to trim, contact reduction was the only budget: it passed the guard in 21 of the 23 scenes it was tried on, and was kept on six, the cubes, the masonry arch and the backspin ball as surfaces. Four mj files failed the final check: on the incline as a surface the box escapes in 326 of the check's 512 worlds, against 324 untuned, the scene's doing and not the tuning's; the incline as a box overflowed its tuned row capacity in the check's rollouts; and on the twenty armadillos as hulls, open and walled, the check itself ran out of memory, so those two are unchecked.
+\end{itemize}

@@ -1,0 +1,53 @@
+\documentclass[tikz,border=4pt]{standalone}
+\input{fig/common.tex}
+\begin{document}
+\begin{tikzpicture}[font=\small]
+  % left: the geometry
+  \begin{scope}
+    \def\h{0.7}
+    \clip (-2.8,-1.05) rectangle (2.8,3.15);
+    \fill[ourblue!12] (-2.8,-1.05) -- (-2.8,-0.2) .. controls (-1.2,0.05) and (0.6,-0.45) .. (2.8,-0.1) -- (2.8,-1.05) -- cycle;
+    \foreach \i in {0,...,8} { \draw[ourlightgray2, thin] (\i*\h-2.8,-1.05) -- (\i*\h-2.8,3.15); }
+    \foreach \j in {0,...,6} { \draw[ourlightgray2, thin] (-2.8,\j*\h-1.05) -- (2.8,\j*\h-1.05); }
+    \draw[ourblue, thick] (-2.8,-0.2) .. controls (-1.2,0.05) and (0.6,-0.45) .. (2.8,-0.1);
+    % a voxel and its circumsphere
+    \draw[ourred, thick] (-2.1,1.75) rectangle ++(0.7,0.7);
+    \fill[ourred] (-1.75,2.1) circle (0.04);
+    \draw[ourred, dashed] (-1.75,2.1) circle ({0.7*0.7071});
+    \draw[ourred, -{Latex[length=1.2mm]}] (-1.75,2.1) -- ++(45:{0.7*0.7071});
+    \node[font=\footnotesize, text=ourred] at (-1.28,2.72) {$r$};
+    % a tile: its primitives and bounding sphere
+    \def\cx{0.9}\def\cy{1.55}\def\R{0.95}
+    \fill[ourorange!12, draw=ourorange, thick] (\cx,\cy) circle (\R);
+    \foreach \a/\rr in {10/0.82, 70/0.55, 130/0.9, 190/0.7, 250/0.88, 300/0.45, 340/0.75, 30/0.25} {
+      \fill[ourorange!80!black] ($(\cx,\cy)+(\a:\rr)$) circle (0.045);
+    }
+    \fill[black] (\cx,\cy) circle (0.04);
+    \node[font=\footnotesize] at (\cx+0.18,\cy+0.18) {$c$};
+    \draw[-{Latex[length=1.2mm]}] (\cx,\cy) -- ++(200:\R);
+    \node[font=\footnotesize] at (\cx-0.45,\cy+0.02) {$R$};
+  \end{scope}
+  \node[font=\footnotesize, text=ourblue, anchor=west] at (2.85,-0.12) {$\phi = 0$};
+  \node[font=\footnotesize, text=ourred, anchor=north, align=center] at (-1.75,-1.15) {a voxel: $S_{\mathrm{vox}}$ is $\phi$\\at its centre, within $r$};
+  \node[font=\footnotesize, text=ourorange!80!black, anchor=north, align=center] at (0.9,-1.15) {a tile: 8 primitives\\within $R$ of $c$};
+  % right: distances above the surface
+  \begin{scope}[shift={(5.4,-0.9)}]
+    \def\r{0.55}\def\phic{3.0}\def\RR{0.95}
+    \draw[-{Latex[length=2mm]}, ourgray] (0,0) -- (0,4.25) node[above, font=\footnotesize\sffamily, text=ourgray] {distance above the surface};
+    \foreach \k/\lab in {0/0, 1/r, 2/2r} { \draw[ourgray] (-0.08,\k*\r) -- (0.08,\k*\r); \node[font=\footnotesize, anchor=east] at (-0.12,\k*\r) {$\lab$}; }
+    \fill[ourgreen!30] (0.15,0) rectangle (0.45, 2*\r);
+    \node[font=\footnotesize, anchor=west, align=left, text=ourgreen!40!black] at (0.5, 0.55) {the prefilter admits a\\primitive only if $\phi < 2r$};
+    % the tile's interval
+    \fill[ourorange!35] (0.15, \phic-\RR) rectangle (0.45, \phic+\RR);
+    \fill[black] (0.3,\phic) circle (0.045);
+    \draw[ourred, very thick] (0.7, \phic-\r) -- (0.7, \phic+\r);
+    \node[font=\footnotesize, anchor=west] at (0.9,\phic) {$\phi(c)$};
+    \node[font=\footnotesize, text=ourred, anchor=west] at (0.9,\phic+0.45) {$S_{\mathrm{vox}}(c) \in \phi(c) \pm r$};
+    \node[font=\footnotesize, text=ourorange!80!black, anchor=west] at (0.9,\phic-0.55) {the tile's primitives: $\phi(c) \pm R$};
+    \draw[{Latex[length=1.4mm]}-{Latex[length=1.4mm]}, ourgray] (0.3, 2*\r) -- (0.3, \phic-\RR);
+    \node[font=\footnotesize, anchor=west, text=ourgray] at (0.5, {(2*\r+\phic-\RR)/2}) {a gap: nothing of the tile can pass};
+  \end{scope}
+  \node[font=\footnotesize, anchor=north west, align=left, draw=ourgray2, rounded corners=2pt, inner sep=4pt, fill=white] at (5.0,-1.15)
+    {the gap exists if $\phi(c) - R \ge 2r$, and $S_{\mathrm{vox}}(c) \ge R + 3r$ guarantees it:\\so a tile is rejected only when none of its primitives can be a contact};
+\end{tikzpicture}
+\end{document}

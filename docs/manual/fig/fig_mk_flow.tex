@@ -1,0 +1,44 @@
+\documentclass[tikz,border=4pt]{standalone}
+\input{fig/common.tex}
+\begin{document}
+\begin{tikzpicture}[font=\small\sffamily]
+  \tikzset{lflow/.style={flow, ourblue!80!black}, mflow/.style={flow, ourorange!85!black},
+           pstep/.style={box, minimum width=34mm, minimum height=8.5mm}}
+  % the model
+  \node[box, minimum width=30mm, minimum height=11mm] (mjcf) at (0, 0) {\textbf{robot.xml}\\[-1pt]{\footnotesize visual meshes,}\\[-2pt]{\footnotesize fitted primitives}};
+  \node[box, fill=ourlightgray2!35, minimum width=30mm] (decide) at (0, -1.75) {per geometry: which\\[-1pt]representation?};
+  \draw[flow] (mjcf) -- (decide);
+  % three branches
+  \node[mjw, minimum width=30mm] (prim) at (-4.2, -3.4) {MuJoCo primitive\\[-1pt]{\footnotesize kept as it is}};
+  \node[mjw, minimum width=30mm] (poly) at (0, -3.4) {convex hulls\\[-1pt]{\footnotesize ``polytope''}};
+  \node[lodos, minimum width=30mm] (sdf) at (4.2, -3.4) {Lodos surface\\[-1pt]{\footnotesize ``sdf''}};
+  \draw[mflow] (decide.west) -| (prim.north);
+  \draw[mflow] (decide) -- (poly);
+  \draw[lflow] (decide.east) -| (sdf.north);
+  % the pipeline
+  \node[pstep] (s1) at (2.1, -5.0) {1 \texttt{fuse\_meshes\_by\_body}\\[-1pt]{\footnotesize watertight solid per body}};
+  \node[pstep] (s2) at (2.1, -6.25) {2 \texttt{calibrate\_cp\_decomp}\\[-1pt]{\footnotesize CoACD hulls + their union}};
+  \node[pstep] (s3) at (6.3, -5.0) {3 \texttt{interactive\_remesh}\\[-1pt]{\footnotesize vertex budget per body}};
+  \node[pstep] (s4) at (6.3, -6.25) {4 \texttt{fix\_nonmanifold}\\[-1pt]{\footnotesize closed manifolds}};
+  \node[pstep] (s5) at (6.3, -7.5) {5 \texttt{create\_surface\_data}\\[-1pt]{\footnotesize Hilbert order + SDF bake}};
+  \draw[flow] (poly.south) |- (s1.west);
+  \draw[flow] (sdf.south) -- ++(0, -0.45) -| (s1.north);
+  \draw[flow] (s1) -- (s2);
+  \draw[flow] (s2.east) -- ++(0.45, 0) |- (s3.west);
+  \draw[flow] (s3) -- (s4);
+  \draw[flow] (s4) -- (s5);
+  % the scene
+  \node[box, minimum width=88mm, minimum height=9mm, fill=ourgreen!10, draw=ourgreen!80!black] (scene) at (2.1, -9.1)
+    {\textbf{the scene}: MJCF edits (hull geoms, keyed geoms, physics) + \texttt{Surfaces} (pairs, parameters)};
+  \draw[mflow] (prim.south) |- (scene.west);
+  \draw[mflow] (s2.south) -- (scene.north -| s2.south) node[pos=0.45, left, note] {\texttt{\_cp/}: one mesh per hull};
+  \draw[lflow] (s5) -- (s5 |- scene.north);
+  % after
+  \node[box, minimum width=26mm] (val) at (-2.2, -10.75) {validate\\[-1pt]{\footnotesize viewer, rest, slope}};
+  \node[box, minimum width=26mm] (tune) at (2.1, -10.75) {tune\\[-1pt]{\footnotesize \texttt{tools/performance\_tuning/}}};
+  \node[box, minimum width=26mm] (ship) at (6.4, -10.75) {ship\\[-1pt]{\footnotesize assets, viewer, tuning file}};
+  \draw[flow] (scene.south -| val.north) -- (val.north);
+  \draw[flow] (val) -- (tune);
+  \draw[flow] (tune) -- (ship);
+\end{tikzpicture}
+\end{document}

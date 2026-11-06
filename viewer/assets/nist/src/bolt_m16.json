@@ -1,0 +1,71 @@
+{
+ "source": "viewer/assets/nist/usd/bolt_m16.usd",
+ "body": "/factory_bolt_m16_loose/factory_bolt_loose",
+ "meters_per_unit": 1.0,
+ "y_up_turned": false,
+ "authored_mass": 0.05000000074505806,
+ "meshes": {
+  "collision": {
+   "prims": [
+    "/factory_bolt_m16_loose/factory_bolt_loose/collisions_01"
+   ],
+   "approximation": [
+    "sdf"
+   ],
+   "prim_scale": [
+    [
+     0.95,
+     0.95,
+     1.0
+    ]
+   ],
+   "vertices": 1055,
+   "triangles": 2106,
+   "bbox_min": [
+    -0.007363336324495012,
+    -0.0073699286446905765,
+    0.009999966248869896
+   ],
+   "bbox_max": [
+    0.00736810339216562,
+    0.0073749297304381844,
+    0.03500247001647949
+   ]
+  },
+  "visual": {
+   "prims": [
+    "/factory_bolt_m16_loose/factory_bolt_loose/thread_visual",
+    "/factory_bolt_m16_loose/factory_bolt_loose/bolt"
+   ],
+   "approximation": [
+    null,
+    null
+   ],
+   "prim_scale": [
+    [
+     0.95,
+     0.95,
+     1.0
+    ],
+    [
+     1.0,
+     1.0,
+     1.0
+    ]
+   ],
+   "vertices": 1067,
+   "triangles": 2126,
+   "bbox_min": [
+    -0.01199999451637268,
+    -0.013500000350177288,
+    0.0
+   ],
+   "bbox_max": [
+    0.012000005692243576,
+    0.013500000350177288,
+    0.03500247001647949
+   ]
+  }
+ },
+ "visual_is_collision": false
+}

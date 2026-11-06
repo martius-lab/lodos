@@ -1,0 +1,97 @@
+{
+ "scene": "cube_5_polytope",
+ "B": 2048,
+ "states": 2062,
+ "baseline": {
+  "B": 2048,
+  "settings": {
+   "collision": {},
+   "runtime": {
+    "nconmax": 256,
+    "njmax": 192
+   },
+   "sim": {},
+   "solver_kwargs": {}
+  },
+  "error_at_B": null,
+  "throughput": {
+   "world_steps_per_s": 1117667.8166794067,
+   "ms_per_step": 1.832387020040187,
+   "B": 2048,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.0031329189437972987,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 3026.27077960968
+  },
+  "artifacts": {
+   "nan": 0,
+   "escaped": 0,
+   "deep_mean": 0.004178459506641729,
+   "deep_p99": 0.039678569510579166,
+   "creep": 0.00012452716108347998,
+   "rest_speed": 0.00013233307206661493,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "guard_B": 512
+ },
+ "capacities": {
+  "throughput": {
+   "world_steps_per_s": 1204462.2196607946,
+   "ms_per_step": 1.700343909978983,
+   "B": 2048,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.008842963968924086,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 182.81956958770752
+  },
+  "rounds": 1
+ },
+ "noise": {
+  "deep_mean": 3.987261720794777e-07,
+  "deep_p99": 1.779571175627992e-07,
+  "creep": 8.237064897932645e-08,
+  "rest_speed": 7.645334644479362e-06
+ },
+ "budgets": [],
+ "batch": [
+  {
+   "B": 2048,
+   "world_steps_per_s": 1204462.2196607946
+  },
+  {
+   "B": 4096,
+   "world_steps_per_s": 1412518.3730452352,
+   "error": null
+  },
+  {
+   "B": 8192,
+   "world_steps_per_s": 1385363.5405158817,
+   "error": null
+  }
+ ],
+ "tuned": {
+  "B": 4096,
+  "world_steps_per_s": 1412518.3730452352,
+  "settings": {
+   "collision": {},
+   "runtime": {
+    "naconmax": 83657,
+    "nconmax": 21,
+    "njmax": 113,
+    "nccdmax": 2
+   },
+   "sim": {},
+   "solver_kwargs": {},
+   "B": 4096
+  },
+  "artifacts_ok": true,
+  "why": ""
+ },
+ "speedup": 1.263808756023619,
+ "seconds": 15.870479822158813
+}

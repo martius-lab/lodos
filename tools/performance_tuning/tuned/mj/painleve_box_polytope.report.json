@@ -1,0 +1,103 @@
+{
+ "scene": "painleve_box_polytope",
+ "B": 8192,
+ "states": 988,
+ "baseline": {
+  "B": 2048,
+  "settings": {
+   "collision": {},
+   "runtime": {
+    "nconmax": 1024,
+    "njmax": 4096
+   },
+   "sim": {},
+   "solver_kwargs": {}
+  },
+  "error_at_B": null,
+  "throughput": {
+   "world_steps_per_s": 1789734.6813333035,
+   "ms_per_step": 1.144303690016386,
+   "B": 2048,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.005364755886860546,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 12278.283967018127
+  },
+  "artifacts": {
+   "nan": 0,
+   "escaped": 0,
+   "deep_mean": 0.0002798824774799868,
+   "deep_p99": 0.000276029109954834,
+   "creep": 2.139196747137599e-06,
+   "rest_speed": 3.0487587161509566e-06,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "guard_B": 512
+ },
+ "capacities": {
+  "throughput": {
+   "world_steps_per_s": 15072834.06268516,
+   "ms_per_step": 0.5434943399450276,
+   "B": 8192,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.0017867158782311594,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 417.14920139312744
+  },
+  "rounds": 1
+ },
+ "noise": {
+  "deep_mean": 2.9103830456733704e-11,
+  "deep_p99": 0.0,
+  "creep": 9.581983262871015e-13,
+  "rest_speed": 3.6119995883154843e-12,
+  "path": 4.797573012790241e-07
+ },
+ "budgets": [],
+ "batch": [
+  {
+   "B": 8192,
+   "world_steps_per_s": 15072834.06268516
+  },
+  {
+   "B": 16384,
+   "world_steps_per_s": 17491019.758465275,
+   "error": null
+  },
+  {
+   "B": 32768,
+   "world_steps_per_s": 18561689.63203806,
+   "error": null
+  },
+  {
+   "B": 65536,
+   "world_steps_per_s": 17556352.520117965,
+   "error": null
+  }
+ ],
+ "tuned": {
+  "B": 32768,
+  "world_steps_per_s": 18561689.63203806,
+  "settings": {
+   "collision": {},
+   "runtime": {
+    "naconmax": 196608,
+    "nconmax": 6,
+    "njmax": 18,
+    "nccdmax": 1
+   },
+   "sim": {},
+   "solver_kwargs": {},
+   "B": 32768
+  },
+  "artifacts_ok": true,
+  "why": ""
+ },
+ "speedup": 10.371196259218774,
+ "seconds": 25.379785537719727
+}

@@ -1,0 +1,787 @@
+{
+ "format": "lodos-tuning/2",
+ "scene": "masonry_arch_sdf",
+ "B": 2048,
+ "layout": "independent",
+ "fingerprint": {
+  "model": {
+   "nq": 161,
+   "nv": 138,
+   "nu": 0,
+   "na": 0,
+   "structure": "5ff266179e4b262c"
+  },
+  "geometry": "533c84e30e8084b9",
+  "timestep": 0.004166666666666667,
+  "hulls": {
+   "hulls": 0
+  },
+  "surfaces": [
+   {
+    "kind": "surface",
+    "vertices": 2178,
+    "faces": 4352,
+    "grid_N": [
+     100,
+     88,
+     67
+    ],
+    "voxel_h": [
+     0.2293643206357956,
+     0.2293643206357956,
+     0.2293643206357956
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     11.468216,
+     10.0,
+     7.671844999999999
+    ],
+    "sha": "f2061a3c510324da",
+    "file": "viewer/assets/surfaces/arch25_stone01/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 1794,
+    "faces": 3584,
+    "grid_N": [
+     100,
+     91,
+     72
+    ],
+    "voxel_h": [
+     0.21536807715892792,
+     0.21536807715892792,
+     0.21536807715892792
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     10.768404,
+     9.726362,
+     7.732078
+    ],
+    "sha": "a3849ba05d20838c",
+    "file": "viewer/assets/surfaces/arch25_stone02/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 1794,
+    "faces": 3584,
+    "grid_N": [
+     100,
+     90,
+     74
+    ],
+    "voxel_h": [
+     0.2111295610666275,
+     0.2111295610666275,
+     0.2111295610666275
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     10.556478,
+     9.453656,
+     7.801089
+    ],
+    "sha": "22024daa3813c5ce",
+    "file": "viewer/assets/surfaces/arch25_stone03/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 1794,
+    "faces": 3584,
+    "grid_N": [
+     100,
+     89,
+     77
+    ],
+    "voxel_h": [
+     0.20707018673419952,
+     0.20707018673419952,
+     0.20707018673419952
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     10.353508999999999,
+     9.182104,
+     7.881029
+    ],
+    "sha": "ef1bf3f6f3e2ecfc",
+    "file": "viewer/assets/surfaces/arch25_stone04/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 1794,
+    "faces": 3584,
+    "grid_N": [
+     100,
+     88,
+     79
+    ],
+    "voxel_h": [
+     0.203226238489151,
+     0.203226238489151,
+     0.203226238489151
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     10.161311999999999,
+     8.912006,
+     7.9748149999999995
+    ],
+    "sha": "38087ca7e40904bd",
+    "file": "viewer/assets/surfaces/arch25_stone05/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 1794,
+    "faces": 3584,
+    "grid_N": [
+     100,
+     87,
+     82
+    ],
+    "voxel_h": [
+     0.19964146614074707,
+     0.19964146614074707,
+     0.19964146614074707
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     9.982073,
+     8.643786,
+     8.08648
+    ],
+    "sha": "3102102e1d94eb87",
+    "file": "viewer/assets/surfaces/arch25_stone06/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 1282,
+    "faces": 2560,
+    "grid_N": [
+     100,
+     86,
+     84
+    ],
+    "voxel_h": [
+     0.196364164352417,
+     0.196364164352417,
+     0.196364164352417
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     9.818208,
+     8.378064,
+     8.221698
+    ],
+    "sha": "d7c04b8a015d61a1",
+    "file": "viewer/assets/surfaces/arch25_stone07/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 1282,
+    "faces": 2560,
+    "grid_N": [
+     100,
+     84,
+     87
+    ],
+    "voxel_h": [
+     0.1934303343296051,
+     0.1934303343296051,
+     0.1934303343296051
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     9.671517,
+     8.115802,
+     8.388438
+    ],
+    "sha": "e176c33a729c5eb4",
+    "file": "viewer/assets/surfaces/arch25_stone08/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 1282,
+    "faces": 2560,
+    "grid_N": [
+     100,
+     83,
+     91
+    ],
+    "voxel_h": [
+     0.19079360365867615,
+     0.19079360365867615,
+     0.19079360365867615
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     9.53968,
+     7.858578,
+     8.597133
+    ],
+    "sha": "3f05f24e75c6e151",
+    "file": "viewer/assets/surfaces/arch25_stone09/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 1410,
+    "faces": 2816,
+    "grid_N": [
+     100,
+     81,
+     95
+    ],
+    "voxel_h": [
+     0.18802377581596375,
+     0.18802377581596375,
+     0.18802377581596375
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     9.401188999999999,
+     7.609222,
+     8.855667
+    ],
+    "sha": "db745288a255a037",
+    "file": "viewer/assets/surfaces/arch25_stone10/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 1410,
+    "faces": 2816,
+    "grid_N": [
+     100,
+     81,
+     100
+    ],
+    "voxel_h": [
+     0.1828709989786148,
+     0.1828709989786148,
+     0.1828709989786148
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     9.14355,
+     7.373468,
+     9.123951
+    ],
+    "sha": "3f025e8431d19388",
+    "file": "viewer/assets/surfaces/arch25_stone11/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 1410,
+    "faces": 2816,
+    "grid_N": [
+     92,
+     80,
+     100
+    ],
+    "voxel_h": [
+     0.17918628454208374,
+     0.17918628454208374,
+     0.17918628454208374
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     8.237452000000001,
+     7.164976,
+     8.959314
+    ],
+    "sha": "50db98bc1815c8a0",
+    "file": "viewer/assets/surfaces/arch25_stone12/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 1410,
+    "faces": 2816,
+    "grid_N": [
+     100,
+     92,
+     88
+    ],
+    "voxel_h": [
+     0.15295584499835968,
+     0.15295584499835968,
+     0.15295584499835968
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     7.647792,
+     7.021924,
+     6.691255
+    ],
+    "sha": "a570cd74fdca59a0",
+    "file": "viewer/assets/surfaces/arch25_stone13/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 1410,
+    "faces": 2816,
+    "grid_N": [
+     92,
+     80,
+     100
+    ],
+    "voxel_h": [
+     0.17918628454208374,
+     0.17918628454208374,
+     0.17918628454208374
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     8.237452000000001,
+     7.164976,
+     8.959314
+    ],
+    "sha": "df7f09feddb15872",
+    "file": "viewer/assets/surfaces/arch25_stone14/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 1410,
+    "faces": 2816,
+    "grid_N": [
+     100,
+     81,
+     100
+    ],
+    "voxel_h": [
+     0.1828709989786148,
+     0.1828709989786148,
+     0.1828709989786148
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     9.14355,
+     7.373468,
+     9.123951
+    ],
+    "sha": "f8b1599de56d7af1",
+    "file": "viewer/assets/surfaces/arch25_stone15/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 1410,
+    "faces": 2816,
+    "grid_N": [
+     100,
+     81,
+     95
+    ],
+    "voxel_h": [
+     0.18802377581596375,
+     0.18802377581596375,
+     0.18802377581596375
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     9.401188999999999,
+     7.609222,
+     8.855667
+    ],
+    "sha": "ce1026d8e56a98f7",
+    "file": "viewer/assets/surfaces/arch25_stone16/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 1282,
+    "faces": 2560,
+    "grid_N": [
+     100,
+     83,
+     91
+    ],
+    "voxel_h": [
+     0.19079360365867615,
+     0.19079360365867615,
+     0.19079360365867615
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     9.53968,
+     7.858578,
+     8.597133
+    ],
+    "sha": "fe66165d124850a2",
+    "file": "viewer/assets/surfaces/arch25_stone17/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 1282,
+    "faces": 2560,
+    "grid_N": [
+     100,
+     84,
+     87
+    ],
+    "voxel_h": [
+     0.1934303343296051,
+     0.1934303343296051,
+     0.1934303343296051
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     9.671517,
+     8.115802,
+     8.388438
+    ],
+    "sha": "cb2b0ff4f07b85f3",
+    "file": "viewer/assets/surfaces/arch25_stone18/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 1282,
+    "faces": 2560,
+    "grid_N": [
+     100,
+     86,
+     84
+    ],
+    "voxel_h": [
+     0.196364164352417,
+     0.196364164352417,
+     0.196364164352417
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     9.818208,
+     8.378064,
+     8.221698
+    ],
+    "sha": "198a0a1c9b7bf819",
+    "file": "viewer/assets/surfaces/arch25_stone19/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 1794,
+    "faces": 3584,
+    "grid_N": [
+     100,
+     87,
+     82
+    ],
+    "voxel_h": [
+     0.19964146614074707,
+     0.19964146614074707,
+     0.19964146614074707
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     9.982073,
+     8.643786,
+     8.08648
+    ],
+    "sha": "144435355a821d2c",
+    "file": "viewer/assets/surfaces/arch25_stone20/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 1794,
+    "faces": 3584,
+    "grid_N": [
+     100,
+     88,
+     79
+    ],
+    "voxel_h": [
+     0.203226238489151,
+     0.203226238489151,
+     0.203226238489151
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     10.161311999999999,
+     8.912006,
+     7.9748149999999995
+    ],
+    "sha": "bfff7c463d17da7b",
+    "file": "viewer/assets/surfaces/arch25_stone21/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 1794,
+    "faces": 3584,
+    "grid_N": [
+     100,
+     89,
+     77
+    ],
+    "voxel_h": [
+     0.20707018673419952,
+     0.20707018673419952,
+     0.20707018673419952
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     10.353508999999999,
+     9.182104,
+     7.881029
+    ],
+    "sha": "0d7bc1a05fd1c9c8",
+    "file": "viewer/assets/surfaces/arch25_stone22/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 1794,
+    "faces": 3584,
+    "grid_N": [
+     100,
+     90,
+     74
+    ],
+    "voxel_h": [
+     0.2111295610666275,
+     0.2111295610666275,
+     0.2111295610666275
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     10.556478,
+     9.453656,
+     7.801089
+    ],
+    "sha": "151237f5a9849bb9",
+    "file": "viewer/assets/surfaces/arch25_stone23/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 1794,
+    "faces": 3584,
+    "grid_N": [
+     100,
+     91,
+     72
+    ],
+    "voxel_h": [
+     0.21536807715892792,
+     0.21536807715892792,
+     0.21536807715892792
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     10.768404,
+     9.726362,
+     7.732078
+    ],
+    "sha": "1d67147eff227fc5",
+    "file": "viewer/assets/surfaces/arch25_stone24/surface_data.npz"
+   },
+   {
+    "kind": "surface",
+    "vertices": 2562,
+    "faces": 5120,
+    "grid_N": [
+     100,
+     88,
+     67
+    ],
+    "voxel_h": [
+     0.2293643206357956,
+     0.2293643206357956,
+     0.2293643206357956
+    ],
+    "spline_type": "cubic",
+    "spheres": 0,
+    "extent": [
+     11.468216,
+     10.0,
+     7.671844999999999
+    ],
+    "sha": "49b676c424a75d8b",
+    "file": "viewer/assets/surfaces/arch25_stone25/surface_data.npz"
+   },
+   {
+    "kind": "plane"
+   }
+  ],
+  "pairs": 621
+ },
+ "states": {
+  "path": "results/tuning/states/mj/masonry_arch_sdf.states.npz",
+  "digest": "4f3e43c3449cc69d",
+  "size": 990,
+  "source": {
+   "kind": "explore",
+   "scene": "masonry_arch_sdf",
+   "strategy": [
+    "initial",
+    "perturb"
+   ],
+   "starts": 32,
+   "horizon": 1500,
+   "stride": 50,
+   "seed": 0,
+   "jitter": 0.0005,
+   "sigma": 0.5,
+   "max_depth": 0.01,
+   "dropped_nonfinite": 0,
+   "dropped_deep": 0
+  },
+  "horizon": 200,
+  "controls": {
+   "kind": "hold"
+  }
+ },
+ "safety": 1.5,
+ "created": "2026-11-01T09:20:17",
+ "commit": null,
+ "device": "NVIDIA GeForce RTX 4080",
+ "collision": {
+  "capacity_tile": 0.04424816426212841,
+  "capacity2": 0.6468405419065751,
+  "capacity1": 0.12250773770963795
+ },
+ "runtime": {
+  "naconmax": 634569,
+  "nconmax": 310,
+  "njmax": 9315
+ },
+ "sim": {
+  "contact_reduction": true
+ },
+ "solver_kwargs": {
+  "mode": "mj"
+ },
+ "tiles": {
+  "error": "RuntimeError: Failed to allocate 152616960 bytes on device 'cuda:0'"
+ },
+ "baseline": {
+  "B": 128,
+  "settings": {
+   "collision": {},
+   "runtime": {
+    "nconmax": 4096,
+    "njmax": 16384
+   },
+   "sim": {},
+   "solver_kwargs": {}
+  },
+  "throughput": {
+   "world_steps_per_s": 14768.104104798313,
+   "ms_per_step": 8.66732785005297,
+   "B": 128,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.003786304220356495,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 10363.772857666016
+  },
+  "artifacts": {
+   "nan": 0,
+   "escaped": 0,
+   "deep_mean": 0.0015276684808668505,
+   "deep_p99": 0.012562573170289065,
+   "creep": 0.01121749692359094,
+   "rest_speed": 0.0176054777475656,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "guard_B": 128
+ },
+ "peaks": {
+  "B": 2048,
+  "runtime": {
+   "nacon": 423046,
+   "ncollision": 0,
+   "naconmax": 1030016,
+   "contacts_per_world": 2070,
+   "overflow": false,
+   "nefc_per_world": 6210,
+   "njmax": 12420,
+   "efc_overflow": false
+  },
+  "lodos_col": {
+   "peak": {
+    "nCa1": 60431376,
+    "nCa2": 39089464,
+    "nCa3": 423046,
+    "nTa": 7553922,
+    "nTb": 20914176
+   },
+   "allocated": {
+    "nCa1": 120862720,
+    "nCa2": 78178560,
+    "nCa3": 78178560,
+    "nTa": 15107840,
+    "nTb": 41828352
+   },
+   "overflow": {
+    "nCa1": false,
+    "nCa2": false,
+    "nCa3": false,
+    "nTa": false,
+    "nTb": false
+   },
+   "tile_slots": 256075776,
+   "slots_per_world": 1000296,
+   "uniform_K": 1,
+   "tile_K": 8,
+   "compacts": 1,
+   "contacts_per_world": 2070
+  },
+  "overflowed": false,
+  "layout": "independent",
+  "horizon": 200,
+  "batches": 1,
+  "states": 990,
+  "controls": {
+   "kind": "hold"
+  }
+ },
+ "throughput": {
+  "world_steps_per_s": 65872.46688545433,
+  "B": 2048
+ },
+ "artifacts": {
+  "tuned": {
+   "nan": 0,
+   "escaped": 0,
+   "deep_mean": 0.0015163814672860098,
+   "deep_p99": 0.01162637583911419,
+   "creep": 0.011252905281550537,
+   "rest_speed": 0.017584722801984753,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "baseline": {
+   "nan": 0,
+   "escaped": 0,
+   "deep_mean": 0.0015276684808668505,
+   "deep_p99": 0.012562573170289065,
+   "creep": 0.01121749692359094,
+   "rest_speed": 0.0176054777475656,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "ok": true,
+  "why": ""
+ }
+}

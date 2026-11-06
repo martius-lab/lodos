@@ -1,0 +1,135 @@
+% Shared preamble of the two Lodos v2 manuals, collision_detection.tex and contact_dynamics.tex.
+%
+% The notation and the palette follow the contact tutorial (papers/contact_tutorial.pdf):
+% plain math, q-dot and q-ddot the generalized velocity and acceleration, v a contact
+% velocity, G the Delassus matrix, R the regularization, gamma_n the stabilization and
+% Gamma the de Saxce correction.
+%
+% tex2md.py turns each manual into Markdown. It understands the commands and environments
+% defined here and the standard ones the manuals use; keep math free of custom macros, so
+% that it reads the same in both.
+
+\documentclass[11pt,a4paper]{article}
+
+% --- Fonts ---
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{libertine}
+\usepackage[libertine]{newtxmath}
+\usepackage[varqu,scaled=0.92]{zi4}
+\usepackage{microtype}
+
+% --- Page ---
+\usepackage[a4paper,margin=24mm,top=22mm,bottom=24mm]{geometry}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt plus 1pt}
+\linespread{1.04}
+
+% --- Colours: the tutorial's ---
+\usepackage[table]{xcolor}
+\definecolor{ourblue}{rgb}{0.368,0.507,0.71}
+\definecolor{ourorange}{rgb}{0.881,0.611,0.142}
+\definecolor{ourgreen}{rgb}{0.56,0.692,0.195}
+\definecolor{ourred}{rgb}{0.923,0.386,0.209}
+\definecolor{ourviolet}{rgb}{0.528,0.471,0.701}
+\definecolor{ourbrown}{rgb}{0.772,0.432,0.102}
+\definecolor{ourazure}{rgb}{0.364,0.619,0.782}
+\definecolor{ourgray}{RGB}{102,88,84}
+\definecolor{ourgray2}{RGB}{124,124,115}
+\definecolor{ourlightgray2}{RGB}{194,194,189}
+\definecolor{ourdarkblue2}{RGB}{5,97,164}
+\definecolor{codebg}{RGB}{246,247,249}
+
+% --- Headings: sans, as the tutorial's ---
+\usepackage[scaled=0.92]{helvet}
+\usepackage{titlesec}
+\titleformat{\section}{\sffamily\bfseries\Large}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\sffamily\bfseries\large}{\thesubsection}{0.6em}{}
+\titleformat{\subsubsection}{\sffamily\bfseries\normalsize}{\thesubsubsection}{0.6em}{}
+\titleformat{\paragraph}[runin]{\sffamily\bfseries\normalsize}{}{0pt}{}[.]
+\titlespacing*{\section}{0pt}{14pt plus 3pt}{6pt}
+\titlespacing*{\subsection}{0pt}{11pt plus 2pt}{4pt}
+\titlespacing*{\subsubsection}{0pt}{9pt plus 2pt}{3pt}
+\titlespacing*{\paragraph}{0pt}{6pt plus 1pt}{0.6em}
+
+% --- Figures, tables, lists ---
+\usepackage{graphicx}
+\usepackage{booktabs,tabularx,array,longtable}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\arraybackslash}p{#1}}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.12}
+\usepackage[font=small,labelfont={bf,sf}]{caption}
+\usepackage{enumitem}
+\setlist{itemsep=1pt,topsep=3pt,parsep=1pt,leftmargin=1.4em}
+\setlist[itemize]{label={\color{ourblue}\textbullet}}
+
+% --- Boxes: the tutorial's equation box, and the implementation notes ---
+\usepackage[most]{tcolorbox}
+\newtcolorbox{equationbox}[1]{
+    enhanced, sharp corners, colback=white, colframe=black!60, boxrule=0.8pt,
+    top=0.6em, attach boxed title to top left={xshift=-1mm, yshift=-5mm, yshifttext=-1mm},
+    boxed title style={sharp corners, size=small, colback=black!60, colframe=black!60},
+    fonttitle=\bfseries\sffamily, title=#1}
+% "In the code": where a section's theory lives in the repository.
+\newtcolorbox{codebox}{
+    enhanced, sharp corners, colback=codebg, colframe=ourblue, boxrule=0pt,
+    leftrule=2.2pt, left=6pt, right=6pt, top=3pt, bottom=3pt, before skip=6pt, after skip=6pt,
+    fontupper=\small}
+% A note with a title of its own (a finding, a caveat, a rule).
+\newtcolorbox{notebox}[1]{
+    enhanced, breakable, sharp corners, colback=ourorange!6, colframe=ourorange, boxrule=0pt,
+    leftrule=2.2pt, left=6pt, right=6pt, top=3pt, bottom=3pt, before skip=6pt, after skip=6pt,
+    fontupper=\small, title={#1}, coltitle=black, fonttitle=\bfseries\sffamily\small,
+    colbacktitle=ourorange!6, attach title to upper={.\ }}
+
+% --- Code ---
+\usepackage{needspace}
+\usepackage{listings}
+\lstdefinestyle{lodos}{
+    basicstyle=\ttfamily\small, backgroundcolor=\color{codebg}, frame=single,
+    framerule=0pt, rulecolor=\color{codebg}, xleftmargin=4pt, xrightmargin=4pt,
+    aboveskip=6pt, belowskip=6pt, columns=fullflexible, keepspaces=true,
+    showstringspaces=false, breaklines=true, breakatwhitespace=false,
+    keywordstyle=\color{ourdarkblue2}, commentstyle=\color{ourgray2}\itshape,
+    stringstyle=\color{ourbrown}, upquote=true}
+\lstset{style=lodos, language=Python}
+% Identifiers and paths: typewriter, breaking at dots, underscores and slashes.
+\usepackage[obeyspaces,spaces]{url}
+\DeclareUrlCommand\codeurl{\urlstyle{tt}}
+% Robust, so that it survives captions and tables (moving arguments).
+\DeclareRobustCommand{\code}[1]{\codeurl{#1}}
+\renewcommand{\UrlBreaks}{\do\.\do\_\do\/\do\,\do\(\do\=\do\-}
+
+% --- TikZ, plots, algorithms ---
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc,fit,backgrounds,decorations.pathreplacing,shapes.geometric}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\algrenewcommand\algorithmicrequire{\textbf{Input:}}
+% One hyperref anchor per line of every algorithm, not one per line number.
+\makeatletter\providecommand{\theHALG@line}{}\renewcommand{\theHALG@line}{\thealgorithm.\arabic{ALG@line}}\makeatother
+\algrenewcommand\algorithmicensure{\textbf{Output:}}
+
+% --- Links and references ---
+\usepackage[colorlinks=true,allcolors=ourdarkblue2,breaklinks=true,bookmarksnumbered=true]{hyperref}
+\usepackage[capitalise,noabbrev]{cleveref}
+\crefname{section}{Section}{Sections}
+\crefname{subsection}{Section}{Sections}
+\crefname{subsubsection}{Section}{Sections}
+\crefname{appendix}{Appendix}{Appendices}
+\crefname{equation}{Eq.}{Eqs.}
+\crefname{figure}{Figure}{Figures}
+\crefname{table}{Table}{Tables}
+\crefname{algorithm}{Algorithm}{Algorithms}
+\creflabelformat{equation}{#2(#1)#3}
+
+% --- Title block: \manualtitle{title}{subtitle}{the line under it} ---
+\newcommand{\manualtitle}[3]{%
+  {\sffamily\bfseries\huge #1\par}\vspace{4pt}%
+  {\sffamily\Large\color{ourgray} #2\par}\vspace{6pt}%
+  {\small\color{ourgray2} #3\par}\vspace{8pt}%
+  {\color{ourblue}\rule{\linewidth}{1.2pt}}\par\vspace{4pt}}
+
+\newcommand{\micro}{\textmu}

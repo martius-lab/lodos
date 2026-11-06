@@ -1,0 +1,64 @@
+{
+ "source": "viewer/assets/nist/usd/nut_m12.usd",
+ "body": "/factory_nut_m12_hex/factory_nut_m12_hex",
+ "meters_per_unit": 1.0,
+ "y_up_turned": false,
+ "authored_mass": 0.05000000074505806,
+ "meshes": {
+  "collision": {
+   "prims": [
+    "/factory_nut_m12_hex/factory_nut_m12_hex/collision"
+   ],
+   "approximation": [
+    "sdf"
+   ],
+   "prim_scale": [
+    [
+     1.0,
+     1.0,
+     1.0
+    ]
+   ],
+   "vertices": 535,
+   "triangles": 1070,
+   "bbox_min": [
+    -0.009517290629446507,
+    -0.010852932929992676,
+    0.012986533343791962
+   ],
+   "bbox_max": [
+    0.009490164928138256,
+    0.011083973571658134,
+    0.023012487217783928
+   ]
+  },
+  "visual": {
+   "prims": [
+    "/factory_nut_m12_hex/factory_nut_m12_hex/visual"
+   ],
+   "approximation": [
+    null
+   ],
+   "prim_scale": [
+    [
+     1.0,
+     1.0,
+     1.0
+    ]
+   ],
+   "vertices": 5551,
+   "triangles": 11102,
+   "bbox_min": [
+    -0.009514999575912952,
+    -0.010852999985218048,
+    0.012993999756872654
+   ],
+   "bbox_max": [
+    0.009484999813139439,
+    0.011086000129580498,
+    0.022993000224232674
+   ]
+  }
+ },
+ "visual_is_collision": false
+}

@@ -1,0 +1,30 @@
+.venv/
+__pycache__/
+*.egg-info/
+/build/
+/dist/
+.ipynb_checkpoints/
+.DS_Store
+.vscode/
+.idea/
+MUJOCO_LOG.TXT
+imgui.ini
+/results/
+.scratch/
+
+# The Instant Meshes binary tools/mesh_processing/ runs; a copy, never committed.
+tools/mesh_processing/.instant-meshes
+
+# Intermediate files scene_surfaces.py leaves behind.
+tools/mesh_processing/.tmp/
+
+# The manuals' LaTeX build (docs/manual/build.sh copies the PDFs to docs/).
+docs/manual/build/
+
+# mesh_processing tools installed beside the pipeline (docs/installation_guide.pdf)
+tools/mesh_processing/.pylibs/
+tools/mesh_processing/.pamo.sif
+
+# tune_all.py's logs, written beside the tuned files; records of a run, not shipped.
+tools/performance_tuning/tuned/logs/
+tools/performance_tuning/tuned/mj/logs/

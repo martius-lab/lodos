@@ -1,0 +1,31 @@
+\documentclass[11pt]{article}
+\usepackage[margin=0.9in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage[T1]{fontenc}
+\usepackage{parskip}
+\usepackage{booktabs,array,longtable}
+\usepackage{graphicx}
+\usepackage[dvipsnames]{xcolor}
+\usepackage[colorlinks=true,allcolors=NavyBlue]{hyperref}
+\usepackage[capitalise,noabbrev]{cleveref}
+
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+\setlength{\LTcapwidth}{\textwidth}
+
+\title{Lodos's mj mode against MuJoCo Warp: batched throughput}
+\author{}
+\date{2026-11-02}
+
+\begin{document}
+\maketitle
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\textwidth]{throughput.pdf}
+\caption{World-steps per second against the batch size, each configuration's ladder; dashed where a run lost
+worlds.}\label{fig:throughput}
+\end{figure}
+
+\input{tables.tex}
+
+\end{document}

@@ -1,0 +1,64 @@
+{
+ "source": "viewer/assets/nist/usd/nistboard.usd",
+ "body": "/nistboard",
+ "meters_per_unit": 1.0,
+ "y_up_turned": false,
+ "authored_mass": 1.0,
+ "meshes": {
+  "collision": {
+   "prims": [
+    "/nistboard/collisions/mesh_0"
+   ],
+   "approximation": [
+    null
+   ],
+   "prim_scale": [
+    [
+     0.385,
+     0.384615,
+     0.03
+    ]
+   ],
+   "vertices": 8,
+   "triangles": 12,
+   "bbox_min": [
+    -0.0001715255313233799,
+    -0.384076017928605,
+    0.00015596858750080607
+   ],
+   "bbox_max": [
+    0.38482847446867663,
+    0.0005389820713949944,
+    0.030155968587500803
+   ]
+  },
+  "visual": {
+   "prims": [
+    "/nistboard/collisions/mesh_0"
+   ],
+   "approximation": [
+    null
+   ],
+   "prim_scale": [
+    [
+     0.385,
+     0.384615,
+     0.03
+    ]
+   ],
+   "vertices": 8,
+   "triangles": 12,
+   "bbox_min": [
+    -0.0001715255313233799,
+    -0.384076017928605,
+    0.00015596858750080607
+   ],
+   "bbox_max": [
+    0.38482847446867663,
+    0.0005389820713949944,
+    0.030155968587500803
+   ]
+  }
+ },
+ "visual_is_collision": true
+}

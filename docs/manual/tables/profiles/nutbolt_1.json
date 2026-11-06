@@ -1,0 +1,48 @@
+{
+ "scene": "nutbolt_1",
+ "B": 2048,
+ "pre": 50,
+ "ms": {
+  "rbd": 0.07145223207771778,
+  "lodos_bbox": 0.2584517331949125,
+  "lodos_sdf": 0.1570805674418807,
+  "lodos_narrow": 0.5754057667218149,
+  "contact_dynamics": 9.380231167112168,
+  "integrate": 0.027710800835241876,
+  "whole_step": 10.487719400164982
+ },
+ "stages_sum_ms": 10.470332267383736,
+ "world_steps_per_s": 195276.01014647502,
+ "funnel": {
+  "lodos": {
+   "candidates": {
+    "n": 5586816,
+    "allocated": 8600848
+   },
+   "tiles": {
+    "n": 698352,
+    "allocated": 1075106,
+    "of": 4825088
+   },
+   "voxel": {
+    "n": 2633677,
+    "allocated": 4073414
+   },
+   "contacts": {
+    "n": 1975726,
+    "allocated": 4073414
+   }
+  },
+  "runtime": {
+   "contacts": {
+    "n": 97978,
+    "allocated": 148233
+   },
+   "rows_per_world": {
+    "n": 219,
+    "allocated": 365
+   }
+  }
+ },
+ "mempool_mb": 791.4139490127563
+}

@@ -1,0 +1,150 @@
+{
+ "format": "lodos-tuning/2",
+ "scene": "cube_walled_20_polytope",
+ "B": 4096,
+ "layout": "independent",
+ "fingerprint": {
+  "model": {
+   "nq": 140,
+   "nv": 120,
+   "nu": 0,
+   "na": 0,
+   "structure": "06bbe2e0f5a0e8b2"
+  },
+  "geometry": "5b5100a1d3841f10",
+  "timestep": 0.002,
+  "hulls": {
+   "hulls": 0
+  }
+ },
+ "states": {
+  "path": "results/tuning/states/mj/cube_walled_20_polytope.states.npz",
+  "digest": "c9d448940f149a5c",
+  "size": 1055,
+  "source": {
+   "kind": "explore",
+   "scene": "cube_walled_20_polytope",
+   "strategy": [
+    "scatter"
+   ],
+   "starts": 32,
+   "horizon": 2500,
+   "stride": 50,
+   "seed": 0,
+   "jitter": 0.01,
+   "sigma": 0.5,
+   "max_depth": 0.01,
+   "dropped_nonfinite": 0,
+   "dropped_deep": 545
+  },
+  "horizon": 200,
+  "controls": {
+   "kind": "hold"
+  }
+ },
+ "safety": 1.5,
+ "created": "2026-11-01T09:50:47",
+ "commit": null,
+ "device": "NVIDIA GeForce RTX 4080",
+ "collision": {},
+ "runtime": {
+  "naconmax": 394676,
+  "nconmax": 97,
+  "njmax": 396,
+  "nccdmax": 15
+ },
+ "sim": {},
+ "solver_kwargs": {
+  "mode": "mj"
+ },
+ "baseline": {
+  "B": 2048,
+  "settings": {
+   "collision": {},
+   "runtime": {
+    "nconmax": 1024,
+    "njmax": 768
+   },
+   "sim": {},
+   "solver_kwargs": {}
+  },
+  "throughput": {
+   "world_steps_per_s": 308215.85093462345,
+   "ms_per_step": 6.644693950001965,
+   "B": 2048,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.0012117081746189457,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 11824.93116569519
+  },
+  "artifacts": {
+   "nan": 0,
+   "escaped": 0,
+   "deep_mean": 0.005344744748896346,
+   "deep_p99": 0.04915980041027089,
+   "creep": 0.01821086932931218,
+   "rest_speed": 0.07591692053465238,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "guard_B": 512
+ },
+ "peaks": {
+  "B": 4096,
+  "runtime": {
+   "nacon": 263117,
+   "ncollision": 92809,
+   "naconmax": 519936,
+   "contacts_per_world": 88,
+   "overflow": false,
+   "nefc_per_world": 264,
+   "njmax": 504,
+   "efc_overflow": false,
+   "ccd": {
+    "epa": 36737,
+    "manifold": 39724,
+    "contacts": 87397,
+    "naccdmax": 86016,
+    "overflow": false
+   }
+  },
+  "overflowed": false,
+  "layout": "independent",
+  "horizon": 200,
+  "batches": 1,
+  "states": 1055,
+  "controls": {
+   "kind": "hold"
+  }
+ },
+ "throughput": {
+  "world_steps_per_s": 378582.2626829692,
+  "B": 4096
+ },
+ "artifacts": {
+  "tuned": {
+   "nan": 0,
+   "escaped": 0,
+   "deep_mean": 0.005348381225257981,
+   "deep_p99": 0.04929274320602417,
+   "creep": 0.018441127909632656,
+   "rest_speed": 0.07726468235148332,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "baseline": {
+   "nan": 0,
+   "escaped": 0,
+   "deep_mean": 0.005344744748896346,
+   "deep_p99": 0.04915980041027089,
+   "creep": 0.01821086932931218,
+   "rest_speed": 0.07591692053465238,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "ok": true,
+  "why": ""
+ }
+}

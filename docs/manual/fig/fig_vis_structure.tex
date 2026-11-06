@@ -1,0 +1,49 @@
+\documentclass[tikz,border=4pt]{standalone}
+\input{fig/common.tex}
+\begin{document}
+\begin{tikzpicture}[font=\small\sffamily]
+  \tikzset{
+    part/.style={box, align=left, text width=#1},
+    part/.default=50mm,
+    label/.style={font=\footnotesize\sffamily, text=ourgray, align=left},
+    own/.style={rounded corners=3pt, inner sep=7pt},
+  }
+  % The session's contents
+  \node[part=52mm, fill=ourorange!14, draw=ourorange] (run) at (0, 0)
+    {\textbf{Runner}, one per runner key\\[1pt]
+     {\footnotesize a one-world \texttt{Sim} built by \texttt{SceneSource.make\_sim}; its capacities and the demand seen on them; three captured graphs, \texttt{forward}, \texttt{integrate} and \texttt{step}; a \texttt{Collector}. Under Newton's sims a \texttt{NewtonRunner} (\texttt{newton\_link.py}) instead, the scene in Newton's process}};
+  \node[part=46mm, fill=white] (take) at (7.6, 0)
+    {\textbf{Take}, one per run\\[1pt]
+     {\footnotesize its configuration, the frame it branched from, a \texttt{LiveFrame} every \texttt{stride} steps, the state after its last step (\texttt{tail}); saved whole by \texttt{save\_take}}};
+  \draw[flow] (run.east) -- node[above, label] {\texttt{collect()}} node[below, label] {a \texttt{LiveFrame}} (take.west);
+  \node[part=52mm, fill=ourlightgray2!30] (src) at (0, -3.0)
+    {\textbf{SceneSource} \texttt{scenes/catalog.py}\\[1pt]
+     {\footnotesize model, surfaces, start, capacities, solver and mode defaults, keyframes, controls, sampler; what Newton's sims take instead}};
+  \draw[flow] (src.north) -- node[right, label] {\texttt{make\_sim}, $B = 1$} (run.south);
+  \node[part=46mm, fill=ourlightgray2!30] (draft) at (7.6, -3.0)
+    {\textbf{the draft}\\[1pt]
+     {\footnotesize a take of one frame: the frame looked at, edited and forwarded; \emph{Play} commits it}};
+  \node[anchor=north west, align=left, text width=124mm] (stitle) at ($(src.south west) + (-0.05, -0.2)$)
+    {\textbf{Session} \texttt{session.py}\quad{\footnotesize\sffamily\color{ourgray}one scene, its runners and its takes; everything a user does is a method: \texttt{load}, \texttt{edit\_state}, \texttt{set\_sim}, \texttt{set\_option}, \texttt{set\_pairs}, \texttt{play}, \texttt{tick}, \texttt{seek}, \texttt{tune\_capacities}}};
+  % The viewer's parts
+  \node[part=52mm, fill=ourlightgray2!30] (scene) at (0, 3.35)
+    {\textbf{LiveScene} \texttt{geometry.py}\\[1pt]
+     {\footnotesize what the scene looks like: meshes, kinds, colours, length scale, ground squares}};
+  \node[part=46mm, fill=white] (gl) at (7.6, 3.35)
+    {\textbf{LiveViewerGL}\\[1pt]
+     {\footnotesize Newton's \texttt{ViewerGL}: the window, the camera, ImGui; clicks and keys}};
+  \node[part=46mm, fill=white] (perf) at (3.8, 5.25)
+    {\textbf{Performance} \texttt{performance.py}\\[1pt]
+     {\footnotesize the tuning file, the state set, the tools}};
+  \node[anchor=south west, align=left, text width=124mm] (atitle) at ($(scene.north west) + (-0.05, 1.75)$)
+    {\textbf{LiveViewer} \texttt{app.py}\quad{\footnotesize\sffamily\color{ourgray}a \texttt{TrajectoryViewer}: the panels, the timeline, gizmos and picking, the drawing}};
+  % The boxes that hold them, drawn behind: the viewer's first, then the session's over it.
+  \begin{scope}[on background layer]
+    \node[own, draw=ourblue, fill=ourblue!7, fit=(run) (take) (src) (draft) (stitle) (scene) (gl) (perf) (atitle), inner sep=10pt] (app) {};
+    \node[own, draw=ourgreen!80!black, fill=ourgreen!9, fit=(run) (take) (src) (draft) (stitle)] (ses) {};
+  \end{scope}
+  \draw[flow] (run.north) -- node[right, label] {the first build makes it} (scene.south);
+  \draw[flow] (take.north) -- node[right, label] {the frame looked at,\\[-1pt]drawn by \texttt{log\_frame}} (gl.south);
+  \draw[flow] (perf.south) -- node[right, label, pos=0.45] {knobs,\\[-1pt]states} (perf.south |- ses.north);
+\end{tikzpicture}
+\end{document}

@@ -1,0 +1,353 @@
+\begingroup\small\setlength{\tabcolsep}{4pt}
+\begin{longtable}{@{}lrrrlr@{}}
+\toprule
+scene & s & $\Delta t$ (ms) & steps & Lodos's Newton solver & Kamino's iterations \\
+\midrule
+\endhead
+\texttt{cube\_walled\_5\_polytope} & 3 & 2 & 1500 & 100 it, tol 1e-06, ls 50 it & 20 \\
+\texttt{cube\_walled\_5\_sdf} & 3 & 2 & 1500 & 100 it, tol 1e-06, ls 50 it & -- \\
+\texttt{arm\_walled\_5\_polytope} & 3 & 2 & 1500 & 100 it, tol 1e-06, ls 50 it & 20 \\
+\texttt{arm\_walled\_5\_sdf} & 3 & 2 & 1500 & 100 it, tol 1e-06, ls 50 it & -- \\
+\texttt{shadow\_grasp\_polytope} & 5 & 2 & 2500 & 100 it, tol 1e-06, ls 50 it & 200 \\
+\texttt{shadow\_grasp\_sdf} & 5 & 2 & 2500 & 100 it, tol 1e-06, ls 50 it & -- \\
+\texttt{shadow\_walled\_5\_polytope} & 3 & 2 & 1500 & 100 it, tol 1e-06, ls 50 it & 200 \\
+\texttt{shadow\_walled\_5\_sdf} & 3 & 2 & 1500 & 100 it, tol 1e-06, ls 50 it & -- \\
+\texttt{nist\_threading\_m8} & 5 & 1.25 & 4000 & 100 it, tol 1e-06, ls 50 it & -- \\
+\texttt{masonry\_arch\_polytope} & 2 & 4.17 & 480 & 100 it, tol 1e-06, ls 50 it & 20 \\
+\texttt{masonry\_arch\_sdf} & 2 & 4.17 & 480 & 100 it, tol 1e-06, ls 50 it & -- \\
+\texttt{house\_of\_cards\_polytope} & 2 & 4.17 & 480 & 100 it, tol 1e-06, ls 50 it & 20 \\
+\texttt{house\_of\_cards\_sdf} & 2 & 4.17 & 480 & 100 it, tol 1e-06, ls 50 it & -- \\
+\texttt{cube\_walled\_20\_polytope} & 3 & 2 & 1500 & 100 it, tol 1e-06, ls 50 it & 20 \\
+\texttt{cube\_walled\_20\_sdf} & 3 & 2 & 1500 & 100 it, tol 1e-06, ls 50 it & -- \\
+\texttt{arm\_walled\_20\_polytope} & 3 & 2 & 1500 & 100 it, tol 1e-06, ls 50 it & 20 \\
+\texttt{arm\_walled\_20\_sdf} & 3 & 2 & 1500 & 100 it, tol 1e-06, ls 50 it & -- \\
+\texttt{shadow\_walled\_20\_polytope} & 3 & 2 & 1500 & 100 it, tol 1e-06, ls 50 it & left out \\
+\texttt{shadow\_walled\_20\_sdf} & 3 & 2 & 1500 & 100 it, tol 1e-06, ls 50 it & -- \\*
+\noalign{\vskip\aboverulesep\hrule height\heavyrulewidth}
+\caption{The scenes: the simulated seconds a run times, the step, the steps, Lodos's Newton solver (its iterations, tolerance and line-search iterations) and Kamino's PADMM iterations (--: a scene with Lodos surfaces, which Kamino does not run; left out: the twenty hands, where 16 worlds took 7.2\,s a step).}\label{tab:setup}
+\end{longtable}
+
+\begin{longtable}{@{}llp{9.5cm}@{}}
+\toprule
+scene & configuration & a world's capacities (1.5 times its peak over 16 starts) \\
+\midrule
+\endhead
+\texttt{cube\_walled\_5\_polytope} & Lodos, contact & nconmax 38, njmax 113, nccdmax 12 \\
+\texttt{cube\_walled\_5\_polytope} & Kamino & contacts 54; its Delassus matrix 162 rows, 0.1\,MB, so at most 81,827 worlds \\
+\texttt{cube\_walled\_5\_sdf} & Lodos, contact & nconmax 146, njmax 437; capacity\_tile 0.116, capacity2 0.279 \\
+\texttt{cube\_walled\_5\_sdf} & Lodos, cone & nconmax 20, njmax 59; capacity\_tile 0.121, capacity2 0.269 \\
+\texttt{cube\_walled\_5\_sdf} & Lodos, ray & nconmax 21, njmax 21; capacity\_tile 0.105, capacity2 0.376 \\
+\texttt{arm\_walled\_5\_polytope} & Lodos, contact & nconmax 225, njmax 140, nccdmax 21 \\
+\texttt{arm\_walled\_5\_polytope} & Kamino & contacts 180; its Delassus matrix 540 rows, 1.2\,MB, so at most 7,364 worlds \\
+\texttt{arm\_walled\_5\_sdf} & Lodos, contact & nconmax 27, njmax 81; capacity\_tile 0.162, capacity2 0.0334 \\
+\texttt{arm\_walled\_5\_sdf} & Lodos, cone & nconmax 20, njmax 59; capacity\_tile 0.184, capacity2 0.0341 \\
+\texttt{arm\_walled\_5\_sdf} & Lodos, ray & nconmax 26, njmax 26; capacity\_tile 0.184, capacity2 0.044 \\
+\texttt{shadow\_grasp\_polytope} & Lodos, contact & nconmax 56, njmax 137, nccdmax 14 \\
+\texttt{shadow\_grasp\_polytope} & Kamino & contacts 21; its Delassus matrix 263 rows (200 of joints and limits), 0.3\,MB, so at most 31,046 worlds \\
+\texttt{shadow\_grasp\_sdf} & Lodos, contact & nconmax 15, njmax 83; capacity\_tile 0.0354, capacity2 0.0755 \\
+\texttt{shadow\_grasp\_sdf} & Lodos, cone & nconmax 8, njmax 60; capacity\_tile 0.0354, capacity2 0.0755 \\
+\texttt{shadow\_grasp\_sdf} & Lodos, ray & nconmax 8, njmax 45; capacity\_tile 0.0548, capacity2 0.063 \\
+\texttt{shadow\_walled\_5\_polytope} & Lodos, contact & nconmax 758, njmax 902, nccdmax 74 \\
+\texttt{shadow\_walled\_5\_polytope} & Kamino & contacts 374; its Delassus matrix 2,002 rows (880 of joints and limits), 16\,MB, so at most 535 worlds \\
+\texttt{shadow\_walled\_5\_sdf} & Lodos, contact & nconmax 330, njmax 1214; capacity\_tile 0.0214, capacity2 0.0435 \\
+\texttt{shadow\_walled\_5\_sdf} & Lodos, cone & nconmax 63, njmax 420; capacity\_tile 0.0238, capacity2 0.0482 \\
+\texttt{shadow\_walled\_5\_sdf} & Lodos, ray & nconmax 84, njmax 314; capacity\_tile 0.0234, capacity2 0.0827 \\
+\texttt{nist\_threading\_m8} & Lodos, contact & nconmax 117, njmax 351, nccdmax 2; capacity\_tile 0.259, capacity2 0.256 \\
+\texttt{nist\_threading\_m8} & Lodos, cone & nconmax 29, njmax 86, nccdmax 2; capacity\_tile 0.258, capacity2 0.249 \\
+\texttt{nist\_threading\_m8} & Lodos, ray & nconmax 36, njmax 38, nccdmax 2; capacity\_tile 0.448, capacity2 0.169 \\
+\texttt{masonry\_arch\_polytope} & Lodos, contact & nconmax 135, njmax 405, nccdmax 36 \\
+\texttt{masonry\_arch\_polytope} & Kamino & contacts 171; its Delassus matrix 525 rows (12 of joints and limits), 1.1\,MB, so at most 7,791 worlds \\
+\texttt{masonry\_arch\_sdf} & Lodos, contact & nconmax 1041, njmax 3123; capacity\_tile 0.0443, capacity2 0.647 \\
+\texttt{masonry\_arch\_sdf} & Lodos, cone & nconmax 72, njmax 216; capacity\_tile 0.0446, capacity2 0.646 \\
+\texttt{masonry\_arch\_sdf} & Lodos, ray & nconmax 72, njmax 72; capacity\_tile 0.0452, capacity2 0.64 \\
+\texttt{house\_of\_cards\_polytope} & Lodos, contact & nconmax 231, njmax 693, nccdmax 93 \\
+\texttt{house\_of\_cards\_polytope} & Kamino & contacts 438; its Delassus matrix 1,314 rows, 6.9\,MB, so at most 1,243 worlds \\
+\texttt{house\_of\_cards\_sdf} & Lodos, contact & nconmax 2123, njmax 6368; capacity\_tile 0.0947, capacity2 0.0261 \\
+\texttt{house\_of\_cards\_sdf} & Lodos, cone & nconmax 185, njmax 554; capacity\_tile 0.132, capacity2 0.0275 \\
+\texttt{house\_of\_cards\_sdf} & Lodos, ray & nconmax 371, njmax 371; capacity\_tile 0.2, capacity2 0.0451 \\
+\texttt{cube\_walled\_20\_polytope} & Lodos, contact & nconmax 119, njmax 356, nccdmax 30 \\
+\texttt{cube\_walled\_20\_polytope} & Kamino & contacts 171; its Delassus matrix 513 rows, 1.1\,MB, so at most 8,160 worlds \\
+\texttt{cube\_walled\_20\_sdf} & Lodos, contact & nconmax 939, njmax 2817; capacity\_tile 0.0332, capacity2 0.298 \\
+\texttt{cube\_walled\_20\_sdf} & Lodos, cone & nconmax 53, njmax 158; capacity\_tile 0.032, capacity2 0.307 \\
+\texttt{cube\_walled\_20\_sdf} & Lodos, ray & nconmax 53, njmax 53; capacity\_tile 0.0347, capacity2 0.352 \\
+\texttt{arm\_walled\_20\_polytope} & Lodos, contact & nconmax 756, njmax 369, nccdmax 62 \\
+\texttt{arm\_walled\_20\_polytope} & Kamino & contacts 650; its Delassus matrix 1,950 rows, 15.2\,MB, so at most 564 worlds \\
+\texttt{arm\_walled\_20\_sdf} & Lodos, contact & nconmax 96, njmax 288; capacity\_tile 0.0563, capacity2 0.0315 \\
+\texttt{arm\_walled\_20\_sdf} & Lodos, cone & nconmax 72, njmax 216; capacity\_tile 0.0629, capacity2 0.0374 \\
+\texttt{arm\_walled\_20\_sdf} & Lodos, ray & nconmax 78, njmax 78; capacity\_tile 0.0595, capacity2 0.0323 \\
+\texttt{shadow\_walled\_20\_polytope} & Lodos, contact & nconmax 2747, njmax 2580, nccdmax 179 \\
+\texttt{shadow\_walled\_20\_sdf} & Lodos, contact & nconmax 549, njmax 2537; capacity\_tile 0.00493, capacity2 0.0351 \\
+\texttt{shadow\_walled\_20\_sdf} & Lodos, cone & nconmax 204, njmax 1577; capacity\_tile 0.00474, capacity2 0.0376 \\
+\texttt{shadow\_walled\_20\_sdf} & Lodos, ray & nconmax 252, njmax 1202; capacity\_tile 0.00525, capacity2 0.0611 \\*
+\noalign{\vskip\aboverulesep\hrule height\heavyrulewidth}
+\caption{Each configuration's capacities per world, times the worlds at a batch size: Lodos's MJWarp contacts, rows and CCD slots and its arenas as fractions of a world's worst case; Kamino's contacts, which size its dense Delassus matrix too, three rows a contact besides the joints' and limits'. One array holds every world's matrix, at most $2^{31}$ entries, Warp's limit, which caps Kamino's batch.}\label{tab:caps}
+\end{longtable}
+
+\begin{longtable}{@{}lrrrr@{}}
+\toprule
+scene & Lodos, contact & Lodos, cone & Lodos, ray & Kamino \\
+\midrule
+\endhead
+\texttt{cube\_walled\_5\_polytope} & 25 / 75 & n/a & n/a & 36 \\
+\texttt{cube\_walled\_5\_sdf} & 97 / 291 & 13 / 39 & 14 / 14 & n/a \\
+\texttt{arm\_walled\_5\_polytope} & 150 / 93 & n/a & n/a & 120 \\
+\texttt{arm\_walled\_5\_sdf} & 18 / 54 & 13 / 39 & 17 / 17 & n/a \\
+\texttt{shadow\_grasp\_polytope} & 37 / 91 & n/a & n/a & 14 \\
+\texttt{shadow\_grasp\_sdf} & 10 / 55 & 5 / 40 & 5 / 30 & n/a \\
+\texttt{shadow\_walled\_5\_polytope} & 505 / 601 & n/a & n/a & 249 \\
+\texttt{shadow\_walled\_5\_sdf} & 220 / 809 & 42 / 280 & 56 / 209 & n/a \\
+\texttt{nist\_threading\_m8} & 78 / 234 & 19 / 57 & 24 / 25 & n/a \\
+\texttt{masonry\_arch\_polytope} & 90 / 270 & n/a & n/a & 114 \\
+\texttt{masonry\_arch\_sdf} & 694 / 2082 & 48 / 144 & 48 / 48 & n/a \\
+\texttt{house\_of\_cards\_polytope} & 154 / 462 & n/a & n/a & 292 \\
+\texttt{house\_of\_cards\_sdf} & 1415 / 4245 & 123 / 369 & 247 / 247 & n/a \\
+\texttt{cube\_walled\_20\_polytope} & 79 / 237 & n/a & n/a & 114 \\
+\texttt{cube\_walled\_20\_sdf} & 626 / 1878 & 35 / 105 & 35 / 35 & n/a \\
+\texttt{arm\_walled\_20\_polytope} & 504 / 246 & n/a & n/a & 433 \\
+\texttt{arm\_walled\_20\_sdf} & 64 / 192 & 48 / 144 & 52 / 52 & n/a \\
+\texttt{shadow\_walled\_20\_polytope} & 1831 / 1720 & n/a & n/a & left out \\
+\texttt{shadow\_walled\_20\_sdf} & 366 / 1691 & 136 / 1051 & 168 / 801 & n/a \\*
+\noalign{\vskip\aboverulesep\hrule height\heavyrulewidth}
+\caption{A world's largest demand over the 16 starts: Lodos's contacts / constraint rows of the contact solve (MJWarp's contacts and rows, its surfaces' contacts among them, a group of them a contact); Kamino's contacts. n/a: a polytope scene has no Lodos surfaces, so no groups, and Kamino does not run the scenes with them.}\label{tab:demand}
+\end{longtable}
+
+\begin{longtable}{@{}llrrrrl@{}}
+\toprule
+scene & groups & B & default & no shared H. & fused Newton & kept \\
+\midrule
+\endhead
+\texttt{cube\_walled\_5\_polytope} & contact & 1024 & 503k & 502k & -- & default \\
+\texttt{cube\_walled\_5\_sdf} & contact & 1024 & 244k & 244k & -- & default \\
+\texttt{cube\_walled\_5\_sdf} & cone & 1024 & 404k & 404k & -- & default \\
+\texttt{cube\_walled\_5\_sdf} & ray & 1024 & 683k & 682k & -- & default \\
+\texttt{arm\_walled\_5\_polytope} & contact & 1024 & 295k & 294k & -- & default \\
+\texttt{arm\_walled\_5\_sdf} & contact & 1024 & 363k & 364k & -- & default \\
+\texttt{arm\_walled\_5\_sdf} & cone & 1024 & 373k & 374k & -- & default \\
+\texttt{arm\_walled\_5\_sdf} & ray & 1024 & 709k & 708k & -- & default \\
+\texttt{shadow\_grasp\_polytope} & contact & 1024 & 533k & 568k & -- & no shared H. \\
+\texttt{shadow\_grasp\_sdf} & contact & 1024 & 403k & 420k & -- & no shared H. \\
+\texttt{shadow\_grasp\_sdf} & cone & 1024 & 406k & 440k & -- & no shared H. \\
+\texttt{shadow\_grasp\_sdf} & ray & 1024 & 644k & 677k & -- & no shared H. \\
+\texttt{shadow\_walled\_5\_polytope} & contact & 1024 & 124k & 119k & -- & default \\
+\texttt{shadow\_walled\_5\_sdf} & contact & 1024 & 57.3k & 55.8k & -- & default \\
+\texttt{shadow\_walled\_5\_sdf} & cone & 1024 & 52.5k & 50k & -- & default \\
+\texttt{shadow\_walled\_5\_sdf} & ray & 1024 & 53.1k & 49.1k & -- & default \\
+\texttt{nist\_threading\_m8} & contact & 1024 & 353k & 352k & 643k & fused Newton \\
+\texttt{nist\_threading\_m8} & cone & 1024 & 493k & 489k & 667k & fused Newton \\
+\texttt{nist\_threading\_m8} & ray & 1024 & 428k & 423k & 590k & fused Newton \\
+\texttt{masonry\_arch\_polytope} & contact & 1024 & 142k & 126k & -- & default \\
+\texttt{masonry\_arch\_sdf} & contact & 1024 & 44k & 41.9k & -- & default \\
+\texttt{masonry\_arch\_sdf} & cone & 1024 & 35.7k & 32.9k & -- & default \\
+\texttt{masonry\_arch\_sdf} & ray & 1024 & 19.9k & 19.1k & -- & default \\
+\texttt{house\_of\_cards\_polytope} & contact & 1024 & 28.8k & 29.3k & -- & default \\
+\texttt{house\_of\_cards\_sdf} & contact & 1024 & 8.11k & 8.23k & -- & default \\
+\texttt{house\_of\_cards\_sdf} & cone & 1024 & 15.1k & 15k & -- & default \\
+\texttt{house\_of\_cards\_sdf} & ray & 1024 & 13.1k & 13.1k & -- & default \\
+\texttt{cube\_walled\_20\_polytope} & contact & 256 & 66.2k & 60.4k & -- & default \\
+\texttt{cube\_walled\_20\_sdf} & contact & 256 & 35k & 33.7k & -- & default \\
+\texttt{cube\_walled\_20\_sdf} & cone & 256 & 52.9k & 47.4k & -- & default \\
+\texttt{cube\_walled\_20\_sdf} & ray & 256 & 77k & 69.6k & -- & default \\
+\texttt{arm\_walled\_20\_polytope} & contact & 256 & 46.8k & 43.8k & -- & default \\
+\texttt{arm\_walled\_20\_sdf} & contact & 256 & 59.4k & 53.7k & -- & default \\
+\texttt{arm\_walled\_20\_sdf} & cone & 256 & 55.1k & 49.7k & -- & default \\
+\texttt{arm\_walled\_20\_sdf} & ray & 256 & 79.7k & 71k & -- & default \\
+\texttt{shadow\_walled\_20\_polytope} & contact & 256 & 3.66k & 3.66k & -- & default \\
+\texttt{shadow\_walled\_20\_sdf} & contact & 256 & 1.67k & 1.67k & -- & default \\
+\texttt{shadow\_walled\_20\_sdf} & cone & 256 & 1.31k & 1.32k & -- & default \\
+\texttt{shadow\_walled\_20\_sdf} & ray & 256 & 1.19k & 1.19k & -- & default \\*
+\noalign{\vskip\aboverulesep\hrule height\heavyrulewidth}
+\caption{Lodos's execution options, world-steps/s at B worlds, from the capacity runs' half-way states: the default with MJWarp's Hessian summed in shared memory (on by default where it builds, on models of at most 144 degrees of freedom, padded), without it (no shared H.), and the fused Newton solve; an option is kept where it is 3\,\% faster (``--'': refused, the fused solve takes models of at most 16 degrees of freedom).}\label{tab:ab}
+\end{longtable}
+
+\begin{longtable}{@{}lrrrrrl@{}}
+\toprule
+scene & B & default & sparse J. & RCM & both & kept \\
+\midrule
+\endhead
+\texttt{cube\_walled\_5\_polytope} & 1024 & 421k & 420k & 338k & 323k & default \\
+\texttt{arm\_walled\_5\_polytope} & 1024 & 75.3k & 70.5k & 65.3k & 57.8k & default \\
+\texttt{shadow\_grasp\_polytope} & 1024 & 11.1k & 11.8k & 11.1k & 11.9k & both \\
+\texttt{shadow\_walled\_5\_polytope} & 256 & 250 & 487 & OOM & OOM & sparse J. \\
+\texttt{masonry\_arch\_polytope} & 1024 & 13.2k & 24k & 14.7k & 28.6k & both \\
+\texttt{house\_of\_cards\_polytope} & 512 & 5.29k & 8.88k & 5.19k & 9.14k & both \\
+\texttt{cube\_walled\_20\_polytope} & 256 & 71.2k & 70.6k & 55.2k & 55k & default \\
+\texttt{arm\_walled\_20\_polytope} & 256 & 9.29k & 7.85k & OOM & OOM & default \\*
+\noalign{\vskip\aboverulesep\hrule height\heavyrulewidth}
+\caption{Kamino's execution options, world-steps/s at B worlds, from the capacity runs' half-way states: the default (dense Jacobians, its Delassus matrices factored by blocked Cholesky), sparse Jacobians (sparse J.), the factorization after a reverse Cuthill--McKee reordering (RCM), and both: the same solve each. An option is kept where it is 3\,\% faster. B is halved from 1024 until the default fits. OOM: out of memory.}\label{tab:abk}
+\end{longtable}
+
+\begin{longtable}{@{}lrrrrl@{}}
+\toprule
+scene & cap & best & iterations & converged & ladder \\
+\midrule
+\endhead
+\texttt{cube\_walled\_5\_polytope} & 20 & 589k @4096 & 20 & 0.366\,\% & dropped at 8192 \\
+\texttt{arm\_walled\_5\_polytope} & 20 & 58.3k @128 & 20 & 0\,\% & dropped at 256 \\
+\texttt{shadow\_grasp\_polytope} & 200 & 11.1k @512 & 200 & 0\,\% & dropped at 1024 \\
+\texttt{shadow\_walled\_5\_polytope} & 200 & 501 @256 & 200 & 0\,\% & out of memory at 512 \\
+\texttt{masonry\_arch\_polytope} & 20 & 35.3k @2048 & 20 & 0\,\% & out of memory at 4096 \\
+\texttt{house\_of\_cards\_polytope} & 20 & 9.34k @512 & 20 & 0\,\% & out of memory at 1024 \\
+\texttt{cube\_walled\_20\_polytope} & 20 & 76.6k @4096 & 20 & 0\,\% & past $2^{31}$ entries at 8192 \\
+\texttt{arm\_walled\_20\_polytope} & 20 & 9.66k @256 & 20 & 0\,\% & out of memory at 512 \\*
+\noalign{\vskip\aboverulesep\hrule height\heavyrulewidth}
+\caption{Kamino's solves: its PADMM iterations' cap, its best throughput (world-steps/s at the batch size after @), and in that run's last step its worlds' mean PADMM iterations and the share of them whose solve met its tolerances; how its ladder ended.}\label{tab:kamino}
+\end{longtable}
+
+\begin{longtable}{@{}lrrrrr@{}}
+\toprule
+scene & Lodos, contact & Lodos, cone & Lodos, ray & Kamino & ratio \\
+\midrule
+\endhead
+\texttt{cube\_walled\_5\_polytope} & 711k @8192 & n/a & n/a & 589k @4096 & 1.21 \\
+\texttt{cube\_walled\_5\_sdf} & 225k @2048 & 596k @8192 & 1.08M @4096 & n/a & 1.83$^\ddagger$ \\
+\texttt{arm\_walled\_5\_polytope} & 408k @8192 & n/a & n/a & 58.3k @128 & 6.99 \\
+\texttt{arm\_walled\_5\_sdf} & 523k @4096 & 544k @4096 & 1.12M @8192 & n/a & 19.26$^\ddagger$ \\
+\texttt{shadow\_grasp\_polytope} & 983k @8192 & n/a & n/a & 11.1k @512 & 88.33 \\
+\texttt{shadow\_grasp\_sdf} & 660k @8192 & 675k @8192 & 1.02M @8192$^\dagger$ & n/a & 60.64$^\ddagger$ \\
+\texttt{shadow\_walled\_5\_polytope} & 103k @8192 & n/a & n/a & 501 @256 & 205.50 \\
+\texttt{shadow\_walled\_5\_sdf} & 65.3k @4096 & 69.4k @8192 & 74.4k @4096 & n/a & 148.50$^\ddagger$ \\
+\texttt{nist\_threading\_m8} & 1.12M @8192 & 1.25M @8192 & 1.45M @8192 & n/a & -- \\
+\texttt{masonry\_arch\_polytope} & 175k @16384 & n/a & n/a & 35.3k @2048 & 4.97 \\
+\texttt{masonry\_arch\_sdf} & 44.3k @2048 & 34.8k @1024 & 21.4k @1024 & n/a & 1.26$^\ddagger$ \\
+\texttt{house\_of\_cards\_polytope} & 34.2k @8192 & n/a & n/a & 9.34k @512 & 3.66 \\
+\texttt{house\_of\_cards\_sdf} & 7.89k @2048 & 18.6k @4096 & 16.8k @2048 & n/a & 1.99$^\ddagger$ \\
+\texttt{cube\_walled\_20\_polytope} & 189k @16384 & n/a & n/a & 76.6k @4096 & 2.47 \\
+\texttt{cube\_walled\_20\_sdf} & 61k @4096 & 148k @16384 & 199k @8192 & n/a & 2.60$^\ddagger$ \\
+\texttt{arm\_walled\_20\_polytope} & 102k @16384 & n/a & n/a & 9.66k @256 & 10.59 \\
+\texttt{arm\_walled\_20\_sdf} & 143k @16384 & 142k @16384 & 216k @16384 & n/a & 22.31$^\ddagger$ \\
+\texttt{shadow\_walled\_20\_polytope} & 2.62k @1024 & n/a & n/a & left out & -- \\
+\texttt{shadow\_walled\_20\_sdf} & 1.74k @512 & 1.58k @512 & 1.56k @512 & n/a & -- \\*
+\noalign{\vskip\aboverulesep\hrule height\heavyrulewidth}
+\caption{The best throughput of each configuration, world-steps/s at the batch size after @, and the ratio of Lodos's to Kamino's on the same bodies, Lodos's the fastest of its configurations that lost no world. $\ddagger$: against Kamino on the scene's polytope version, which collides the bodies as convex hulls, the scene having Lodos surfaces. $\dagger$: the run lost worlds, non-finite or escaped (\cref{tab:ladders}). n/a: a polytope scene has no Lodos surfaces, so no groups, and Kamino does not run the scenes with them.}\label{tab:best}
+\end{longtable}
+
+\begin{longtable}{@{}llrrrr@{}}
+\toprule
+scene & configuration & world-steps/s & B & $\times$ real time & $\times$ Kamino \\
+\midrule
+\endhead
+\texttt{cube\_walled\_5\_polytope} & Lodos, contact & 711k & 8192 & 1\,420 & 1.21 \\*
+ & Kamino & 589k & 4096 & 1\,180 & 1.00 \\
+\addlinespace
+\texttt{cube\_walled\_5\_sdf} & Lodos, contact & 225k & 2048 & 449 & 0.38$^\ddagger$ \\*
+ & Lodos, cone & 596k & 8192 & 1\,190 & 1.01$^\ddagger$ \\*
+ & Lodos, ray & 1.08M & 4096 & 2\,150 & 1.83$^\ddagger$ \\
+\addlinespace
+\texttt{arm\_walled\_5\_polytope} & Lodos, contact & 408k & 8192 & 815 & 6.99 \\*
+ & Kamino & 58.3k & 128 & 117 & 1.00 \\
+\addlinespace
+\texttt{arm\_walled\_5\_sdf} & Lodos, contact & 523k & 4096 & 1\,050 & 8.98$^\ddagger$ \\*
+ & Lodos, cone & 544k & 4096 & 1\,090 & 9.33$^\ddagger$ \\*
+ & Lodos, ray & 1.12M & 8192 & 2\,250 & 19.26$^\ddagger$ \\
+\addlinespace
+\texttt{shadow\_grasp\_polytope} & Lodos, contact & 983k & 8192 & 1\,970 & 88.33 \\*
+ & Kamino & 11.1k & 512 & 22.3 & 1.00 \\
+\addlinespace
+\texttt{shadow\_grasp\_sdf} & Lodos, contact & 660k & 8192 & 1\,320 & 59.33$^\ddagger$ \\*
+ & Lodos, cone & 675k & 8192 & 1\,350 & 60.64$^\ddagger$ \\*
+ & Lodos, ray & 1.02M$^\dagger$ & 8192 & 2\,050 & 92.00$^\ddagger$ \\
+\addlinespace
+\texttt{shadow\_walled\_5\_polytope} & Lodos, contact & 103k & 8192 & 206 & 205.50 \\*
+ & Kamino & 501 & 256 & 1 & 1.00 \\
+\addlinespace
+\texttt{shadow\_walled\_5\_sdf} & Lodos, contact & 65.3k & 4096 & 131 & 130.38$^\ddagger$ \\*
+ & Lodos, cone & 69.4k & 8192 & 139 & 138.63$^\ddagger$ \\*
+ & Lodos, ray & 74.4k & 4096 & 149 & 148.50$^\ddagger$ \\
+\addlinespace
+\texttt{nist\_threading\_m8} & Lodos, contact & 1.12M & 8192 & 1\,390 & -- \\*
+ & Lodos, cone & 1.25M & 8192 & 1\,570 & -- \\*
+ & Lodos, ray & 1.45M & 8192 & 1\,810 & -- \\
+\addlinespace
+\texttt{masonry\_arch\_polytope} & Lodos, contact & 175k & 16384 & 730 & 4.97 \\*
+ & Kamino & 35.3k & 2048 & 147 & 1.00 \\
+\addlinespace
+\texttt{masonry\_arch\_sdf} & Lodos, contact & 44.3k & 2048 & 185 & 1.26$^\ddagger$ \\*
+ & Lodos, cone & 34.8k & 1024 & 145 & 0.99$^\ddagger$ \\*
+ & Lodos, ray & 21.4k & 1024 & 89.1 & 0.61$^\ddagger$ \\
+\addlinespace
+\texttt{house\_of\_cards\_polytope} & Lodos, contact & 34.2k & 8192 & 142 & 3.66 \\*
+ & Kamino & 9.34k & 512 & 38.9 & 1.00 \\
+\addlinespace
+\texttt{house\_of\_cards\_sdf} & Lodos, contact & 7.89k & 2048 & 32.9 & 0.84$^\ddagger$ \\*
+ & Lodos, cone & 18.6k & 4096 & 77.3 & 1.99$^\ddagger$ \\*
+ & Lodos, ray & 16.8k & 2048 & 70.1 & 1.80$^\ddagger$ \\
+\addlinespace
+\texttt{cube\_walled\_20\_polytope} & Lodos, contact & 189k & 16384 & 378 & 2.47 \\*
+ & Kamino & 76.6k & 4096 & 153 & 1.00 \\
+\addlinespace
+\texttt{cube\_walled\_20\_sdf} & Lodos, contact & 61k & 4096 & 122 & 0.80$^\ddagger$ \\*
+ & Lodos, cone & 148k & 16384 & 295 & 1.93$^\ddagger$ \\*
+ & Lodos, ray & 199k & 8192 & 399 & 2.60$^\ddagger$ \\
+\addlinespace
+\texttt{arm\_walled\_20\_polytope} & Lodos, contact & 102k & 16384 & 205 & 10.59 \\*
+ & Kamino & 9.66k & 256 & 19.3 & 1.00 \\
+\addlinespace
+\texttt{arm\_walled\_20\_sdf} & Lodos, contact & 143k & 16384 & 286 & 14.78$^\ddagger$ \\*
+ & Lodos, cone & 142k & 16384 & 283 & 14.67$^\ddagger$ \\*
+ & Lodos, ray & 216k & 16384 & 431 & 22.31$^\ddagger$ \\
+\addlinespace
+\texttt{shadow\_walled\_20\_polytope} & Lodos, contact & 2.62k & 1024 & 5.24 & -- \\
+\addlinespace
+\texttt{shadow\_walled\_20\_sdf} & Lodos, contact & 1.74k & 512 & 3.48 & -- \\*
+ & Lodos, cone & 1.58k & 512 & 3.16 & -- \\*
+ & Lodos, ray & 1.56k & 512 & 3.11 & -- \\*
+\noalign{\vskip\aboverulesep\hrule height\heavyrulewidth}
+\caption{Each configuration's best throughput: world-steps/s at a batch of B worlds; how many times real time it ran, the seconds simulated per second summed over the worlds (world-steps/s times the step: 2\,ms, the threading's 1.25\,ms, the arch's and the house of cards' 4.17\,ms; each world's own is that over B); and its ratio to Kamino's best on the same bodies. $\ddagger$: against Kamino on the scene's polytope version, as convex hulls. $\dagger$: the run lost worlds, non-finite or escaped (\cref{tab:ladders}).}\label{tab:max}
+\end{longtable}
+
+\begin{longtable}{@{}llp{9.5cm}@{}}
+\toprule
+scene & configuration & world-steps/s by batch size; how the ladder ended; worlds lost at the best \\
+\midrule
+\endhead
+\texttt{cube\_walled\_5\_polytope} & Lodos, contact & 64: 59.5k, 128: 105k, 256: 177k, 512: 282k, 1024: 430k, 2048: 574k, 4096: 680k, 8192: 711k, 16384: 699k; dropped at 16384; 0 non-finite, 0 escaped \\
+\texttt{cube\_walled\_5\_polytope} & Kamino & 64: 98.1k, 128: 173k, 256: 294k, 512: 393k, 1024: 482k, 2048: 554k, 4096: 589k, 8192: 580k; dropped at 8192; 0 non-finite, 0 escaped \\
+\texttt{cube\_walled\_5\_sdf} & Lodos, contact & 64: 37.1k, 128: 65.1k, 256: 104k, 512: 150k, 1024: 198k, 2048: 225k, 4096: 224k; dropped at 4096; 0 non-finite, 0 escaped; 1 redone after an overflow \\
+\texttt{cube\_walled\_5\_sdf} & Lodos, cone & 64: 54.2k, 128: 99.5k, 256: 172k, 512: 281k, 1024: 402k, 2048: 515k, 4096: 587k, 8192: 596k, 16384: 571k; dropped at 16384; 0 non-finite, 0 escaped \\
+\texttt{cube\_walled\_5\_sdf} & Lodos, ray & 64: 80.3k, 128: 136k, 256: 260k, 512: 450k, 1024: 678k, 2048: 905k, 4096: 1.08M, 8192: 1.07M; dropped at 8192; 0 non-finite, 0 escaped \\
+\texttt{arm\_walled\_5\_polytope} & Lodos, contact & 64: 48.9k, 128: 85k, 256: 142k, 512: 214k, 1024: 295k, 2048: 376k, 4096: 406k, 8192: 408k, 16384: 390k; dropped at 16384; 0 non-finite, 0 escaped; 1 redone after an overflow \\
+\texttt{arm\_walled\_5\_polytope} & Kamino & 64: 40.4k, 128: 58.3k, 256: 32k; dropped at 256; 0 non-finite, 0 escaped; 1 redone after an overflow \\
+\texttt{arm\_walled\_5\_sdf} & Lodos, contact & 64: 62.2k, 128: 108k, 256: 178k, 512: 274k, 1024: 380k, 2048: 469k, 4096: 523k, 8192: 511k; dropped at 8192; 0 non-finite, 0 escaped \\
+\texttt{arm\_walled\_5\_sdf} & Lodos, cone & 64: 58.9k, 128: 104k, 256: 176k, 512: 274k, 1024: 389k, 2048: 485k, 4096: 544k, 8192: 542k; dropped at 8192; 0 non-finite, 0 escaped \\
+\texttt{arm\_walled\_5\_sdf} & Lodos, ray & 64: 92.8k, 128: 164k, 256: 287k, 512: 486k, 1024: 724k, 2048: 955k, 4096: 1.1M, 8192: 1.12M, 16384: 1.09M; dropped at 16384; 0 non-finite, 0 escaped \\
+\texttt{shadow\_grasp\_polytope} & Lodos, contact & 64: 76.6k, 128: 137k, 256: 246k, 512: 414k, 1024: 601k, 2048: 822k, 4096: 949k, 8192: 983k, 16384: 976k; dropped at 16384; 0 non-finite, 0 escaped \\
+\texttt{shadow\_grasp\_polytope} & Kamino & 64: 5.68k, 128: 9.68k, 256: 10.8k, 512: 11.1k, 1024: 10.2k; dropped at 1024; 0 non-finite, 0 escaped \\
+\texttt{shadow\_grasp\_sdf} & Lodos, contact & 64: 66.1k, 128: 122k, 256: 207k, 512: 344k, 1024: 471k, 2048: 615k, 4096: 655k, 8192: 660k, 16384: 648k; dropped at 16384; 0 non-finite, 0 escaped \\
+\texttt{shadow\_grasp\_sdf} & Lodos, cone & 64: 59k, 128: 109k, 256: 191k, 512: 315k, 1024: 449k, 2048: 601k, 4096: 660k, 8192: 675k, 16384: 664k; dropped at 16384; 0 non-finite, 0 escaped \\
+\texttt{shadow\_grasp\_sdf} & Lodos, ray & 64: 77k, 128: 142k, 256: 251k, 512: 414k, 1024: 611k, 2048: 861k, 4096: 982k, 8192: 1.02M, 16384: 1.01M; dropped at 16384; 0 non-finite, 8192 escaped \\
+\texttt{shadow\_walled\_5\_polytope} & Lodos, contact & 64: 17.2k, 128: 29.8k, 256: 38.1k, 512: 58.8k, 1024: 78.8k, 2048: 93.4k, 4096: 99.4k, 8192: 103k, 16384: --; out of memory at 16384; 0 non-finite, 0 escaped; 1 redone after an overflow \\
+\texttt{shadow\_walled\_5\_polytope} & Kamino & 64: 211, 128: 355, 256: 501, 512: --; out of memory at 512; 0 non-finite, 0 escaped \\
+\texttt{shadow\_walled\_5\_sdf} & Lodos, contact & 64: 12.9k, 128: 20.5k, 256: 30.3k, 512: 45.3k, 1024: 54.2k, 2048: 61.1k, 4096: 65.3k, 8192: --; out of memory at 8192; 0 non-finite, 0 escaped; 1 redone after an overflow \\
+\texttt{shadow\_walled\_5\_sdf} & Lodos, cone & 64: 10.4k, 128: 17.5k, 256: 27.2k, 512: 42.4k, 1024: 51k, 2048: 60.2k, 4096: 66.3k, 8192: 69.4k, 16384: --; out of memory at 16384; 0 non-finite, 0 escaped \\
+\texttt{shadow\_walled\_5\_sdf} & Lodos, ray & 64: 10.4k, 128: 17.7k, 256: 27.3k, 512: 44.1k, 1024: 54.8k, 2048: 66.3k, 4096: 74.4k, 8192: --; out of memory at 8192; 0 non-finite, 0 escaped \\
+\texttt{nist\_threading\_m8} & Lodos, contact & 64: 86.4k, 128: 162k, 256: 297k, 512: 481k, 1024: 685k, 2048: 909k, 4096: 1.07M, 8192: 1.12M, 16384: 1.11M; dropped at 16384; 0 non-finite, 0 escaped \\
+\texttt{nist\_threading\_m8} & Lodos, cone & 64: 82.4k, 128: 149k, 256: 270k, 512: 480k, 1024: 715k, 2048: 989k, 4096: 1.2M, 8192: 1.25M, 16384: 1.23M; dropped at 16384; 0 non-finite, 0 escaped \\
+\texttt{nist\_threading\_m8} & Lodos, ray & 64: 82.7k, 128: 151k, 256: 273k, 512: 492k, 1024: 765k, 2048: 1.11M, 4096: 1.4M, 8192: 1.45M, 16384: 1.42M; dropped at 16384; 0 non-finite, 0 escaped \\
+\texttt{masonry\_arch\_polytope} & Lodos, contact & 64: 22.1k, 128: 38.9k, 256: 65.6k, 512: 102k, 1024: 129k, 2048: 148k, 4096: 163k, 8192: 171k, 16384: 175k, 32768: --; out of memory at 32768; 0 non-finite, 0 escaped \\
+\texttt{masonry\_arch\_polytope} & Kamino & 64: 23.2k, 128: 31.2k, 256: 33.1k, 512: 33.7k, 1024: 34.7k, 2048: 35.3k, 4096: --; out of memory at 4096; 0 non-finite, 0 escaped \\
+\texttt{masonry\_arch\_sdf} & Lodos, contact & 64: 17k, 128: 26k, 256: 33.7k, 512: 41k, 1024: 42.6k, 2048: 44.3k, 4096: --; out of memory at 4096; 0 non-finite, 0 escaped \\
+\texttt{masonry\_arch\_sdf} & Lodos, cone & 64: 11.2k, 128: 18.1k, 256: 25.4k, 512: 32.5k, 1024: 34.8k, 2048: --; out of memory at 2048; 0 non-finite, 0 escaped \\
+\texttt{masonry\_arch\_sdf} & Lodos, ray & 64: 9.69k, 128: 12.8k, 256: 16.5k, 512: 20k, 1024: 21.4k, 2048: --; out of memory at 2048; 0 non-finite, 0 escaped \\
+\texttt{house\_of\_cards\_polytope} & Lodos, contact & 64: 6.27k, 128: 10.8k, 256: 17.2k, 512: 23.7k, 1024: 27.8k, 2048: 31.8k, 4096: 33.4k, 8192: 34.2k, 16384: --; out of memory at 16384; 0 non-finite, 0 escaped \\
+\texttt{house\_of\_cards\_polytope} & Kamino & 64: 7.37k, 128: 8.93k, 256: 9.04k, 512: 9.34k, 1024: --; out of memory at 1024; 0 non-finite, 0 escaped \\
+\texttt{house\_of\_cards\_sdf} & Lodos, contact & 64: 2.55k, 128: 3.91k, 256: 5.59k, 512: 7.08k, 1024: 7.5k, 2048: 7.89k, 4096: --; out of memory at 4096; 0 non-finite, 0 escaped \\
+\texttt{house\_of\_cards\_sdf} & Lodos, cone & 64: 4.69k, 128: 8.08k, 256: 12.2k, 512: 15.8k, 1024: 16k, 2048: 17.3k, 4096: 18.6k, 8192: --; out of memory at 8192; 0 non-finite, 0 escaped \\
+\texttt{house\_of\_cards\_sdf} & Lodos, ray & 64: 4.72k, 128: 7.93k, 256: 11.5k, 512: 14.6k, 1024: 14.7k, 2048: 16.8k, 4096: --; out of memory at 4096; 0 non-finite, 0 escaped \\
+\texttt{cube\_walled\_20\_polytope} & Lodos, contact & 64: 19.5k, 128: 34.9k, 256: 60.6k, 512: 97.8k, 1024: 129k, 2048: 155k, 4096: 173k, 8192: 184k, 16384: 189k, 32768: --; out of memory at 32768; 0 non-finite, 0 escaped \\
+\texttt{cube\_walled\_20\_polytope} & Kamino & 64: 33.2k, 128: 49k, 256: 65.3k, 512: 72.8k, 1024: 74.9k, 2048: 75.4k, 4096: 76.6k, 8192: --; past $2^{31}$ entries at 8192; 0 non-finite, 0 escaped \\
+\texttt{cube\_walled\_20\_sdf} & Lodos, contact & 64: 9.9k, 128: 16.8k, 256: 27k, 512: 38.8k, 1024: 48.3k, 2048: 56.3k, 4096: 61k, 8192: --; out of memory at 8192; 0 non-finite, 0 escaped; 1 redone after an overflow \\
+\texttt{cube\_walled\_20\_sdf} & Lodos, cone & 64: 18.1k, 128: 32.3k, 256: 53.8k, 512: 87.4k, 1024: 106k, 2048: 126k, 4096: 138k, 8192: 144k, 16384: 148k, 32768: --; out of memory at 32768; 0 non-finite, 0 escaped \\
+\texttt{cube\_walled\_20\_sdf} & Lodos, ray & 64: 25.7k, 128: 45.6k, 256: 75.6k, 512: 123k, 1024: 149k, 2048: 173k, 4096: 191k, 8192: 199k, 16384: --; out of memory at 16384; 0 non-finite, 0 escaped \\
+\texttt{arm\_walled\_20\_polytope} & Lodos, contact & 64: 16.4k, 128: 28k, 256: 45.5k, 512: 67k, 1024: 80.5k, 2048: 90.6k, 4096: 97.7k, 8192: 100k, 16384: 102k, 32768: --; out of memory at 32768; 0 non-finite, 0 escaped \\
+\texttt{arm\_walled\_20\_polytope} & Kamino & 64: 8.16k, 128: 9.07k, 256: 9.66k, 512: --; out of memory at 512; 0 non-finite, 0 escaped \\
+\texttt{arm\_walled\_20\_sdf} & Lodos, contact & 64: 19.3k, 128: 33.7k, 256: 55.4k, 512: 85.5k, 1024: 105k, 2048: 122k, 4096: 134k, 8192: 140k, 16384: 143k, 32768: --; out of memory at 32768; 0 non-finite, 0 escaped \\
+\texttt{arm\_walled\_20\_sdf} & Lodos, cone & 64: 19.1k, 128: 32.9k, 256: 53.9k, 512: 84.7k, 1024: 104k, 2048: 122k, 4096: 134k, 8192: 139k, 16384: 142k, 32768: --; out of memory at 32768; 0 non-finite, 0 escaped \\
+\texttt{arm\_walled\_20\_sdf} & Lodos, ray & 64: 29.1k, 128: 50.2k, 256: 81.1k, 512: 128k, 1024: 157k, 2048: 186k, 4096: 204k, 8192: 213k, 16384: 216k, 32768: --; out of memory at 32768; 0 non-finite, 0 escaped \\
+\texttt{shadow\_walled\_20\_polytope} & Lodos, contact & 64: 846, 128: 1.15k, 256: 1.79k, 512: 2.36k, 1024: 2.62k, 2048: --; out of memory at 2048; 0 non-finite, 0 escaped \\
+\texttt{shadow\_walled\_20\_sdf} & Lodos, contact & 64: 576, 128: 968, 256: 1.4k, 512: 1.74k, 1024: --; out of memory at 1024; 0 non-finite, 0 escaped \\
+\texttt{shadow\_walled\_20\_sdf} & Lodos, cone & 64: 494, 128: 824, 256: 1.22k, 512: 1.58k, 1024: --; out of memory at 1024; 0 non-finite, 0 escaped \\
+\texttt{shadow\_walled\_20\_sdf} & Lodos, ray & 64: 466, 128: 773, 256: 1.17k, 512: 1.56k, 1024: --; out of memory at 1024; 0 non-finite, 0 escaped \\*
+\noalign{\vskip\aboverulesep\hrule height\heavyrulewidth}
+\caption{Every ladder: each batch size's world-steps/s, from 64 doubled, how it ended, and the worlds the best run lost.}\label{tab:ladders}
+\end{longtable}
+\endgroup

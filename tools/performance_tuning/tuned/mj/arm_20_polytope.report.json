@@ -1,0 +1,102 @@
+{
+ "scene": "arm_20_polytope",
+ "B": 1024,
+ "states": 1011,
+ "baseline": {
+  "B": 256,
+  "settings": {
+   "collision": {},
+   "runtime": {
+    "nconmax": 8192,
+    "njmax": 16384
+   },
+   "sim": {},
+   "solver_kwargs": {}
+  },
+  "error_at_B": null,
+  "throughput": {
+   "world_steps_per_s": 30854.078334978167,
+   "ms_per_step": 8.297120310016908,
+   "B": 256,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.001124594997352173,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 13570.746339797974
+  },
+  "artifacts": {
+   "nan": 0,
+   "escaped": 0,
+   "deep_mean": 0.005009142248128739,
+   "deep_p99": 0.04123259086161865,
+   "creep": 0.026391909226202156,
+   "rest_speed": 0.06225367872282229,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "guard_B": 256
+ },
+ "capacities": {
+  "throughput": {
+   "world_steps_per_s": 135070.45457572088,
+   "ms_per_step": 7.581228650014964,
+   "B": 1024,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.0008373959166445913,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 459.89349937438965
+  },
+  "rounds": 1
+ },
+ "noise": {
+  "deep_mean": 1.1874039330455818e-06,
+  "deep_p99": 6.591621786342788e-05,
+  "creep": 4.2727803906364437e-05,
+  "rest_speed": 0.0004587863284618923
+ },
+ "budgets": [],
+ "batch": [
+  {
+   "B": 1024,
+   "world_steps_per_s": 135070.45457572088
+  },
+  {
+   "B": 2048,
+   "world_steps_per_s": 151288.30512817836,
+   "error": null
+  },
+  {
+   "B": 4096,
+   "world_steps_per_s": 160286.45487342327,
+   "error": null
+  },
+  {
+   "B": 8192,
+   "world_steps_per_s": 165381.3013022515,
+   "error": null
+  }
+ ],
+ "tuned": {
+  "B": 4096,
+  "world_steps_per_s": 160286.45487342327,
+  "settings": {
+   "collision": {},
+   "runtime": {
+    "naconmax": 2053692,
+    "nconmax": 502,
+    "njmax": 455,
+    "nccdmax": 25
+   },
+   "sim": {},
+   "solver_kwargs": {},
+   "B": 4096
+  },
+  "artifacts_ok": false,
+  "why": "RuntimeError: Failed to allocate 33554432 bytes on device 'cuda:0'"
+ },
+ "speedup": 5.194984375589409,
+ "seconds": 134.48658895492554
+}

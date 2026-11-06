@@ -1,0 +1,11 @@
+{
+  "body": "right_ring_DP",
+  "hulls": 1,
+  "hull_vertices": 92,
+  "threshold": 0.401,
+  "max_hulls": -1,
+  "sum_hull_volume_cm3": 3.957,
+  "source_volume_cm3": 3.358,
+  "stale": false,
+  "source": "right_decimated/pamo/body"
+}

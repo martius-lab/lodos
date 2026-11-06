@@ -1,0 +1,107 @@
+{
+ "scene": "shadow_grasp_polytope",
+ "B": 1024,
+ "states": 1300,
+ "baseline": {
+  "B": 1024,
+  "settings": {
+   "collision": {},
+   "runtime": {
+    "nconmax": 1024,
+    "njmax": 4096
+   },
+   "sim": {},
+   "solver_kwargs": {}
+  },
+  "error_at_B": null,
+  "throughput": {
+   "world_steps_per_s": 542766.9796330228,
+   "ms_per_step": 1.8866291399899637,
+   "B": 1024,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.0011932658072056398,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 6644.658143997192
+  },
+  "artifacts": {
+   "nan": 0,
+   "escaped": 3,
+   "deep_mean": 2.1259684795796665e-05,
+   "deep_p99": 0.0003533392384997572,
+   "creep": 0.0,
+   "rest_speed": 0.00041203951150237117,
+   "rest_nan": 0,
+   "overflow": []
+  },
+  "guard_B": 512
+ },
+ "capacities": {
+  "throughput": {
+   "world_steps_per_s": 853778.3368246781,
+   "ms_per_step": 1.1993745400104672,
+   "B": 1024,
+   "steps": 100,
+   "reps": 3,
+   "spread": 0.00614239322437185,
+   "overflowed": false,
+   "overflow": [],
+   "mempool_mb": 150.7524700164795
+  },
+  "rounds": 2
+ },
+ "noise": {
+  "deep_mean": 1.2673615799193801e-09,
+  "deep_p99": 6.821821443744576e-08,
+  "creep": 0.0,
+  "rest_speed": 2.9388047551037744e-10
+ },
+ "budgets": [],
+ "batch": [
+  {
+   "B": 1024,
+   "world_steps_per_s": 853778.3368246781
+  },
+  {
+   "B": 2048,
+   "world_steps_per_s": 1269108.227647545,
+   "error": null
+  },
+  {
+   "B": 4096,
+   "world_steps_per_s": 1630096.7306592031,
+   "error": null
+  },
+  {
+   "B": 8192,
+   "world_steps_per_s": 1841193.9722168376,
+   "error": null
+  },
+  {
+   "B": 16384,
+   "world_steps_per_s": 1819457.36659498,
+   "error": null
+  }
+ ],
+ "tuned": {
+  "B": 8192,
+  "world_steps_per_s": 1841193.9722168376,
+  "settings": {
+   "collision": {},
+   "runtime": {
+    "naconmax": 88235,
+    "nconmax": 11,
+    "njmax": 204,
+    "nccdmax": 1
+   },
+   "sim": {},
+   "solver_kwargs": {},
+   "B": 8192
+  },
+  "artifacts_ok": true,
+  "why": ""
+ },
+ "speedup": 3.3922365237872634,
+ "seconds": 42.18363928794861
+}

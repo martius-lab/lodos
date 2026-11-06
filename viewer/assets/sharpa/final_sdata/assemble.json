@@ -1,0 +1,403 @@
+[
+  {
+    "body": "right_hand_C_MC",
+    "geoms": [
+      "right_hand_C_MC_visual"
+    ],
+    "meshes": [
+      "right_hand_C_MC_visual"
+    ],
+    "v_in": 6900,
+    "f_in": 13786,
+    "trimmed": false,
+    "v_out": 6900,
+    "f_out": 13786,
+    "area_cm2": 362.68,
+    "watertight": false,
+    "components": 4
+  },
+  {
+    "body": "right_thumb_CMC_VL",
+    "geoms": [
+      "geom33"
+    ],
+    "meshes": [
+      "right_thumb_CMC_VL"
+    ],
+    "v_in": 3175,
+    "f_in": 6358,
+    "trimmed": false,
+    "v_out": 3175,
+    "f_out": 6358,
+    "area_cm2": 21.64,
+    "watertight": true,
+    "components": 2
+  },
+  {
+    "body": "right_thumb_MC",
+    "geoms": [
+      "geom35"
+    ],
+    "meshes": [
+      "right_thumb_MC_visual"
+    ],
+    "v_in": 6725,
+    "f_in": 11600,
+    "trimmed": false,
+    "v_out": 6725,
+    "f_out": 11600,
+    "area_cm2": 98.34,
+    "watertight": false,
+    "components": 6
+  },
+  {
+    "body": "right_thumb_MCP_VL",
+    "geoms": [
+      "geom37"
+    ],
+    "meshes": [
+      "right_thumb_MCP_VL_visual"
+    ],
+    "v_in": 3007,
+    "f_in": 6014,
+    "trimmed": false,
+    "v_out": 3007,
+    "f_out": 6014,
+    "area_cm2": 15.82,
+    "watertight": true,
+    "components": 2
+  },
+  {
+    "body": "right_thumb_PP",
+    "geoms": [
+      "geom38"
+    ],
+    "meshes": [
+      "right_thumb_PP_visual"
+    ],
+    "v_in": 9301,
+    "f_in": 15442,
+    "trimmed": false,
+    "v_out": 9301,
+    "f_out": 15442,
+    "area_cm2": 59.3,
+    "watertight": false,
+    "components": 6
+  },
+  {
+    "body": "right_thumb_DP",
+    "geoms": [
+      "geom40",
+      "geom41"
+    ],
+    "meshes": [
+      "DP_Visual_HB1_TH",
+      "elastomer_HB1_TH"
+    ],
+    "v_in": 5478,
+    "f_in": 10948,
+    "trimmed": false,
+    "v_out": 5478,
+    "f_out": 10948,
+    "area_cm2": 29.86,
+    "watertight": true,
+    "components": 2
+  },
+  {
+    "body": "right_index_MCP_VL",
+    "geoms": [
+      "geom43"
+    ],
+    "meshes": [
+      "right_MCP_VL_visual"
+    ],
+    "v_in": 3223,
+    "f_in": 6450,
+    "trimmed": false,
+    "v_out": 3223,
+    "f_out": 6450,
+    "area_cm2": 19.55,
+    "watertight": true,
+    "components": 2
+  },
+  {
+    "body": "right_index_PP",
+    "geoms": [
+      "geom45"
+    ],
+    "meshes": [
+      "right_PP_visual"
+    ],
+    "v_in": 6544,
+    "f_in": 11197,
+    "trimmed": false,
+    "v_out": 6544,
+    "f_out": 11197,
+    "area_cm2": 52.69,
+    "watertight": false,
+    "components": 12
+  },
+  {
+    "body": "right_index_MP",
+    "geoms": [
+      "geom47"
+    ],
+    "meshes": [
+      "right_MP_visual"
+    ],
+    "v_in": 3985,
+    "f_in": 7386,
+    "trimmed": false,
+    "v_out": 3985,
+    "f_out": 7386,
+    "area_cm2": 38.16,
+    "watertight": false,
+    "components": 3
+  },
+  {
+    "body": "right_index_DP",
+    "geoms": [
+      "geom49",
+      "geom50"
+    ],
+    "meshes": [
+      "DP_visual_HB1_4F",
+      "elastomer_HB1_4F"
+    ],
+    "v_in": 5485,
+    "f_in": 10970,
+    "trimmed": false,
+    "v_out": 5485,
+    "f_out": 10970,
+    "area_cm2": 22.49,
+    "watertight": true,
+    "components": 2
+  },
+  {
+    "body": "right_middle_MCP_VL",
+    "geoms": [
+      "geom52"
+    ],
+    "meshes": [
+      "right_MCP_VL_visual"
+    ],
+    "v_in": 3223,
+    "f_in": 6450,
+    "trimmed": false,
+    "v_out": 3223,
+    "f_out": 6450,
+    "area_cm2": 19.55,
+    "watertight": true,
+    "components": 2
+  },
+  {
+    "body": "right_middle_PP",
+    "geoms": [
+      "geom54"
+    ],
+    "meshes": [
+      "right_PP_visual"
+    ],
+    "v_in": 6544,
+    "f_in": 11197,
+    "trimmed": false,
+    "v_out": 6544,
+    "f_out": 11197,
+    "area_cm2": 52.69,
+    "watertight": false,
+    "components": 12
+  },
+  {
+    "body": "right_middle_MP",
+    "geoms": [
+      "geom56"
+    ],
+    "meshes": [
+      "right_MP_visual"
+    ],
+    "v_in": 3985,
+    "f_in": 7386,
+    "trimmed": false,
+    "v_out": 3985,
+    "f_out": 7386,
+    "area_cm2": 38.16,
+    "watertight": false,
+    "components": 3
+  },
+  {
+    "body": "right_middle_DP",
+    "geoms": [
+      "geom58",
+      "geom59"
+    ],
+    "meshes": [
+      "DP_visual_HB1_4F",
+      "elastomer_HB1_4F"
+    ],
+    "v_in": 5485,
+    "f_in": 10970,
+    "trimmed": false,
+    "v_out": 5485,
+    "f_out": 10970,
+    "area_cm2": 22.49,
+    "watertight": true,
+    "components": 2
+  },
+  {
+    "body": "right_ring_MCP_VL",
+    "geoms": [
+      "geom61"
+    ],
+    "meshes": [
+      "right_MCP_VL_visual"
+    ],
+    "v_in": 3223,
+    "f_in": 6450,
+    "trimmed": false,
+    "v_out": 3223,
+    "f_out": 6450,
+    "area_cm2": 19.55,
+    "watertight": true,
+    "components": 2
+  },
+  {
+    "body": "right_ring_PP",
+    "geoms": [
+      "geom63"
+    ],
+    "meshes": [
+      "right_PP_visual"
+    ],
+    "v_in": 6544,
+    "f_in": 11197,
+    "trimmed": false,
+    "v_out": 6544,
+    "f_out": 11197,
+    "area_cm2": 52.69,
+    "watertight": false,
+    "components": 12
+  },
+  {
+    "body": "right_ring_MP",
+    "geoms": [
+      "geom65"
+    ],
+    "meshes": [
+      "right_MP_visual"
+    ],
+    "v_in": 3985,
+    "f_in": 7386,
+    "trimmed": false,
+    "v_out": 3985,
+    "f_out": 7386,
+    "area_cm2": 38.16,
+    "watertight": false,
+    "components": 3
+  },
+  {
+    "body": "right_ring_DP",
+    "geoms": [
+      "geom67",
+      "geom68"
+    ],
+    "meshes": [
+      "DP_visual_HB1_4F",
+      "elastomer_HB1_4F"
+    ],
+    "v_in": 5485,
+    "f_in": 10970,
+    "trimmed": false,
+    "v_out": 5485,
+    "f_out": 10970,
+    "area_cm2": 22.49,
+    "watertight": true,
+    "components": 2
+  },
+  {
+    "body": "right_pinky_MC",
+    "geoms": [
+      "geom70"
+    ],
+    "meshes": [
+      "right_pinky_MC_visual"
+    ],
+    "v_in": 1940,
+    "f_in": 3872,
+    "trimmed": false,
+    "v_out": 1940,
+    "f_out": 3872,
+    "area_cm2": 89.16,
+    "watertight": true,
+    "components": 2
+  },
+  {
+    "body": "right_pinky_MCP_VL",
+    "geoms": [
+      "geom72"
+    ],
+    "meshes": [
+      "right_MCP_VL_visual"
+    ],
+    "v_in": 3223,
+    "f_in": 6450,
+    "trimmed": false,
+    "v_out": 3223,
+    "f_out": 6450,
+    "area_cm2": 19.55,
+    "watertight": true,
+    "components": 2
+  },
+  {
+    "body": "right_pinky_PP",
+    "geoms": [
+      "geom74"
+    ],
+    "meshes": [
+      "right_PP_visual"
+    ],
+    "v_in": 6544,
+    "f_in": 11197,
+    "trimmed": false,
+    "v_out": 6544,
+    "f_out": 11197,
+    "area_cm2": 52.69,
+    "watertight": false,
+    "components": 12
+  },
+  {
+    "body": "right_pinky_MP",
+    "geoms": [
+      "geom76"
+    ],
+    "meshes": [
+      "right_MP_visual"
+    ],
+    "v_in": 3985,
+    "f_in": 7386,
+    "trimmed": false,
+    "v_out": 3985,
+    "f_out": 7386,
+    "area_cm2": 38.16,
+    "watertight": false,
+    "components": 3
+  },
+  {
+    "body": "right_pinky_DP",
+    "geoms": [
+      "geom78",
+      "geom79"
+    ],
+    "meshes": [
+      "DP_visual_HB1_4F",
+      "elastomer_HB1_4F"
+    ],
+    "v_in": 5485,
+    "f_in": 10970,
+    "trimmed": false,
+    "v_out": 5485,
+    "f_out": 10970,
+    "area_cm2": 22.49,
+    "watertight": true,
+    "components": 2
+  }
+]

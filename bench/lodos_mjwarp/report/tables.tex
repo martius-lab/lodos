@@ -1,0 +1,298 @@
+\begingroup\small\setlength{\tabcolsep}{4pt}
+\begin{longtable}{@{}lrrrrl@{}}
+\toprule
+scene & s & $\Delta t$ (ms) & steps & solref (ms) & Lodos's solver \\
+\midrule
+\endhead
+\texttt{cube\_walled\_5\_polytope} & 3 & 2 & 1500 & 5 & 100 it, tol 1e-06, ls 50 it \\
+\texttt{cube\_walled\_5\_sdf} & 3 & 2 & 1500 & 5 & 100 it, tol 1e-06, ls 50 it \\
+\texttt{arm\_walled\_5\_polytope} & 3 & 2 & 1500 & 5 & 100 it, tol 1e-06, ls 50 it \\
+\texttt{arm\_walled\_5\_sdf} & 3 & 2 & 1500 & 5 & 100 it, tol 1e-06, ls 50 it \\
+\texttt{shadow\_grasp\_polytope} & 5 & 2 & 2500 & 5 & 100 it, tol 1e-06, ls 50 it \\
+\texttt{shadow\_grasp\_sdf} & 5 & 2 & 2500 & 5 & 100 it, tol 1e-06, ls 50 it \\
+\texttt{shadow\_walled\_5\_polytope} & 3 & 2 & 1500 & 5 & 100 it, tol 1e-06, ls 50 it \\
+\texttt{shadow\_walled\_5\_sdf} & 3 & 2 & 1500 & 5 & 100 it, tol 1e-06, ls 50 it \\
+\texttt{nist\_threading\_m8} & 5 & 1.25 & 4000 & 2.5 & 100 it, tol 1e-05, ls 50 it \\
+\texttt{cube\_walled\_20\_polytope} & 3 & 2 & 1500 & 5 & 100 it, tol 1e-06, ls 50 it \\
+\texttt{cube\_walled\_20\_sdf} & 3 & 2 & 1500 & 5 & 100 it, tol 1e-06, ls 50 it \\
+\texttt{arm\_walled\_20\_polytope} & 3 & 2 & 1500 & 5 & 100 it, tol 1e-06, ls 50 it \\
+\texttt{arm\_walled\_20\_sdf} & 3 & 2 & 1500 & 5 & 100 it, tol 1e-06, ls 50 it \\
+\texttt{shadow\_walled\_20\_polytope} & 3 & 2 & 1500 & 5 & 100 it, tol 1e-06, ls 50 it \\
+\texttt{shadow\_walled\_20\_sdf} & 3 & 2 & 1500 & 5 & 100 it, tol 1e-06, ls 50 it \\*
+\noalign{\vskip\aboverulesep\hrule height\heavyrulewidth}
+\caption{The scenes: the simulated seconds a run times, the step, the steps, every contact's solref time constant (damping ratio 1), and the solver settings both sims run (the viewer's defaults for Lodos's mj mode).}\label{tab:setup}
+\end{longtable}
+
+\begin{longtable}{@{}llp{9.5cm}@{}}
+\toprule
+scene & configuration & a world's capacities (1.5 times its peak over 16 starts) \\
+\midrule
+\endhead
+\texttt{cube\_walled\_5\_polytope} & Lodos, contact & nconmax 30, njmax 90, nccdmax 12 \\
+\texttt{cube\_walled\_5\_polytope} & MuJoCo Warp & contacts 53, triangle pairs 1, rows 104 \\
+\texttt{cube\_walled\_5\_sdf} & Lodos, contact & nconmax 141, njmax 423; capacity\_tile 0.103, capacity2 0.395 \\
+\texttt{cube\_walled\_5\_sdf} & Lodos, cone & nconmax 18, njmax 54; capacity\_tile 0.106, capacity2 0.373 \\
+\texttt{cube\_walled\_5\_sdf} & Lodos, ray & nconmax 18, njmax 18; capacity\_tile 0.103, capacity2 0.387 \\
+\texttt{cube\_walled\_5\_sdf} & MuJoCo Warp & contacts 257, triangle pairs 1, rows 581 \\
+\texttt{arm\_walled\_5\_polytope} & Lodos, contact & nconmax 228, njmax 104, nccdmax 21 \\
+\texttt{arm\_walled\_5\_polytope} & MuJoCo Warp & contacts 255, triangle pairs 1, rows 171 \\
+\texttt{arm\_walled\_5\_sdf} & Lodos, contact & nconmax 24, njmax 72; capacity\_tile 0.163, capacity2 0.0351 \\
+\texttt{arm\_walled\_5\_sdf} & Lodos, cone & nconmax 21, njmax 63; capacity\_tile 0.161, capacity2 0.0372 \\
+\texttt{arm\_walled\_5\_sdf} & Lodos, ray & nconmax 23, njmax 23; capacity\_tile 0.178, capacity2 0.0491 \\
+\texttt{arm\_walled\_5\_sdf} & MuJoCo Warp & contacts 273, triangle pairs 1, rows 95 \\
+\texttt{shadow\_grasp\_polytope} & Lodos, contact & nconmax 56, njmax 123, nccdmax 14 \\
+\texttt{shadow\_grasp\_polytope} & MuJoCo Warp & contacts 21, triangle pairs 1, rows 74 \\
+\texttt{shadow\_grasp\_sdf} & Lodos, contact & nconmax 14, njmax 78; capacity\_tile 0.0347, capacity2 0.0675 \\
+\texttt{shadow\_grasp\_sdf} & Lodos, cone & nconmax 8, njmax 60; capacity\_tile 0.0347, capacity2 0.0675 \\
+\texttt{shadow\_grasp\_sdf} & Lodos, ray & nconmax 8, njmax 45; capacity\_tile 0.0562, capacity2 0.0523 \\
+\texttt{shadow\_grasp\_sdf} & MuJoCo Warp & contacts 233, triangle pairs 1, rows 699 \\
+\texttt{shadow\_walled\_5\_polytope} & Lodos, contact & nconmax 698, njmax 842, nccdmax 63 \\
+\texttt{shadow\_walled\_5\_polytope} & MuJoCo Warp & contacts 252, triangle pairs 1, rows 566 \\
+\texttt{shadow\_walled\_5\_sdf} & Lodos, contact & nconmax 330, njmax 1211; capacity\_tile 0.0218, capacity2 0.0423 \\
+\texttt{shadow\_walled\_5\_sdf} & Lodos, cone & nconmax 56, njmax 408; capacity\_tile 0.0199, capacity2 0.0427 \\
+\texttt{shadow\_walled\_5\_sdf} & Lodos, ray & nconmax 65, njmax 303; capacity\_tile 0.0219, capacity2 0.0767 \\
+\texttt{shadow\_walled\_5\_sdf} & MuJoCo Warp & contacts 1119, triangle pairs 1, rows 3515 \\
+\texttt{nist\_threading\_m8} & Lodos, contact & nconmax 110, njmax 329, nccdmax 2; capacity\_tile 0.251, capacity2 0.249 \\
+\texttt{nist\_threading\_m8} & Lodos, cone & nconmax 26, njmax 77, nccdmax 2; capacity\_tile 0.253, capacity2 0.243 \\
+\texttt{nist\_threading\_m8} & Lodos, ray & nconmax 42, njmax 45, nccdmax 2; capacity\_tile 0.454, capacity2 0.181 \\
+\texttt{nist\_threading\_m8} & MuJoCo Warp & contacts 423, triangle pairs 5294, rows 366 \\
+\texttt{cube\_walled\_20\_polytope} & Lodos, contact & nconmax 111, njmax 333, nccdmax 24 \\
+\texttt{cube\_walled\_20\_polytope} & MuJoCo Warp & contacts 168, triangle pairs 1, rows 360 \\
+\texttt{cube\_walled\_20\_sdf} & Lodos, contact & nconmax 1136, njmax 3407; capacity\_tile 0.0311, capacity2 0.362 \\
+\texttt{cube\_walled\_20\_sdf} & Lodos, cone & nconmax 45, njmax 135; capacity\_tile 0.0307, capacity2 0.324 \\
+\texttt{cube\_walled\_20\_sdf} & Lodos, ray & nconmax 51, njmax 51; capacity\_tile 0.0332, capacity2 0.378 \\
+\texttt{cube\_walled\_20\_sdf} & MuJoCo Warp & contacts 810, triangle pairs 1, rows 1944 \\
+\texttt{arm\_walled\_20\_polytope} & Lodos, contact & nconmax 839, njmax 293, nccdmax 54 \\
+\texttt{arm\_walled\_20\_polytope} & MuJoCo Warp & contacts 684, triangle pairs 1, rows 414 \\
+\texttt{arm\_walled\_20\_polytope} & MuJoCo Warp, SAP & contacts 755, triangle pairs 1, rows 437, shape pairs 2769 \\
+\texttt{arm\_walled\_20\_sdf} & Lodos, contact & nconmax 87, njmax 261; capacity\_tile 0.0553, capacity2 0.0349 \\
+\texttt{arm\_walled\_20\_sdf} & Lodos, cone & nconmax 69, njmax 207; capacity\_tile 0.0583, capacity2 0.0337 \\
+\texttt{arm\_walled\_20\_sdf} & Lodos, ray & nconmax 65, njmax 65; capacity\_tile 0.0576, capacity2 0.035 \\
+\texttt{arm\_walled\_20\_sdf} & MuJoCo Warp & contacts 939, triangle pairs 1, rows 270 \\
+\texttt{shadow\_walled\_20\_polytope} & Lodos, contact & nconmax 2537, njmax 2208, nccdmax 134 \\
+\texttt{shadow\_walled\_20\_polytope} & MuJoCo Warp & contacts 893, triangle pairs 1, rows 1938 \\
+\texttt{shadow\_walled\_20\_polytope} & MuJoCo Warp, SAP & contacts 866, triangle pairs 1, rows 1926, shape pairs 10058 \\
+\texttt{shadow\_walled\_20\_sdf} & Lodos, contact & nconmax 374, njmax 1991; capacity\_tile 0.00457, capacity2 0.0284 \\
+\texttt{shadow\_walled\_20\_sdf} & Lodos, cone & nconmax 186, njmax 1526; capacity\_tile 0.00466, capacity2 0.0304 \\
+\texttt{shadow\_walled\_20\_sdf} & Lodos, ray & nconmax 218, njmax 1185; capacity\_tile 0.00491, capacity2 0.0437 \\
+\texttt{shadow\_walled\_20\_sdf} & MuJoCo Warp & contacts 3992, triangle pairs 81326, rows 12653 \\*
+\noalign{\vskip\aboverulesep\hrule height\heavyrulewidth}
+\caption{Each configuration's capacities per world, times the worlds at a batch size: MuJoCo Warp's contacts, rows and CCD slots, Lodos's arenas as fractions of a world's worst case; Newton's contacts and mesh triangle pairs (at least a million in all) and rows, and under its sweep-and-prune broad phase (SAP) its candidate shape pairs.}\label{tab:caps}
+\end{longtable}
+
+\begin{longtable}{@{}lrrrr@{}}
+\toprule
+scene & Lodos, contact & Lodos, cone & Lodos, ray & MuJoCo Warp \\
+\midrule
+\endhead
+\texttt{cube\_walled\_5\_polytope} & 20 / 60 & n/a & n/a & 35 / 69 \\
+\texttt{cube\_walled\_5\_sdf} & 94 / 282 & 12 / 36 & 12 / 12 & 171 / 387 \\
+\texttt{arm\_walled\_5\_polytope} & 152 / 69 & n/a & n/a & 170 / 114 \\
+\texttt{arm\_walled\_5\_sdf} & 16 / 48 & 14 / 42 & 15 / 15 & 182 / 63 \\
+\texttt{shadow\_grasp\_polytope} & 37 / 82 & n/a & n/a & 14 / 49 \\
+\texttt{shadow\_grasp\_sdf} & 9 / 52 & 5 / 40 & 5 / 30 & 155 / 466 \\
+\texttt{shadow\_walled\_5\_polytope} & 465 / 561 & n/a & n/a & 168 / 377 \\
+\texttt{shadow\_walled\_5\_sdf} & 220 / 807 & 37 / 272 & 43 / 202 & 746 / 2343 \\
+\texttt{nist\_threading\_m8} & 73 / 219 & 17 / 51 & 28 / 30 & 282 / 244 \\
+\texttt{cube\_walled\_20\_polytope} & 74 / 222 & n/a & n/a & 112 / 240 \\
+\texttt{cube\_walled\_20\_sdf} & 757 / 2271 & 30 / 90 & 34 / 34 & 540 / 1296 \\
+\texttt{arm\_walled\_20\_polytope} & 559 / 195 & n/a & n/a & 456 / 276 \\
+\texttt{arm\_walled\_20\_sdf} & 58 / 174 & 46 / 138 & 43 / 43 & 626 / 180 \\
+\texttt{shadow\_walled\_20\_polytope} & 1691 / 1472 & n/a & n/a & 595 / 1292 \\
+\texttt{shadow\_walled\_20\_sdf} & 249 / 1327 & 124 / 1017 & 145 / 790 & 2661 / 8435 \\*
+\noalign{\vskip\aboverulesep\hrule height\heavyrulewidth}
+\caption{A world's largest demand over the 16 starts: contacts / constraint rows of the contact solve (Lodos's: MJWarp's contacts and rows, its surfaces' contacts among them, a group of them a contact). n/a: a polytope scene has no Lodos surfaces, so no groups.}\label{tab:demand}
+\end{longtable}
+
+\begin{longtable}{@{}llrrrrl@{}}
+\toprule
+scene & groups & B & default & no shared H. & fused Newton & kept \\
+\midrule
+\endhead
+\texttt{cube\_walled\_5\_polytope} & contact & 1024 & 965k & 1.07M & -- & no shared H. \\
+\texttt{cube\_walled\_5\_sdf} & contact & 1024 & 583k & 601k & -- & no shared H. \\
+\texttt{cube\_walled\_5\_sdf} & cone & 1024 & 868k & 871k & -- & default \\
+\texttt{cube\_walled\_5\_sdf} & ray & 1024 & 1.27M & 1.29M & -- & default \\
+\texttt{arm\_walled\_5\_polytope} & contact & 1024 & 683k & 685k & -- & default \\
+\texttt{arm\_walled\_5\_sdf} & contact & 1024 & 923k & 932k & -- & default \\
+\texttt{arm\_walled\_5\_sdf} & cone & 1024 & 888k & 892k & -- & default \\
+\texttt{arm\_walled\_5\_sdf} & ray & 1024 & 1.33M & 1.41M & -- & no shared H. \\
+\texttt{shadow\_grasp\_polytope} & contact & 1024 & 688k & 706k & -- & default \\
+\texttt{shadow\_grasp\_sdf} & contact & 1024 & 825k & 914k & -- & no shared H. \\
+\texttt{shadow\_grasp\_sdf} & cone & 1024 & 759k & 864k & -- & no shared H. \\
+\texttt{shadow\_grasp\_sdf} & ray & 1024 & 896k & 944k & -- & no shared H. \\
+\texttt{shadow\_walled\_5\_polytope} & contact & 1024 & 148k & 138k & -- & default \\
+\texttt{shadow\_walled\_5\_sdf} & contact & 1024 & 107k & 101k & -- & default \\
+\texttt{shadow\_walled\_5\_sdf} & cone & 1024 & 94.1k & 91.3k & -- & default \\
+\texttt{shadow\_walled\_5\_sdf} & ray & 1024 & 78.7k & 74.3k & -- & default \\
+\texttt{nist\_threading\_m8} & contact & 1024 & 667k & 678k & 888k & fused Newton \\
+\texttt{nist\_threading\_m8} & cone & 1024 & 781k & 788k & 951k & fused Newton \\
+\texttt{nist\_threading\_m8} & ray & 1024 & 790k & 789k & 941k & fused Newton \\
+\texttt{cube\_walled\_20\_polytope} & contact & 256 & 146k & 131k & -- & default \\
+\texttt{cube\_walled\_20\_sdf} & contact & 256 & 87.6k & 83k & -- & default \\
+\texttt{cube\_walled\_20\_sdf} & cone & 256 & 101k & 90.2k & -- & default \\
+\texttt{cube\_walled\_20\_sdf} & ray & 256 & 138k & 128k & -- & default \\
+\texttt{arm\_walled\_20\_polytope} & contact & 256 & 94.8k & 88.4k & -- & default \\
+\texttt{arm\_walled\_20\_sdf} & contact & 256 & 120k & 110k & -- & default \\
+\texttt{arm\_walled\_20\_sdf} & cone & 256 & 105k & 95.5k & -- & default \\
+\texttt{arm\_walled\_20\_sdf} & ray & 256 & 150k & 140k & -- & default \\
+\texttt{shadow\_walled\_20\_polytope} & contact & 256 & 4.11k & 4.1k & -- & default \\
+\texttt{shadow\_walled\_20\_sdf} & contact & 256 & 3.22k & 3.21k & -- & default \\
+\texttt{shadow\_walled\_20\_sdf} & cone & 256 & 2.04k & 2.04k & -- & default \\
+\texttt{shadow\_walled\_20\_sdf} & ray & 256 & 1.78k & 1.78k & -- & default \\*
+\noalign{\vskip\aboverulesep\hrule height\heavyrulewidth}
+\caption{Lodos's execution options, world-steps/s at B worlds, from the capacity runs' half-way states: the default with MJWarp's Hessian summed in shared memory (on by default where it builds), without it (no shared H.), and the fused Newton solve; an option is kept where it is 3\,\% faster (``--'': refused, the fused solve takes models of at most 16 degrees of freedom).}\label{tab:ab}
+\end{longtable}
+
+\begin{longtable}{@{}lrrrrr@{}}
+\toprule
+scene & Lodos, contact & Lodos, cone & Lodos, ray & MuJoCo Warp & ratio \\
+\midrule
+\endhead
+\texttt{cube\_walled\_5\_polytope} & 1.61M @8192 & n/a & n/a & 1.11M @8192 & 1.45 \\
+\texttt{cube\_walled\_5\_sdf} & 551k @4096 & 1.27M @8192 & 1.86M @8192 & 276k @2048 & 6.76 \\
+\texttt{arm\_walled\_5\_polytope} & 985k @8192 & n/a & n/a & 163k @2048 & 6.04 \\
+\texttt{arm\_walled\_5\_sdf} & 1.24M @4096 & 1.25M @8192 & 1.97M @8192 & 238k @2048 & 8.29 \\
+\texttt{shadow\_grasp\_polytope} & 1.18M @8192 & n/a & n/a & 432k @32768 & 2.73 \\
+\texttt{shadow\_grasp\_sdf} & 1.38M @8192 & 1.25M @8192 & 1.42M @8192$^\dagger$ & 126k @4096$^\dagger$ & 10.94 \\
+\texttt{shadow\_walled\_5\_polytope} & 130k @8192 & n/a & n/a & 36.2k @2048 & 3.60 \\
+\texttt{shadow\_walled\_5\_sdf} & 112k @4096 & 113k @8192 & 110k @8192 & 17.4k @4096 & 6.46 \\
+\texttt{nist\_threading\_m8} & 1.74M @8192 & 1.94M @8192 & 1.97M @8192$^\dagger$ & 52k @1024 & 37.35 \\
+\texttt{cube\_walled\_20\_polytope} & 394k @16384 & n/a & n/a & 256k @16384 & 1.54 \\
+\texttt{cube\_walled\_20\_sdf} & 119k @4096 & 263k @16384 & 349k @8192 & 107k @4096 & 3.25 \\
+\texttt{arm\_walled\_20\_polytope} & 178k @16384 & n/a & n/a & 46.3k @2048$^\S$ & 3.85 \\
+\texttt{arm\_walled\_20\_sdf} & 261k @16384 & 259k @16384 & 366k @16384 & 84k @4096 & 4.36 \\
+\texttt{shadow\_walled\_20\_polytope} & 3.31k @512 & n/a & n/a & 2.59k @512$^\S$ & 1.28 \\
+\texttt{shadow\_walled\_20\_sdf} & 2.88k @512 & 2.3k @512 & 2.36k @512 & 626 @64 & 4.60 \\*
+\noalign{\vskip\aboverulesep\hrule height\heavyrulewidth}
+\caption{The best throughput of each configuration, world-steps/s at the batch size after @, and the ratio of Lodos's to MuJoCo Warp's, Lodos's the fastest of its configurations that lost no world, MuJoCo Warp's the faster of its broad phases where it ran both. $\dagger$: the run lost worlds, non-finite or escaped (\cref{tab:ladders}). $^\S$: under Newton's sweep-and-prune broad phase (\cref{tab:max}). n/a: a polytope scene has no Lodos surfaces, so no groups.}\label{tab:best}
+\end{longtable}
+
+\begin{longtable}{@{}llrrrr@{}}
+\toprule
+scene & configuration & world-steps/s & B & $\times$ real time & $\times$ MuJoCo Warp \\
+\midrule
+\endhead
+\texttt{cube\_walled\_5\_polytope} & Lodos, contact & 1.61M & 8192 & 3\,230 & 1.45 \\*
+ & MuJoCo Warp & 1.11M & 8192 & 2\,230 & 1.00 \\
+\addlinespace
+\texttt{cube\_walled\_5\_sdf} & Lodos, contact & 551k & 4096 & 1\,100 & 2.00 \\*
+ & Lodos, cone & 1.27M & 8192 & 2\,550 & 4.62 \\*
+ & Lodos, ray & 1.86M & 8192 & 3\,720 & 6.76 \\*
+ & MuJoCo Warp & 276k & 2048 & 551 & 1.00 \\
+\addlinespace
+\texttt{arm\_walled\_5\_polytope} & Lodos, contact & 985k & 8192 & 1\,970 & 6.04 \\*
+ & MuJoCo Warp & 163k & 2048 & 326 & 1.00 \\
+\addlinespace
+\texttt{arm\_walled\_5\_sdf} & Lodos, contact & 1.24M & 4096 & 2\,490 & 5.22 \\*
+ & Lodos, cone & 1.25M & 8192 & 2\,500 & 5.25 \\*
+ & Lodos, ray & 1.97M & 8192 & 3\,950 & 8.29 \\*
+ & MuJoCo Warp & 238k & 2048 & 476 & 1.00 \\
+\addlinespace
+\texttt{shadow\_grasp\_polytope} & Lodos, contact & 1.18M & 8192 & 2\,350 & 2.73 \\*
+ & MuJoCo Warp & 432k & 32768 & 864 & 1.00 \\
+\addlinespace
+\texttt{shadow\_grasp\_sdf} & Lodos, contact & 1.38M & 8192 & 2\,770 & 10.94 \\*
+ & Lodos, cone & 1.25M & 8192 & 2\,510 & 9.92 \\*
+ & Lodos, ray & 1.42M$^\dagger$ & 8192 & 2\,830 & 11.19 \\*
+ & MuJoCo Warp & 126k$^\dagger$ & 4096 & 253 & 1.00 \\
+\addlinespace
+\texttt{shadow\_walled\_5\_polytope} & Lodos, contact & 130k & 8192 & 260 & 3.60 \\*
+ & MuJoCo Warp & 36.2k & 2048 & 72.4 & 1.00 \\
+\addlinespace
+\texttt{shadow\_walled\_5\_sdf} & Lodos, contact & 112k & 4096 & 223 & 6.40 \\*
+ & Lodos, cone & 113k & 8192 & 226 & 6.46 \\*
+ & Lodos, ray & 110k & 8192 & 219 & 6.29 \\*
+ & MuJoCo Warp & 17.4k & 4096 & 34.9 & 1.00 \\
+\addlinespace
+\texttt{nist\_threading\_m8} & Lodos, contact & 1.74M & 8192 & 2\,180 & 33.50 \\*
+ & Lodos, cone & 1.94M & 8192 & 2\,430 & 37.35 \\*
+ & Lodos, ray & 1.97M$^\dagger$ & 8192 & 2\,460 & 37.89 \\*
+ & MuJoCo Warp & 52k & 1024 & 65 & 1.00 \\
+\addlinespace
+\texttt{cube\_walled\_20\_polytope} & Lodos, contact & 394k & 16384 & 788 & 1.54 \\*
+ & MuJoCo Warp & 256k & 16384 & 512 & 1.00 \\
+\addlinespace
+\texttt{cube\_walled\_20\_sdf} & Lodos, contact & 119k & 4096 & 239 & 1.11 \\*
+ & Lodos, cone & 263k & 16384 & 525 & 2.45 \\*
+ & Lodos, ray & 349k & 8192 & 698 & 3.25 \\*
+ & MuJoCo Warp & 107k & 4096 & 215 & 1.00 \\
+\addlinespace
+\texttt{arm\_walled\_20\_polytope} & Lodos, contact & 178k & 16384 & 356 & 3.85 \\*
+ & MuJoCo Warp & 44.2k & 512 & 88.4 & 0.95 \\*
+ & MuJoCo Warp, SAP & 46.3k & 2048 & 92.6 & 1.00 \\
+\addlinespace
+\texttt{arm\_walled\_20\_sdf} & Lodos, contact & 261k & 16384 & 522 & 3.11 \\*
+ & Lodos, cone & 259k & 16384 & 517 & 3.08 \\*
+ & Lodos, ray & 366k & 16384 & 732 & 4.36 \\*
+ & MuJoCo Warp & 84k & 4096 & 168 & 1.00 \\
+\addlinespace
+\texttt{shadow\_walled\_20\_polytope} & Lodos, contact & 3.31k & 512 & 6.61 & 1.28 \\*
+ & MuJoCo Warp & 1.56k & 128 & 3.12 & 0.60 \\*
+ & MuJoCo Warp, SAP & 2.59k & 512 & 5.18 & 1.00 \\
+\addlinespace
+\texttt{shadow\_walled\_20\_sdf} & Lodos, contact & 2.88k & 512 & 5.76 & 4.60 \\*
+ & Lodos, cone & 2.3k & 512 & 4.6 & 3.67 \\*
+ & Lodos, ray & 2.36k & 512 & 4.72 & 3.77 \\*
+ & MuJoCo Warp & 626 & 64 & 1.25 & 1.00 \\*
+\noalign{\vskip\aboverulesep\hrule height\heavyrulewidth}
+\caption{Each configuration's best throughput: world-steps/s at a batch of B worlds; how many times real time it ran, the seconds simulated per second summed over the worlds (world-steps/s times the step, 2\,ms, the threading's 1.25\,ms; each world's own is that over B); and its ratio to MuJoCo Warp's best on the scene, over its broad phases. MuJoCo Warp, SAP: under Newton's sweep-and-prune broad phase, its candidate shape pairs a capacity measured as the others, in place of the explicit pairs, whose narrow-phase buffers Newton sizes for every pair of shapes in every world. $\dagger$: the run lost worlds, non-finite or escaped (\cref{tab:ladders}).}\label{tab:max}
+\end{longtable}
+
+\begin{longtable}{@{}llp{9.5cm}@{}}
+\toprule
+scene & configuration & world-steps/s by batch size; how the ladder ended; worlds lost at the best \\
+\midrule
+\endhead
+\texttt{cube\_walled\_5\_polytope} & Lodos, contact & 64: 111k, 128: 201k, 256: 358k, 512: 598k, 1024: 917k, 2048: 1.27M, 4096: 1.55M, 8192: 1.61M, 16384: 1.59M; dropped at 16384; 0 non-finite, 0 escaped \\
+\texttt{cube\_walled\_5\_polytope} & MuJoCo Warp & 64: 113k, 128: 201k, 256: 344k, 512: 543k, 1024: 782k, 2048: 987k, 4096: 1.1M, 8192: 1.11M, 16384: 1.07M; dropped at 16384; 0 non-finite, 0 escaped \\
+\texttt{cube\_walled\_5\_sdf} & Lodos, contact & 64: 75.8k, 128: 133k, 256: 217k, 512: 328k, 1024: 444k, 2048: 532k, 4096: 551k, 8192: 536k; dropped at 8192; 0 non-finite, 0 escaped; 1 redone after an overflow \\
+\texttt{cube\_walled\_5\_sdf} & Lodos, cone & 64: 102k, 128: 186k, 256: 332k, 512: 560k, 1024: 805k, 2048: 1.05M, 4096: 1.21M, 8192: 1.27M, 16384: 1.25M; dropped at 16384; 0 non-finite, 0 escaped \\
+\texttt{cube\_walled\_5\_sdf} & Lodos, ray & 64: 135k, 128: 258k, 256: 467k, 512: 794k, 1024: 1.17M, 2048: 1.54M, 4096: 1.78M, 8192: 1.86M, 16384: 1.83M; dropped at 16384; 0 non-finite, 0 escaped \\
+\texttt{cube\_walled\_5\_sdf} & MuJoCo Warp & 64: 65.7k, 128: 107k, 256: 158k, 512: 211k, 1024: 257k, 2048: 276k, 4096: 266k; dropped at 4096; 0 non-finite, 0 escaped; 5 redone after an overflow \\
+\texttt{arm\_walled\_5\_polytope} & Lodos, contact & 64: 93.9k, 128: 169k, 256: 290k, 512: 462k, 1024: 625k, 2048: 807k, 4096: 939k, 8192: 985k, 16384: 975k; dropped at 16384; 0 non-finite, 0 escaped; 1 redone after an overflow \\
+\texttt{arm\_walled\_5\_polytope} & MuJoCo Warp & 64: 55.3k, 128: 85.5k, 256: 118k, 512: 146k, 1024: 160k, 2048: 163k, 4096: 162k; dropped at 4096; 0 non-finite, 0 escaped; 2 redone after an overflow \\
+\texttt{arm\_walled\_5\_sdf} & Lodos, contact & 64: 118k, 128: 216k, 256: 383k, 512: 620k, 1024: 866k, 2048: 1.11M, 4096: 1.24M, 8192: 1.24M; dropped at 8192; 0 non-finite, 0 escaped \\
+\texttt{arm\_walled\_5\_sdf} & Lodos, cone & 64: 113k, 128: 213k, 256: 365k, 512: 596k, 1024: 849k, 2048: 1.09M, 4096: 1.23M, 8192: 1.25M, 16384: 1.23M; dropped at 16384; 0 non-finite, 0 escaped \\
+\texttt{arm\_walled\_5\_sdf} & Lodos, ray & 64: 164k, 128: 305k, 256: 528k, 512: 879k, 1024: 1.29M, 2048: 1.7M, 4096: 1.92M, 8192: 1.97M, 16384: 1.97M; dropped at 16384; 0 non-finite, 0 escaped \\
+\texttt{arm\_walled\_5\_sdf} & MuJoCo Warp & 64: 81.7k, 128: 128k, 256: 171k, 512: 208k, 1024: 229k, 2048: 238k, 4096: 229k; dropped at 4096; 0 non-finite, 0 escaped; 1 redone after an overflow \\
+\texttt{shadow\_grasp\_polytope} & Lodos, contact & 64: 97.5k, 128: 179k, 256: 319k, 512: 527k, 1024: 745k, 2048: 1.01M, 4096: 1.14M, 8192: 1.18M, 16384: 1.15M; dropped at 16384; 0 non-finite, 0 escaped \\
+\texttt{shadow\_grasp\_polytope} & MuJoCo Warp & 64: 72.6k, 128: 129k, 256: 199k, 512: 287k, 1024: 349k, 2048: 393k, 4096: 414k, 8192: 422k, 16384: 428k, 32768: 432k, 65536: --; out of memory at 65536; 0 non-finite, 0 escaped \\
+\texttt{shadow\_grasp\_sdf} & Lodos, contact & 64: 116k, 128: 212k, 256: 369k, 512: 632k, 1024: 889k, 2048: 1.2M, 4096: 1.34M, 8192: 1.38M, 16384: 1.32M; dropped at 16384; 0 non-finite, 0 escaped \\
+\texttt{shadow\_grasp\_sdf} & Lodos, cone & 64: 93.9k, 128: 172k, 256: 303k, 512: 513k, 1024: 767k, 2048: 1.05M, 4096: 1.2M, 8192: 1.25M, 16384: 1.21M; dropped at 16384; 0 non-finite, 0 escaped \\
+\texttt{shadow\_grasp\_sdf} & Lodos, ray & 64: 101k, 128: 186k, 256: 330k, 512: 559k, 1024: 828k, 2048: 1.16M, 4096: 1.33M, 8192: 1.42M, 16384: 1.37M; dropped at 16384; 0 non-finite, 8192 escaped \\
+\texttt{shadow\_grasp\_sdf} & MuJoCo Warp & 64: 35.3k, 128: 55.8k, 256: 78.7k, 512: 102k, 1024: 119k, 2048: 124k, 4096: 126k, 8192: 125k; dropped at 8192; 0 non-finite, 1 escaped; 1 redone after an overflow \\
+\texttt{shadow\_walled\_5\_polytope} & Lodos, contact & 64: 23.2k, 128: 38.7k, 256: 62.4k, 512: 87.5k, 1024: 109k, 2048: 121k, 4096: 128k, 8192: 130k, 16384: --; out of memory at 16384; 0 non-finite, 0 escaped; 1 redone after an overflow \\
+\texttt{shadow\_walled\_5\_polytope} & MuJoCo Warp & 64: 16.8k, 128: 22.5k, 256: 29k, 512: 33.2k, 1024: 34.8k, 2048: 36.2k, 4096: --; out of memory at 4096; 0 non-finite, 0 escaped \\
+\texttt{shadow\_walled\_5\_sdf} & Lodos, contact & 64: 19.5k, 128: 29.4k, 256: 41.6k, 512: 65.2k, 1024: 87.6k, 2048: 105k, 4096: 112k, 8192: --; out of memory at 8192; 0 non-finite, 0 escaped; 1 redone after an overflow \\
+\texttt{shadow\_walled\_5\_sdf} & Lodos, cone & 64: 13.6k, 128: 22.2k, 256: 33.9k, 512: 55.7k, 1024: 73.3k, 2048: 91.9k, 4096: 106k, 8192: 113k, 16384: --; out of memory at 16384; 0 non-finite, 0 escaped \\
+\texttt{shadow\_walled\_5\_sdf} & Lodos, ray & 64: 14.5k, 128: 23.8k, 256: 36.1k, 512: 59.6k, 1024: 75.8k, 2048: 91.7k, 4096: 104k, 8192: 110k, 16384: --; out of memory at 16384; 0 non-finite, 0 escaped \\
+\texttt{shadow\_walled\_5\_sdf} & MuJoCo Warp & 64: 6.3k, 128: 9.59k, 256: 13.1k, 512: 16k, 1024: 17k, 2048: 17.4k, 4096: 17.4k, 8192: --; out of memory at 8192; 0 non-finite, 0 escaped; 1 redone after an overflow \\
+\texttt{nist\_threading\_m8} & Lodos, contact & 64: 116k, 128: 216k, 256: 396k, 512: 666k, 1024: 980k, 2048: 1.36M, 4096: 1.67M, 8192: 1.74M, 16384: 1.73M; dropped at 16384; 0 non-finite, 0 escaped \\
+\texttt{nist\_threading\_m8} & Lodos, cone & 64: 108k, 128: 202k, 256: 365k, 512: 658k, 1024: 998k, 2048: 1.43M, 4096: 1.83M, 8192: 1.94M, 16384: 1.92M; dropped at 16384; 0 non-finite, 0 escaped \\
+\texttt{nist\_threading\_m8} & Lodos, ray & 64: 95k, 128: 180k, 256: 329k, 512: 579k, 1024: 958k, 2048: 1.44M, 4096: 1.91M, 8192: 1.97M, 16384: 1.94M; dropped at 16384; 0 non-finite, 35 escaped \\
+\texttt{nist\_threading\_m8} & MuJoCo Warp & 64: 35.5k, 128: 42.8k, 256: 47.7k, 512: 50.9k, 1024: 52k, 2048: 51.8k; dropped at 2048; 0 non-finite, 0 escaped \\
+\texttt{cube\_walled\_20\_polytope} & Lodos, contact & 64: 41.7k, 128: 76.3k, 256: 134k, 512: 217k, 1024: 272k, 2048: 328k, 4096: 365k, 8192: 384k, 16384: 394k, 32768: --; out of memory at 32768; 0 non-finite, 0 escaped \\
+\texttt{cube\_walled\_20\_polytope} & MuJoCo Warp & 64: 40.9k, 128: 72k, 256: 120k, 512: 179k, 1024: 212k, 2048: 236k, 4096: 252k, 8192: 252k, 16384: 256k, 32768: --; out of memory at 32768; 0 non-finite, 0 escaped \\
+\texttt{cube\_walled\_20\_sdf} & Lodos, contact & 64: 23.5k, 128: 38k, 256: 60.6k, 512: 80.9k, 1024: 98.3k, 2048: 111k, 4096: 119k, 8192: --; out of memory at 8192; 0 non-finite, 0 escaped; 1 redone after an overflow \\
+\texttt{cube\_walled\_20\_sdf} & Lodos, cone & 64: 33.4k, 128: 58.7k, 256: 94.5k, 512: 152k, 1024: 188k, 2048: 224k, 4096: 247k, 8192: 257k, 16384: 263k, 32768: --; out of memory at 32768; 0 non-finite, 0 escaped \\
+\texttt{cube\_walled\_20\_sdf} & Lodos, ray & 64: 50k, 128: 86.3k, 256: 133k, 512: 211k, 1024: 264k, 2048: 309k, 4096: 337k, 8192: 349k, 16384: --; out of memory at 16384; 0 non-finite, 0 escaped \\
+\texttt{cube\_walled\_20\_sdf} & MuJoCo Warp & 64: 27.1k, 128: 44.1k, 256: 67.8k, 512: 90k, 1024: 98.7k, 2048: 105k, 4096: 107k, 8192: 106k; dropped at 8192; 0 non-finite, 0 escaped; 1 redone after an overflow \\
+\texttt{arm\_walled\_20\_polytope} & Lodos, contact & 64: 34.9k, 128: 58.6k, 256: 91.3k, 512: 128k, 1024: 146k, 2048: 162k, 4096: 172k, 8192: 176k, 16384: 178k, 32768: --; out of memory at 32768; 0 non-finite, 0 escaped \\
+\texttt{arm\_walled\_20\_polytope} & MuJoCo Warp & 64: 21.6k, 128: 30.7k, 256: 38.9k, 512: 44.2k, 1024: --; out of memory at 1024; 0 non-finite, 0 escaped; 1 redone after an overflow \\
+\texttt{arm\_walled\_20\_polytope} & MuJoCo Warp, SAP & 64: 21.6k, 128: 30.3k, 256: 38.5k, 512: 43.8k, 1024: 45.5k, 2048: 46.3k, 4096: 46.3k; dropped at 4096; 0 non-finite, 0 escaped; 2 redone after an overflow \\
+\texttt{arm\_walled\_20\_sdf} & Lodos, contact & 64: 41.3k, 128: 70.8k, 256: 110k, 512: 167k, 1024: 202k, 2048: 232k, 4096: 249k, 8192: 257k, 16384: 261k, 32768: --; out of memory at 32768; 0 non-finite, 0 escaped \\
+\texttt{arm\_walled\_20\_sdf} & Lodos, cone & 64: 38.7k, 128: 65.8k, 256: 102k, 512: 158k, 1024: 194k, 2048: 227k, 4096: 247k, 8192: 255k, 16384: 259k, 32768: --; out of memory at 32768; 0 non-finite, 0 escaped \\
+\texttt{arm\_walled\_20\_sdf} & Lodos, ray & 64: 57.3k, 128: 96.2k, 256: 140k, 512: 212k, 1024: 269k, 2048: 317k, 4096: 349k, 8192: 362k, 16384: 366k, 32768: --; out of memory at 32768; 0 non-finite, 0 escaped \\
+\texttt{arm\_walled\_20\_sdf} & MuJoCo Warp & 64: 32k, 128: 47.7k, 256: 64.7k, 512: 78k, 1024: 81.8k, 2048: 83.5k, 4096: 84k, 8192: 83.7k; dropped at 8192; 0 non-finite, 0 escaped; 1 redone after an overflow \\
+\texttt{shadow\_walled\_20\_polytope} & Lodos, contact & 64: 1.08k, 128: 1.83k, 256: 2.68k, 512: 3.31k, 1024: 3.24k; dropped at 1024; 0 non-finite, 0 escaped \\
+\texttt{shadow\_walled\_20\_polytope} & MuJoCo Warp & 64: 960, 128: 1.56k, 256: --; out of memory at 256; 0 non-finite, 0 escaped \\
+\texttt{shadow\_walled\_20\_polytope} & MuJoCo Warp, SAP & 64: 958, 128: 1.51k, 256: 2.14k, 512: 2.59k, 1024: --; out of memory at 1024; 0 non-finite, 0 escaped \\
+\texttt{shadow\_walled\_20\_sdf} & Lodos, contact & 64: 860, 128: 1.38k, 256: 2.11k, 512: 2.88k, 1024: --; out of memory at 1024; 0 non-finite, 0 escaped \\
+\texttt{shadow\_walled\_20\_sdf} & Lodos, cone & 64: 631, 128: 1.05k, 256: 1.64k, 512: 2.3k, 1024: --; out of memory at 1024; 0 non-finite, 0 escaped \\
+\texttt{shadow\_walled\_20\_sdf} & Lodos, ray & 64: 693, 128: 1.14k, 256: 1.73k, 512: 2.36k, 1024: --; out of memory at 1024; 0 non-finite, 0 escaped \\
+\texttt{shadow\_walled\_20\_sdf} & MuJoCo Warp & 64: 626, 128: --; failed at 128; 0 non-finite, 0 escaped \\*
+\noalign{\vskip\aboverulesep\hrule height\heavyrulewidth}
+\caption{Every ladder: each batch size's world-steps/s, from 64 doubled, how it ended, and the worlds the best run lost.}\label{tab:ladders}
+\end{longtable}
+\endgroup
