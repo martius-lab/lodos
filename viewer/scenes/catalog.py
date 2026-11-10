@@ -9,7 +9,9 @@ whenever a capacity turns out to be too small. Every build is one world (`B = 1`
 ## Built-in scenes
 
 `BUILTIN` names the scenes `viewer.scenes` builds, at the seed the session asks for. The
-viewer's panel lists `PANEL`, in this order: the FBF benchmarks; cubes,
+viewer's panel lists `PANEL`, in this order: the FBF benchmarks; the thin features under time of
+arrival (`toa_*`: cubes at a card and past its edge, inside rings, on hammers, and a bullet
+at a free card); cubes,
 armadillos, SHARPA and Shadow hands dropped on a floor and in a walled box, five and twenty;
 the SHARPA hand holding an armadillo and the Shadow hand's grasp of the Kong toy; the NIST
 threading, the nut on its bolt at each size and remesh, the driven nut and the board. The
@@ -276,7 +278,7 @@ class SceneSource:
         return {k: v for k, v in kw.items() if mode != "mj" or k not in EXACT_OPTIONS}
 
     def make_sim(self, solver_kwargs=None, overrides=(), caps=None, B=1, qpos=None, qvel=None,
-                 tuning=None, sim_options=None, sided=None):
+                 tuning=None, sim_options=None, sided=None, toa=None):
         """
         `B` worlds of the scene, each at the initial state unless `qpos`.
 
@@ -296,6 +298,10 @@ class SceneSource:
         sided: `{pair index: 1 or 2}`, Lodos pairs made one-sided (the first surface's vertices
             against the second's SDF) or two-sided (both ways, `cpr_is_symmetric`) over the scene's
             own. A pair with a plane is one-sided: a plane has no vertices.
+        toa: Lodos pairs' time of arrival over the scene's own: `{option: {pair index: value}}` for
+            `make_collision_context`'s per-pair options `toa`, `toa_trace`, `toa_trace_iters`,
+            `toa_drift` and `toa_side`, coded as `viewer.pairs.check` holds them, and `toa_horizon` (s),
+            one value (`viewer.pairs.toa_col_kwargs`, after `sided`).
         """
         solver_kwargs = dict(solver_kwargs or {})
         sim_options = dict(sim_options or {})
@@ -317,6 +323,13 @@ class SceneSource:
                     raise ValueError(f"pair {j} has a plane, which has no vertices: it is one-sided")
                 sym[int(j)] = s == 2
             surfaces = dataclasses.replace(surfaces, col_kwargs=dict(surfaces.col_kwargs, cpr_is_symmetric=sym))
+        if toa:
+            if surfaces is None:
+                raise ValueError(f"{self.name} has no Lodos pairs to run time of arrival on")
+            from viewer import pairs as VP
+
+            surfaces = dataclasses.replace(surfaces, col_kwargs=dict(surfaces.col_kwargs,
+                                                                     **VP.toa_col_kwargs(surfaces, toa)))
         sim_kwargs = dict(self.sim_kwargs)
         scene_caps = dict(self.caps)
         given = {}
@@ -531,6 +544,37 @@ def _fbf_available(scene):
     return all(_surface_available(n) for n in names)
 
 
+def _toa(name, scene):
+    """One of `viewer.scenes.toa`'s thin-feature scenes, its pairs on time of arrival. They have no seed."""
+    from viewer.scenes import toa as T
+
+    xml, q0, v0 = T.scene_xml(scene)
+    mjm = mujoco.MjModel.from_xml_string(xml)
+    # The cubes' faces, 81 vertices each, all resting at once on the card: MJWarp's defaults are tight for five.
+    caps = dict(nconmax=2048, njmax=8192) if scene in ("wall", "flyby") else {}
+    return SceneSource(name, mjm, T.surfaces(mjm, scene), q0, v0, caps=caps, xml=xml)
+
+
+TOA = {  # viewer name: (viewer.scenes.toa scene, what it is)
+    "toa_wall_sdf": ("wall", "five cubes shot at a 4 cm card at 10 to 160 m/s, up to eight card thicknesses a step, "
+                             "on time of arrival (toa): every one stops at the card; with toa off they bounce back, "
+                             "stick in it or pass through"),
+    "toa_flyby_sdf": ("flyby", "four cubes flying past a card's edge with 5 or 20 mm to spare at 10 to 80 m/s, and one "
+                               "clipping it, on toa: they pass untouched; with its trace off, ghost collisions stop "
+                               "or spin them"),
+    "toa_ring_sdf": ("ring", "2 cm cubes sliding inside four thin rings (radius 10 cm, 1 cm wall) at 5 to 40 m/s, on "
+                             "toa with its drift correction: they stay inside; without the drift the fast ones stick "
+                             "in the wall or leave"),
+    "toa_hammer_sdf": ("hammer", "2 cm cubes on hinged arms swung at 30 to 150 rad/s along 1 cm plates on the "
+                                 "pivot's side, on toa: past about 90 rad/s the arc crosses the plate's midsurface in "
+                                 "a step, which toa's straight lines miss (toa side catches some; the bend is "
+                                 "reported)"),
+    "toa_bullet_sdf": ("bullet", "a light 20 cm cube shot at 160 m/s, 32 thicknesses a step, at a free 1 cm steel "
+                                 "card hanging in the air, near its side, under gravity, on toa: the card spins away "
+                                 "and both fall to the floor; with toa off the cube passes through it untouched"),
+}
+
+
 def _sharpa(name, n_hands, walls, geometry, seed):
     """`viewer.scenes.sharpa`'s hands, stacked from `seed`, as `geometry`, with their joint limits and friction loss."""
     from viewer.scenes import sharpa as S
@@ -616,6 +660,11 @@ def _builtin():
                 continue
             how = "as Lodos surfaces (SDF)" if g == "sdf" else poly
             panel[f"{name}_{g}"] = (f"{what}, {how}", lambda s, n=f"{name}_{g}", sc=scene, g=g: _fbf(n, sc, g))
+    from viewer.scenes import toa as T
+
+    for name, (scene, what) in TOA.items():
+        if all(_surface_available(n) for n in T.assets()[scene]):
+            panel[name] = (what, lambda s, n=name, sc=scene: _toa(n, sc))
     how = {"sdf": "as Lodos surfaces (SDF)", "polytope": "as 34-piece convex polytopes (GJK/EPA)"}
     for kind, what in (("cube", "cubes"), ("arm", "armadillos")):
         for n, many, layout in ((5, "five", ""), (20, "twenty", " in four stacks")):

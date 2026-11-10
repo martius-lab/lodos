@@ -17,6 +17,12 @@ writes `.tmp/scene_surfaces/NAME.obj`, bakes the directory, and installs each re
 The arch's stones (`viewer/assets/arch`) are convex hexahedra of eight vertices; their faces
 are subdivided to the spacing instead, which keeps them planar and the mesh watertight.
 
+The `toa` scenes (`viewer.scenes.toa`) add a 2 cm cube, a 1 cm plate, a 10 cm ring with a 1 cm wall and a
+1 cm card of 0.6 by 1.2 m (2.4 MB: a card the shipped one's size would be tens of MB at its voxels),
+each fine enough to resolve its thin feature (four voxels across it) and with a band of 1-2 cm; the ring is
+trimesh's annulus, its vertices on its two rims alone, which as an SDF geometry alone it needs no more of.
+Installed files are compressed, as the shipped ones are.
+
 The shipped `cube` surface is its eight corners alone, so two of them touch only corner
 to face: a face resting on a face, or a card's edge against another card, needs vertices
 along the edges and across the faces, which these have.
@@ -49,6 +55,15 @@ SHAPES = {
                            {"--voxels": "270", "--dilation": "1.0", "--d-max": "0.1"}),
 }
 SHAPES.update({f"arch25_stone{i:02d}": ("stone", i, 0.75, {}) for i in range(1, 26)})  # its arch
+SHAPES.update({  # `viewer.scenes.toa`'s: its small cubes, its hammers' plates, its rings (inner radius, wall, height)
+    "cube_0.02": ("box", (0.01, 0.01, 0.01), 0.005, {"--voxels": "32", "--dilation": "1.0", "--d-max": "0.01"}),
+    "plate_0.01x0.12x0.06": ("box", (0.005, 0.06, 0.03), 0.005,
+                             {"--voxels": "64", "--dilation": "1.0", "--d-max": "0.02"}),
+    "ring_0.1x0.01x0.06": ("ring", (0.1, 0.01, 0.06), 0.005,
+                           {"--voxels": "104", "--dilation": "1.0", "--d-max": "0.02"}),
+    # its bullet's card, 1 cm thick: 2.5 mm voxels, four across it, and a 2 cm band
+    "card_0.01x0.6x1.2": ("box", (0.005, 0.3, 0.6), 0.05, {"--voxels": "496", "--dilation": "1.0", "--d-max": "0.02"}),
+})
 
 
 def box_mesh(half, spacing):
@@ -92,6 +107,13 @@ def sphere_mesh(radius, spacing):
     return np.asarray(m.vertices), np.asarray(m.faces, dtype=np.int64)
 
 
+def ring_mesh(size, spacing):
+    """`(v, f)`: a ring about z -- `size` its inner radius, wall and height -- its rims cut about `spacing` apart."""
+    r, wall, height = size
+    m = trimesh.creation.annulus(r, r + wall, height, sections=int(np.ceil(2.0 * np.pi * (r + wall) / spacing)))
+    return np.asarray(m.vertices), np.asarray(m.faces, dtype=np.int64)
+
+
 def stone_mesh(i, spacing):
     """`(v, f)`: the arch's stone `i` in its body frame, its faces subdivided to `spacing`."""
     from viewer.scenes import fbf
@@ -111,7 +133,7 @@ def main():
     ap.add_argument("names", nargs="*", default=list(SHAPES), help=f"of {list(SHAPES)}")
     ap.add_argument("--out", type=Path, default=ASSETS, help="where the surfaces are installed")
     a = ap.parse_args()
-    make = {"box": box_mesh, "sphere": sphere_mesh, "stone": stone_mesh}
+    make = {"box": box_mesh, "sphere": sphere_mesh, "stone": stone_mesh, "ring": ring_mesh}
     # One bake per set of grid options: the bake takes one set for its whole directory.
     groups = {}
     for name in a.names:
@@ -135,7 +157,8 @@ def main():
         for name in names:
             dest = a.out / name
             dest.mkdir(parents=True, exist_ok=True)
-            shutil.copy(baked / f"{name}.npz", dest / "surface_data.npz")
+            with np.load(baked / f"{name}.npz") as z:  # compressed, as the shipped surfaces are
+                np.savez_compressed(dest / "surface_data.npz", **{k: z[k] for k in z.files})
             print(f"installed {dest / 'surface_data.npz'}")
 
 

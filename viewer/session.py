@@ -27,8 +27,8 @@ before the capture. A parameter that only changes a Python-side constant of the 
 (MJWarp's iteration counts) is applied by recapturing; one that lives in a device
 array (the pairs' friction, solref and solimp, MJWarp's tolerance) is written in place,
 which a captured graph sees; one that changes what is allocated (the contact groups,
-the proximal loop's rounds, a Lodos pair made two-sided) is part of the configuration's
-key, so it is a different runner. The pairs' parameters are `viewer.pairs`'.
+the proximal loop's rounds, a Lodos pair made two-sided or given its time of arrival) is part
+of the configuration's key, so it is a different runner. The pairs' parameters are `viewer.pairs`'.
 
 ## Capacities
 
@@ -351,7 +351,36 @@ def edit_config(source, cfg, name, value):
             o["refresh_de_saxce_per_prox"] = 0
         elif not applied and name != "mode":
             o["refresh_de_saxce_per_prox"] = int(bool(source.defaults().get("refresh_de_saxce_per_prox", True)))
+    if name in TOA_OPTIONS:
+        why = toa_conflict(source, cfg)
+        if why:
+            raise ValueError(why)
     return cfg
+
+
+# The options a Lodos pair's time of arrival needs at a value (`toa_conflict`).
+TOA_OPTIONS = ("mode", "baumgarte", "groups")
+
+
+def toa_conflict(source, cfg):
+    """
+    Why `cfg` cannot run its Lodos pairs' time of arrival, or None: a pair with `toa` on needs the exact mode
+    with its Baumgarte bias, whose positive-gap term is what lets a speculative contact close, and no contact
+    groups, whose bias was not made for a gap -- `lodos.sim.make_sim` refuses the others, and the Baumgarte bias,
+    which the viewer sets on a built runner, it does not see.
+    """
+    if cfg["sim"] != "lodos" or source.surfaces is None:
+        return None
+    n = int(np.count_nonzero(VP.lodos_values(source.surfaces, cfg["pairs"]["lodos"])["toa"]))
+    if not n:
+        return None
+    o = cfg["options"]
+    why = ("the mj mode" if o.get("mode") == "mj" else "no Baumgarte bias" if not o.get("baumgarte", 1)
+           else f"{o['groups']} groups" if o.get("groups", "contact") != "contact" else None)
+    if why is None:
+        return None
+    return (f"{n} Lodos pairs have toa on, which needs the exact mode with its Baumgarte bias and no contact "
+            f"groups, not {why}: turn their toa off first")
 
 
 def config_label(cfg):
@@ -423,36 +452,41 @@ def edit_pairs(source, cfg, kind, indices, field, value):
     """
     `cfg` with `field` at `value` on the pairs `indices` of `kind` (`viewer.pairs.KINDS`), or back
     at the scene's where `value` is None -- the configuration `Session.set_pairs` makes. `cfg` itself when
-    nothing changes. Friction is a float, solref two, solimp five; `sided`, Lodos's alone, 1 or 2, and a pair
-    with a plane only 1. `indices` None is every pair of the kind: one value for them all, which clears their
-    own.
+    nothing changes. Friction is a float, solref two, solimp five; Lodos's alone, `sided` 1 or 2, a pair with a
+    plane only 1, and its time of arrival (`viewer.pairs.TOA_FIELDS`, as `viewer.pairs.check` holds them), refused
+    where the configuration cannot run it (`toa_conflict`). `indices` None is every pair of the kind: one value
+    for them all, which clears their own; `toa_horizon` takes only that, one horizon for every Lodos pair.
     """
     if kind not in VP.KINDS:
         raise ValueError(f"pairs are {VP.KINDS}, not {kind!r}")
     fields = VP.kind_fields(kind)
     if field not in fields:
         raise ValueError(f"{kind} pairs take {fields}, not {field!r}")
+    if field == "toa_horizon" and indices is not None:
+        raise ValueError("the toa horizon is one value for every Lodos pair: Lodos takes one per collision context")
     v = None if value is None else VP.check(field, value)
     new = copy.deepcopy(cfg)
     ov = new["pairs"][kind]
     d = ov[field]
+    rebuild = kind == "lodos" and field in VP.REBUILD_FIELDS  # an override changes the runner's key
     if indices is None:
         d.clear()
         ov["all"].pop(field, None)
         if v is not None:
             ov["all"][field] = v
-            if field == "sided" and not VP.sided_changes(source.surfaces, ov):
+            if rebuild and field not in VP.rebuild_changes(source.surfaces, ov):
                 ov["all"].pop(field)  # the scene's own already: no override, so the scene's runner
-        return cfg if new["pairs"] == cfg["pairs"] else new
+        return _edited(source, cfg, new)
     idx = [int(i) for i in np.atleast_1d(np.asarray(indices, dtype=int))]
     if field == "sided":
         planes = VP.plane_pairs(source.surfaces)
         if v == 2 and any(planes[i] for i in idx):
             raise ValueError(f"pair {next(i for i in idx if planes[i])} has a plane, which has no vertices: "
                              "it is one-sided")
+    if rebuild:
         for i in idx:
             d.pop(i, None)
-        base = VP.sided(source.surfaces, ov)  # without their own: what they would be
+        base = VP.lodos_values(source.surfaces, ov)[field]  # without their own: what they would be
         for i in idx:  # a pair at that already is no override, so the same key and runner
             if v is not None and v != base[i]:
                 d[i] = v
@@ -462,11 +496,24 @@ def edit_pairs(source, cfg, kind, indices, field, value):
                 d.pop(i, None)
             else:
                 d[i] = v
-    return cfg if new["pairs"] == cfg["pairs"] else new
+    return _edited(source, cfg, new)
+
+
+def _edited(source, cfg, new):
+    """`new`, a pair edit of `cfg` -- `cfg` itself where it changes nothing -- refused where `toa_conflict` says."""
+    if new["pairs"] == cfg["pairs"]:
+        return cfg
+    why = toa_conflict(source, new)
+    if why:
+        raise ValueError(why)
+    return new
 
 
 def edit_all_pairs(source, cfg, kinds, field, value):
-    """`cfg` with `field` at `value` on every pair of each of `kinds` (`edit_pairs`), as one edit; "sided" is Lodos's."""
+    """
+    `cfg` with `field` at `value` on every pair of each of `kinds` (`edit_pairs`), as one edit; "sided" and the
+    time of arrival are Lodos's.
+    """
     for kind in kinds:
         if field in VP.kind_fields(kind):
             cfg = edit_pairs(source, cfg, kind, None, field, value)
@@ -516,14 +563,19 @@ class Runner:
         if kw.get("shared_hessian") == "auto":
             kw.pop("shared_hessian")  # the solver's default: wherever MJWarp can build it, from 48 dofs
         ov = (f"opt.cone={kw.pop('cone')}",) if "cone" in kw else ()  # under mj: MuJoCo's own option
-        every, own = self.key[2] or (None, ())
-        sided = {} if self.source.surfaces is None else VP.sided_changes(
-            self.source.surfaces, {"all": {} if every is None else {"sided": every}, "sided": dict(own)})
+        # Lodos's pairs made one- or two-sided, or given their time of arrival, against the scene's own: the key's
+        pov = VP.no_overrides()["lodos"]
+        for f, every, own in self.key[2]:
+            if every is not None:
+                pov["all"][f] = every
+            pov[f] = dict(own)
+        toa = {} if self.source.surfaces is None else VP.rebuild_changes(self.source.surfaces, pov)
+        sided = toa.pop("sided", {})
         source = self.source
         if self.collision and source.surfaces is not None:
             source = dataclasses.replace(source, surfaces=dataclasses.replace(
                 source.surfaces, col_kwargs={**source.surfaces.col_kwargs, **self.collision}))
-        self.sim = source.make_sim(solver_kwargs=kw, caps=self.caps, overrides=ov, sided=sided)
+        self.sim = source.make_sim(solver_kwargs=kw, caps=self.caps, overrides=ov, sided=sided, toa=toa)
         self.tracker = lcalibrate.Tracker(self.sim)
         self._tables = None
         if self.scene is None:
@@ -911,14 +963,16 @@ def _out_of_memory(exc):
 def runner_key(cfg):
     """
     What a runner is built for: the sim, the options that change allocation and, under Lodos, the pairs
-    made one- or two-sided against the scene's own. A Newton sim has one runner, whose options -- its
+    made one- or two-sided or given their time of arrival against the scene's own (`viewer.pairs.REBUILD_FIELDS`:
+    each as `(field, the value for all, the pairs' own)`). A Newton sim has one runner, whose options -- its
     timestep among them -- rebuild it in its own process.
     """
     lodos = cfg["sim"] == "lodos"
     keys = REBUILD_OPTIONS + LODOS_REBUILD_OPTIONS if lodos else ()
     ov = cfg["pairs"]["lodos"]
-    sided = (ov["all"].get("sided"), tuple(sorted(ov["sided"].items()))) if lodos else ()
-    return (cfg["sim"], tuple(sorted((k, v) for k, v in cfg["options"].items() if k in keys)), sided)
+    pairs = tuple((f, ov["all"].get(f), tuple(sorted(ov[f].items()))) for f in VP.REBUILD_FIELDS
+                  if f in ov["all"] or ov[f]) if lodos else ()
+    return (cfg["sim"], tuple(sorted((k, v) for k, v in cfg["options"].items() if k in keys)), pairs)
 
 
 #######################################################################################
@@ -1047,7 +1101,9 @@ def _pairs_json(table, cfg, exact):
     """
     A kind of pair's contact parameters for `Session.export_config`, as set: the values most of its pairs share
     (`common`, with how many), every pair whose values differ by its name (`others`), and the fields the solve
-    applies -- under the exact mode friction and sidedness alone.
+    applies -- under the exact mode friction, sidedness and time of arrival alone, which no other mode takes. A
+    Lodos pair's time of arrival in words: `toa`, `toa_drift` and `toa_side` true or false, `toa_trace` its mode,
+    `toa_horizon` in seconds or null for the timestep.
     """
     fields = VP.kind_fields(table.kind)
     v = table.values(cfg["pairs"], exact=False)
@@ -1060,11 +1116,21 @@ def _pairs_json(table, cfg, exact):
         for f in fields:
             w = VP.WIDTH.get(f, 1)
             x = [float(str(np.float32(y))) for y in row[i:i + w]]  # the solver's float32, in its shortest decimals
-            out[f] = int(x[0]) if f == "sided" else x[0] if w == 1 else x
+            if f in ("sided", "toa_trace_iters"):
+                out[f] = int(x[0])
+            elif f in ("toa", "toa_drift", "toa_side"):
+                out[f] = bool(x[0])
+            elif f == "toa_trace":
+                out[f] = VP.TRACE_MODES[int(x[0])]
+            elif f == "toa_horizon":
+                out[f] = x[0] or None
+            else:
+                out[f] = x[0] if w == 1 else x
             i += w
         return out
 
-    return dict(count=len(table), applies=[f for f in fields if not exact or f in ("mu", "sided")],
+    applies = [f for f in fields if (exact if f in VP.TOA_ALL else not exact or f in ("mu", "sided"))]
+    return dict(count=len(table), applies=applies,
                 common=dict(record(uniq[top]), pairs=int(cnt[top])),
                 others=[dict(pair=table.label(int(i)), **record(rows[i])) for i in np.nonzero(inv.ravel() != top)[0]])
 
@@ -1264,6 +1330,35 @@ class Session:
         cfg = self.config
         return self.runner(cfg).pair_tables
 
+    def _toa_runner(self):
+        """The runner of the configuration looked at, where it exists and runs a Lodos pair on time of arrival."""
+        r = self.runners.get(runner_key(self.config)) if self.loaded and self.take is not None else None
+        mcol = getattr(getattr(r, "sim", None), "mcol", None)
+        return r if mcol is not None and int(mcol.has_toa) else None
+
+    def toa_checks(self):
+        """
+        What the time-of-arrival checks report on the configuration looked at -- `lodos.col.sdf.collide`'s
+        `check_toa_band` (a speculative gap read outside a baked grid) and `check_toa_bend` (a rotating body's arc
+        bent off its straight line by more than half a voxel in a step) -- over everything its runner simulated since
+        it was built or `clear_toa_checks`: their messages, none where neither reports anything. Synchronizes.
+        """
+        r = self._toa_runner()
+        if r is None:
+            return []
+        from lodos.col.sdf import collide as sdf_collide
+
+        m, d = r.sim.mcol, r.sim.dcol
+        return [x for x in (sdf_collide.check_toa_band(m, d, warn=False), sdf_collide.check_toa_bend(m, d, warn=False))
+                if x]
+
+    def clear_toa_checks(self):
+        """Forget what `toa_checks` reports: its runner's sticky flags and maxima, from the next step on."""
+        r = self._toa_runner()
+        if r is not None:
+            r.sim.dcol.toa_band.zero_()
+            r.sim.dcol.toa_bend.zero_()
+
     # -------------------------------------------------------------------------------
     # What is being looked at
 
@@ -1364,9 +1459,9 @@ class Session:
         Write everything the panel sets on the configuration looked at to the JSON file `path`: the sim and every
         option it shows; its capacities (per world, with the demand seen: Lodos's, or under Newton's sims Newton's);
         the contact parameters of every pair it applies -- Lodos's and MJWarp's, or under Newton's MuJoCo Warp
-        Newton's: the values most pairs share and each pair that differs, as set (the exact mode applies friction
-        and sidedness alone) -- and the overrides as the take files hold them (`pairs.overrides`). Returns the path
-        written.
+        Newton's: the values most pairs share and each pair that differs, as set (the exact mode applies friction,
+        sidedness and Lodos's time of arrival alone) -- and the overrides as the take files hold them
+        (`pairs.overrides`). Returns the path written.
         """
         cfg, src = self.config, self.source
         out = dict(format=CONFIG_FORMAT, scene=src.name, path=src.path, sim=cfg["sim"], options=dict(cfg["options"]))
@@ -1400,6 +1495,9 @@ class Session:
             return
         new = default_config(self.source, sim)
         new["pairs"] = copy.deepcopy(cfg["pairs"])
+        why = toa_conflict(self.source, new)
+        if why:
+            raise ValueError(why)
         self._make_draft(new, st, parent)
 
     def set_option(self, name, value):
@@ -1410,9 +1508,10 @@ class Session:
 
     def set_pairs(self, kind, indices, field, value):
         """
-        Set `field` -- "mu", "solref", "solimp", or Lodos's "sided" -- to `value` on the pairs `indices` of
-        `kind` (`viewer.pairs.KINDS`), or with `value` None restore the scene's (`edit_pairs`). A pair made one-
-        or two-sided is a rebuild.
+        Set `field` -- "mu", "solref", "solimp", or Lodos's "sided" and time of arrival (`viewer.pairs.TOA_ALL`:
+        "toa", "toa_trace", "toa_trace_iters", "toa_drift", "toa_side", and "toa_horizon" on every pair alone) --
+        to `value` on the pairs `indices` of `kind` (`viewer.pairs.KINDS`), or with `value` None restore the
+        scene's (`edit_pairs`). A pair made one- or two-sided, or given its time of arrival, is a rebuild.
         """
         cfg, st, parent = self._base()
         n = self.runner(cfg).pair_counts.get(kind, 0)

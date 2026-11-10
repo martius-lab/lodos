@@ -24,7 +24,8 @@ way here. What this adds:
 - **Collision pairs** (sidebar): under Lodos, every Lodos pair and every pair MJWarp's
   pipeline collides, and under Newton's MuJoCo Warp every pair of shapes Newton's pipeline
   collides: friction, solref and solimp set on all of them at once, or on the pairs a filter
-  on their names matches, and Lodos's pairs made one- or two-sided (`viewer.pairs`).
+  on their names matches, and Lodos's pairs made one- or two-sided and given their time of
+  arrival, `toa` and its options (`viewer.pairs`).
 - **State** (sidebar): the selected body's joints, position and velocity fields per
   joint. Click a body in the view to select it; its joints get gizmos, dragged as in
   viser: a free joint's translate and rotate handles, a hinge's ring about its axis, a
@@ -49,6 +50,7 @@ from __future__ import annotations
 import os
 import re
 import threading
+import time
 from pathlib import Path
 
 import numpy as np
@@ -201,6 +203,7 @@ class LiveViewer(V.TrajectoryViewer):
         # the Collision pairs folder: each kind's filter, and its values for the configuration on screen
         self.pair_filter = {}
         self._pair_cache = {}
+        self._toa_checks = None  # (when, the messages): `Session.toa_checks`, read twice a second
         self._take_path = ""
         self.cap_overhead = CAPACITY_OVERHEAD  # the Capacities section's: each capacity's room over its peak
         self.cap_note = None  # (configuration key, what its last Tune capacities did), shown under the button
@@ -333,20 +336,27 @@ class LiveViewer(V.TrajectoryViewer):
         value = normalize_option(option, value)
         ses = self.session
         cfg = ses.config
-        self._maybe_build(edit_config(ses.source, cfg, option, value),
-                          f"building {SIM_NAMES[cfg['sim']]} at {option} = {value}",
+        try:
+            new = edit_config(ses.source, cfg, option, value)
+        except ValueError as exc:  # an option the pairs' time of arrival cannot run under (`toa_conflict`)
+            self.live_status = f"refused: {exc}"
+            return
+        self._maybe_build(new, f"building {SIM_NAMES[cfg['sim']]} at {option} = {value}",
                           lambda: ses.set_option(option, value))
 
     def request_pairs(self, kind, indices, field, value):
-        """What a Collision pairs field does: a pair made one- or two-sided builds a runner."""
+        """
+        What a Collision pairs field does: a Lodos pair made one- or two-sided, or given its time of arrival, builds a
+        runner.
+        """
         ses = self.session
         try:
             new = edit_pairs(ses.source, ses.config, kind, indices, field, value)
         except ValueError as exc:
             self.live_status = f"refused: {exc}"
             return
-        what = "restored" if value is None else ("two-sided" if value == 2 else "one-sided")
-        self._maybe_build(new, f"building Lodos with {'every' if indices is None else len(indices)} pairs {what}",
+        who = "every pair" if indices is None else f"{len(indices)} pairs"
+        self._maybe_build(new, f"building Lodos with {who} {_pair_words(field, value)}",
                           lambda: ses.set_pairs(kind, indices, field, value))
 
     def request_all_pairs(self, field, value):
@@ -357,8 +367,8 @@ class LiveViewer(V.TrajectoryViewer):
         except ValueError as exc:
             self.live_status = f"refused: {exc}"
             return
-        what = "restored" if value is None else ("two-sided" if value == 2 else "one-sided")
-        self._maybe_build(new, f"building Lodos with every pair {what}", lambda: ses.set_all_pairs(field, value))
+        self._maybe_build(new, f"building Lodos with every pair {_pair_words(field, value)}",
+                          lambda: ses.set_all_pairs(field, value))
 
     def request_load_take(self, path):
         """Add the take saved at `path`, loading its scene first when another is loaded."""
@@ -888,8 +898,8 @@ class LiveViewer(V.TrajectoryViewer):
             imgui.text_wrapped(f"Kamino takes friction alone, a contact's the {tables['newton'].mix} of its two "
                                "shapes': no solref or solimp reaches it.")
         elif exact:
-            imgui.text_wrapped("The exact mode takes friction and sidedness alone: no solref, solimp or "
-                               "impratio reaches it.")
+            imgui.text_wrapped("The exact mode takes friction, sidedness and time of arrival alone: no solref, "
+                               "solimp or impratio reaches it.")
         else:
             imgui.text_wrapped(f"A time constant below twice the step ({2e3 * ses.dt:.3g} ms) is raised to it "
                                "(MuJoCo's refsafe).")
@@ -974,6 +984,7 @@ class LiveViewer(V.TrajectoryViewer):
                                lambda x: self.request_pairs(kind, None if every else free, "sided", x))
             if len(free) < len(idx):
                 imgui.text_disabled(f"{len(idx) - len(free)} of them have a plane: one-sided")
+            self._ui_toa(imgui, idx, sel, vals, marks, cfg)
 
     def _ui_pair_field(self, imgui, field, first, mixed, n_set, request, disabled, under_all=False):
         """
@@ -1007,6 +1018,107 @@ class LiveViewer(V.TrajectoryViewer):
             back = "back to the value for all of them" if under_all else "restores the scene's"
             imgui.set_tooltip(tip + (f"; set on {n_set} of these pairs, right-click {back}" if n_set else ""))
         imgui.end_disabled()
+
+    # A Lodos pair's time of arrival in the folder: each field's choices (an index into them is its value), what it
+    # does, and the way it makes the sim faster (`_speed_arrow`); `toa_trace_iters` and `toa_horizon` are typed.
+    TOA_UI = {
+        "toa": (("off", "on"), "time of arrival: the pair's tests also keep what its motion can bring within reach "
+                "over the horizon, and a vertex there is a speculative contact, whose gap the solve lets close by at "
+                "most itself in a step: a thin feature is not crossed at any speed (a rebuild; the exact mode with "
+                "its Baumgarte bias, no contact groups)", ""),
+        "toa_trace": (VP.TRACE_MODES, "how a speculative contact's path over the step is checked: off, not at all (a "
+                      "vertex passing an edge is stopped as if it hit it); sphere, sphere tracing, a path proved "
+                      "clear dropping its contact; relaxed, over-relaxed sphere tracing, the same in fewer steps",
+                      "-> relaxed"),
+        "toa_trace_iters": (None, "the most field evaluations one trace takes; a trace that runs out keeps its "
+                            "contact, linearized where it got to", "v"),
+        "toa_drift": (("off", "on"), "a contact sliding along a concave surface takes its predicted second-order "
+                      "drift as a feed-forward, which the depenetration gain would otherwise leave as depth", ""),
+        "toa_side": (("off", "on"), "a penetrating contact whose normal flipped since the last step keeps the side "
+                     "it came from: a safety net for thin features, at about a tenth of the collision time", "-> off"),
+    }
+
+    def _ui_toa(self, imgui, idx, sel, vals, marks, cfg):
+        """
+        Lodos's time of arrival on the pairs `idx` the fields cover -- `sel` None: all of them, one value for them
+        all -- and its horizon, one value for every Lodos pair: each a rebuild (`viewer.pairs.TOA_ALL`). Greyed where
+        the configuration cannot run it (`toa_conflict`'s rules); the trace and the opt-ins where none of the pairs
+        has it on.
+        """
+        imgui.separator()
+        imgui.text("time of arrival")
+        o = cfg["options"]
+        why = ("the mj mode" if o.get("mode") == "mj" else "no Baumgarte bias" if not o.get("baumgarte", 1)
+               else f"{o['groups']} groups" if o.get("groups", "contact") != "contact" else None)
+        if why:
+            imgui.text_disabled(f"needs the exact mode with its Baumgarte bias and no contact groups, not {why}")
+        every = cfg["pairs"]["lodos"]["all"]
+        imgui.begin_disabled(why is not None)
+        for f in VP.TOA_FIELDS:
+            if f == "toa_trace":
+                imgui.begin_disabled(not vals["toa"][idx].any())  # read where toa is on
+            self._ui_toa_field(imgui, f, vals[f][idx], marks[f][idx],
+                               lambda x, f=f: self.request_pairs("lodos", sel, f, x), sel is not None and f in every)
+        imgui.end_disabled()
+        # The horizon: one value for every Lodos pair, whatever the filter
+        h, dt = float(vals["toa_horizon"][0]), float(o.get("timestep", self.session.dt))
+        n_set = bool(marks["toa_horizon"].any())
+        imgui.begin_disabled(not vals["toa"].any())
+        imgui.set_next_item_width(160 * self._dpi())
+        _, nv = imgui.input_float("toa horizon, ms" + (" *" if n_set else "") + "###toa_horizon", 1e3 * (h or dt),
+                                  0.0, 0.0, "%.4g")
+        if imgui.is_item_deactivated_after_edit():
+            self.request_pairs("lodos", None, "toa_horizon", 1e-3 * nv if nv > 0 else None)
+        if n_set and imgui.is_item_clicked(1):
+            self.request_pairs("lodos", None, "toa_horizon", None)
+        if imgui.is_item_hovered():
+            imgui.set_tooltip("the time the motion bound and the trace cover: one value for every Lodos pair, which "
+                              "Lodos takes once per collision context; the timestep unless set (0, or a right-click, "
+                              "restores it)")
+        imgui.end_disabled()
+        imgui.end_disabled()
+        # The checks (`Session.toa_checks`), read twice a second: each a synchronization, and sticky anyway
+        now = time.monotonic()
+        if self._toa_checks is None or now - self._toa_checks[0] > 0.5:
+            self._toa_checks = (now, self.session.toa_checks())
+        for msg in self._toa_checks[1]:
+            imgui.text_colored(imgui.ImVec4(0.95, 0.65, 0.2, 1.0), "check:")
+            imgui.same_line()
+            imgui.text_wrapped(msg)
+        if self._toa_checks[1]:
+            if imgui.small_button("clear the checks"):
+                self.session.clear_toa_checks()
+                self._toa_checks = None
+            if imgui.is_item_hovered():
+                imgui.set_tooltip("the checks keep the worst of everything this configuration simulated since it "
+                                  "was built: clear them to watch what follows")
+        elif vals["toa"].any() and why is None:
+            imgui.text_disabled("checks: no gap read outside a grid, no step bent past half a voxel")
+
+    def _ui_toa_field(self, imgui, field, v, m, request, under_all):
+        """
+        One time-of-arrival field of a set of pairs: the first's value, marked mixed where they differ and `*` where
+        some are set; `request(value)` sets it on them all, `request(None)` restores theirs -- the value for all the
+        Lodos pairs when `under_all`.
+        """
+        choices, tip, arrow = self.TOA_UI[field]
+        mixed, n_set = len(np.unique(v)) > 1, int(np.count_nonzero(m))
+        name = VP.NAMES[field] + (" (mixed)" if mixed else "") + (" *" if n_set else "") + f"###{field}"
+        imgui.set_next_item_width(160 * self._dpi())
+        if choices is None:  # the trace's budget, typed
+            _, nv = imgui.input_int(name, int(v[0]), 0)
+            if imgui.is_item_deactivated_after_edit():
+                request(max(1, int(nv)))
+        else:
+            ch, i = imgui.combo(name, int(v[0]), list(choices))
+            if ch:
+                request(i)
+        if n_set and imgui.is_item_clicked(1):
+            request(None)
+        if imgui.is_item_hovered():
+            back = "back to the value for all of them" if under_all else "restores the scene's"
+            imgui.set_tooltip(tip + (f"; set on {n_set} of these pairs, right-click {back}" if n_set else ""))
+        self._speed_arrow(imgui, arrow)
 
     def _ui_sided(self, imgui, sided, any_set, request):
         """Whether a set of Lodos pairs is one- or two-sided; `request(1 or 2)` makes them so, `request(None)` the scene's."""
@@ -1588,6 +1700,17 @@ class LiveViewer(V.TrajectoryViewer):
         if key is None or key[0] != t.id or len(t.frames) > 1.25 * max(key[1], 1) + 8:
             self.rescale()
             self._rescaled_at = (t.id, len(t.frames))
+
+
+def _pair_words(field, value):
+    """What a pair edit does, for the splash while it builds: "restored", "two-sided", "toa on", "toa trace sphere"."""
+    if value is None:
+        return "restored"
+    if field == "sided":
+        return VP.show(field, value)
+    if field in VP.TOA_ALL:
+        return f"{VP.NAMES[field]} {VP.show(field, VP.check(field, value))}"
+    return f"{field} set"
 
 
 def _summary(v, marks):
