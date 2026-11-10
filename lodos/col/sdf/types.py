@@ -191,6 +191,18 @@ class CollisionModel:
     # tile sizes are uniform, and the partition is what per-segment sizes need.
     # Host-side, like the fields above.
     partition: wp.int32
+    # 1 when some pair is marked `toa` (time of arrival): such a pair's candidates are kept
+    # wherever their motion over `toa_h` could close the distance a test measures, and its
+    # vertices become speculative contacts before they penetrate. Host-side, like the fields
+    # above: it picks the kernels, so a context without a `toa` pair runs the kernels it ran
+    # before the option existed.
+    has_toa: wp.int32
+    toa_h: wp.float32  # the horizon (s) a `toa` segment's motion is bounded over, the timestep by default
+    cpr_toa: wp.array(dtype=int)  # (nCPR,), 1 when a segment of the pair is `toa` # type: ignore
+    seg_toa: wp.array(dtype=int)  # (nSEG,), 1 for a `toa` segment # type: ignore
+    # (nB,), the root body of each geometry's kinematic tree, whose subtree COM the
+    # rigid-body velocities `cvel` are taken about; read only by `toa` kernels.
+    g_root: wp.array(dtype=int)  # type: ignore
     g_nV_cumsum: wp.array(
         dtype=int
     )  # (nB+1), cumsum of g_nV, leading zero # type: ignore
@@ -379,6 +391,15 @@ class CollisionData:
     T_rel: wp.array(
         dtype=wp.transformf, ndim=2
     )  # (B, nSEG), pose of a segment's vertex geom in its SDF geom's frame # type: ignore
+    # Velocities, which only `toa` kernels read. `cvel` (each body's [angular, linear]
+    # velocity about its tree root's subtree COM) and `subtree_com` are bound to
+    # `RbdData`'s like the poses. `twist_rel` is a segment's relative motion in its SDF
+    # geometry's body frame, `broadphase.compute_twist_rel`'s: the vertex geometry's
+    # material point at y moves at `a + Omega x y` relative to the SDF geometry, stored as
+    # the spatial vector (Omega, a); (1, 1) without a `toa` pair.
+    cvel: wp.array(dtype=wp.spatial_vector, ndim=2)  # (B, nbody) # type: ignore
+    subtree_com: wp.array(dtype=wp.vec3, ndim=2)  # (B, nbody) # type: ignore
+    twist_rel: wp.array(dtype=wp.spatial_vector, ndim=2)  # (B, nSEG) # type: ignore
     # --------------------------------------------------------------------------------------
     # Capacities (host-side constants, mirrored here so kernels can clamp).
     nCa1_max: wp.int32  # stage-1 slots: the primitives of the surviving tiles
@@ -561,12 +582,14 @@ def make_collision_context(
     dyn_scan=True,
     grid_stride=True,
     mempool_release_threshold=1 << 30,
+    toa=None,
+    toa_horizon=None,
 ):
     """
     - `cprs` indexes `surfaces`, not the MuJoCo model's geoms
 
     m: any model with MuJoCo's field names, a `mujoco.MjModel` for one. Only
-        `nbody` is read.
+        `nbody` is read, and with a `toa` pair `body_rootid` and `opt.timestep`.
 
     drbd: the batched Warp rigid-body state from
         `lodos.rbd.types.make_rbd_context`. Its `xpos`/`xquat` are *bound*
@@ -770,6 +793,22 @@ def make_collision_context(
         temporary allocation inside every `wp.utils.array_scan` round-trip to
         the driver -- a fixed ~0.6 ms per scan, i.e. far more than the scans
         themselves cost. Pass None to leave the device setting untouched.
+
+    toa: which pairs run on time of arrival, for thin features: None or False for
+        none (the default), True for every pair, a list of nCPR bools (a symmetric
+        pair's two directions take its flag), or `tile_size`'s dict keyed by
+        `(vertex geometry, SDF geometry)` with an optional `None` default. A `toa`
+        pair's every test -- the box test, super-tiles, tiles, the voxel prefilter --
+        also keeps what its relative motion could bring within reach over
+        `toa_horizon` (each level bounding its sphere's speed by the segment's relative
+        twist, `broadphase.compute_twist_rel`), and its narrowphase admits a vertex
+        whose distance that motion could close: a speculative contact with a positive
+        gap, which the exact mode's Baumgarte term lets close by at most the gap in a
+        step. The bounds are path-length bounds on a 1-Lipschitz field, so they hold
+        under rotation; they take the velocities at the start of the step. With no
+        `toa` pair the context compiles and runs exactly the kernels it did before.
+
+    toa_horizon: the horizon (s) of the motion bound, `m.opt.timestep` if None.
 
     Called by `lodos.sim.make_sim` and `tools.performance_tuning.tune.time_collision`.
     In: m, reads nbody; drbd, reads qpos (B, nq) float32 for B and binds xpos (B, nbody) wp.vec3 and xquat
@@ -1043,6 +1082,30 @@ def make_collision_context(
 
     seg_K = _per_seg(tile_size, "tile_size", 8)  # nSEG ints: primitives per tile
     seg_SK = _per_seg(super_size, "super_size", 0)  # nSEG ints: tiles per super-tile, 0 for none
+
+    # Time of arrival, per segment: a bool for every pair, a list of nCPR bools (a symmetric pair's
+    # two directions take its flag), or `tile_size`'s per-direction dict.
+    if toa is None or isinstance(toa, (bool, np.bool_)):
+        seg_toa = [int(bool(toa))] * nSEG  # nSEG ints: 1 for a `toa` segment
+    elif isinstance(toa, dict):
+        seg_toa = [int(bool(x)) for x in _per_seg(toa, "toa", 0)]
+    else:
+        toa = [bool(x) for x in toa]
+        assert len(toa) == nCPR, f"toa has {len(toa)} entries for {nCPR} pairs"
+        seg_toa = [int(toa[seg_cpr[s]]) for s in range(nSEG)]
+    cpr_toa = [int(any(seg_toa[cpr_seg_beg[j]:cpr_seg_beg[j + 1]])) for j in range(nCPR)]  # nCPR ints
+    has_toa = int(any(seg_toa))  # int: 1 when some segment is `toa`
+    toa_h = 0.0  # float: the motion bound's horizon (s)
+    g_root = [0] * nB  # nB ints: each geometry's tree root, read only by `toa` kernels
+    if has_toa:
+        toa_h = float(m.opt.timestep) if toa_horizon is None else float(toa_horizon)
+        assert toa_h > 0.0, f"toa_horizon must be positive, got {toa_h}"
+        g_root = [int(m.body_rootid[int(b)]) for b in surface_body_ids]
+    mcol.has_toa = wp.int32(has_toa)
+    mcol.toa_h = toa_h
+    mcol.cpr_toa = wp.array(cpr_toa, dtype=wp.int32)
+    mcol.seg_toa = wp.array(seg_toa, dtype=wp.int32)
+    mcol.g_root = wp.array(g_root, dtype=wp.int32)
 
     for s in range(nSEG):  # s: int, a segment
         assert seg_K[s] >= 1, (
@@ -1327,6 +1390,10 @@ def make_collision_context(
     dcol.xquat = drbd.xquat
     dcol.T_w = wp.zeros((B, nB), dtype=wp.transformf)
     dcol.T_rel = wp.zeros((B, nSEG), dtype=wp.transformf)
+    # Velocities, bound like the poses; only `toa` kernels read them.
+    dcol.cvel = drbd.cvel
+    dcol.subtree_com = drbd.subtree_com
+    dcol.twist_rel = wp.zeros((B, nSEG) if has_toa else (1, 1), dtype=wp.spatial_vector)
 
     dcol.cpr_active = wp.zeros((B, nCPR), dtype=wp.bool)
     # `B * nG_world`, which is `B * nSEG` exactly when no segment has

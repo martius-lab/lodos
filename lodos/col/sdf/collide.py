@@ -30,13 +30,19 @@ def broadphase_bbox(mcol: CollisionModel, dcol: CollisionData):
     """
     wp.launch(sdf_broadphase.compute_T_w, dim=(mcol.B, mcol.nB), inputs=(mcol, dcol))
     wp.launch(sdf_broadphase.compute_T_rel, dim=(mcol.B, mcol.nCPR), inputs=(mcol, dcol))
-    wp.launch(sdf_broadphase.obb_filter, dim=(mcol.B, mcol.nCPR), inputs=(mcol, dcol))
+    # A context with a `toa` pair runs the `toa` variants of the filters, which also keep what the
+    # pair's motion could bring within reach over the horizon; without one, the kernels as before.
+    toa = int(mcol.has_toa)  # int: 1 when some pair is `toa`
+    if toa:
+        wp.launch(sdf_broadphase.compute_twist_rel, dim=(mcol.B, mcol.nSEG), inputs=(mcol, dcol))
+    wp.launch(sdf_broadphase.obb_filter_toa if toa else sdf_broadphase.obb_filter, dim=(mcol.B, mcol.nCPR),
+              inputs=(mcol, dcol))
 
     # The level above the tiles, which decides how many of them each generator
     # hands down, and clears the counter each accumulates its survivors into --
     # on both paths, since `compact_nTa` scans those counters whichever filter
     # produced them.
-    wp.launch(sdf_broadphase.gen_weights, dim=(mcol.B * mcol.nG_world,),
+    wp.launch(sdf_broadphase.gen_weights_toa if toa else sdf_broadphase.gen_weights, dim=(mcol.B * mcol.nG_world,),
               inputs=(mcol, dcol))
 
     # `capacity1 < 1.0` compacts the box filter's survivors first, so the tile
@@ -45,13 +51,14 @@ def broadphase_bbox(mcol: CollisionModel, dcol: CollisionData):
     # whole grid -- so the dense launch runs unchanged.
     if mcol.seg_compact:
         sdf_compact.compact_nTb(mcol, dcol)
-        wp.launch(sdf_broadphase.tile_filter_seg, dim=(dcol.nTb_max,), inputs=(mcol, dcol))
+        wp.launch(sdf_broadphase.tile_filter_seg_toa if toa else sdf_broadphase.tile_filter_seg,
+                  dim=(dcol.nTb_max,), inputs=(mcol, dcol))
     else:
         # Densely there is no candidate list to shorten, so the level's weights
         # are read only where a super-tile could reject something -- the tile
         # filter reads that verdict rather than a scan of it.
         wp.launch(
-            sdf_broadphase.tile_filter,
+            sdf_broadphase.tile_filter_toa if toa else sdf_broadphase.tile_filter,
             dim=(mcol.B, mcol.nT_world),
             inputs=(mcol, dcol),
         )

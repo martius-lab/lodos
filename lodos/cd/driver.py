@@ -318,6 +318,8 @@ class LodosContacts:
 # under one geom pair, and the cache's nearest-position match within a geom pair would
 # hand one cached force to many of them. They start each step cold.
 LODOS_CONTACT = int(ContactType.CONSTRAINT | ContactType.NOCARRY)
+# A `toa` pair's contact at a positive gap: rows of its own (`export_lodos_toa`).
+LODOS_SPECULATIVE = int(LODOS_CONTACT | ContactType.SPECULATIVE)
 
 
 @wp.kernel
@@ -360,6 +362,49 @@ def export_lodos(lc: LodosContacts, co: ContactOut):  # type: ignore
     co.solimp[cid] = lc.cpr_solimp[j]
     co.adhesion[cid] = 0.0
     co.type[cid] = LODOS_CONTACT
+    co.geomcollisionid[cid] = 0
+    for k in range(co.efc_address.shape[1]):  # k: int, an efc_address column
+        co.efc_address[cid, k] = -1
+
+
+@wp.kernel
+def export_lodos_toa(lc: LodosContacts, co: ContactOut):  # type: ignore
+    """
+    `export_lodos` for a context with a `toa` pair: a contact at a positive gap, a speculative one
+    (`lodos.col.sdf.narrowphase`), is typed `SPECULATIVE` as well, so that the solve gives it rows
+    (`constraint._efc_contact_init` under the model's `flg_speculative`).
+
+    Launch, Reads, Writes: as `export_lodos`, by `SolverDriver.contact_dynamics`.
+    """
+    i = wp.tid()  # int: the Lodos contact
+    if i >= lc.ct[2]:
+        return
+    if lc.reduced != 0:
+        if lc.keep[i] == wp.uint8(0):
+            return
+    if lc.grouped != 0:
+        if lc.key[i] >= 0:
+            return
+    sg = lc.seg_nCa3[i]  # int: its segment
+    j = lc.seg_cpr[sg]  # int: its pair
+    cid = wp.atomic_add(co.nacon, 0, 1)  # int: its MJWarp contact
+    if cid >= co.naconmax:
+        return
+    co.dist[cid] = lc.sdf_nCa3[i]
+    co.pos[cid] = lc.p_nCa3[i]
+    co.frame[cid] = make_frame(lc.n_nCa3[i])
+    co.geom[cid] = wp.vec2i(lc.g_geom[lc.seg_g_s[sg]], lc.g_geom[lc.seg_g_v[sg]])
+    co.worldid[cid] = lc.b_nCa3[i]
+    co.includemargin[cid] = 0.0
+    co.dim[cid] = lc.condim
+    co.friction[cid] = lc.cpr_friction[j]
+    co.solref[cid] = lc.cpr_solref[j]
+    co.solreffriction[cid] = wp.vec2(0.0, 0.0)
+    co.solimp[cid] = lc.cpr_solimp[j]
+    co.adhesion[cid] = 0.0
+    co.type[cid] = LODOS_CONTACT
+    if lc.sdf_nCa3[i] >= 0.0:  # no gap left to close is a row too: `pos < 0` alone would drop it
+        co.type[cid] = LODOS_SPECULATIVE
     co.geomcollisionid[cid] = 0
     for k in range(co.efc_address.shape[1]):  # k: int, an efc_address column
         co.efc_address[cid, k] = -1
@@ -487,6 +532,8 @@ class SolverDriver:
         self.M_map = wp.array(csr_map(mjm, mrbd), dtype=int)  # (nC,) int32: each CSR entry's row of M_blk
         self.co = contact_out(d)  # ContactOut: MJWarp's contact arrays
         self.lc = None  # LodosContacts, or None without Lodos surfaces
+        # bool: some Lodos pair is `toa`, whose speculative contacts the export types as such
+        self.toa = lodos is not None and int(lodos[0].has_toa) == 1
         self.rm = self.rd = None  # ReduceModel and ReduceData under the reduction, else None
         self.groups = None  # lodos.cd.groups.Groups where some pair is grouped, else None
         if lodos is not None:
@@ -562,7 +609,8 @@ class SolverDriver:
                 cd_reduce.reduce(self.rm, self.rd, self.dcol)
             if self.groups is not None:
                 self.groups.before_export()
-            wp.launch(export_lodos, dim=self.nCa3_max, inputs=(self.lc, self.co))
+            wp.launch(export_lodos_toa if self.toa else export_lodos, dim=self.nCa3_max,
+                      inputs=(self.lc, self.co))
             if self.groups is not None:
                 self.groups.export(self.co)
         wp.launch(gather_M, dim=(d.nworld, self.M_map.shape[0]), inputs=(self.M_map, self.drbd.M_blk), outputs=(d.M,))

@@ -216,6 +216,162 @@ def obb_filter(mcol: CollisionModel, dcol: CollisionData):
 
 
 #######################################################################################
+# Time of arrival (`toa` pairs)
+#######################################################################################
+#
+# A `toa` pair's tests keep, besides what is within reach now, whatever its relative
+# motion could bring within reach over the horizon `mcol.toa_h`. Every test is a distance
+# bound on a 1-Lipschitz field, so a margin equal to the farthest any point of the tested
+# sphere can travel (a path length, which rotation does not lengthen) keeps it
+# conservative. The kernels below are the `toa` variants of the ones above and below;
+# a context without a `toa` pair never launches them, and in them a pair or segment that
+# is not `toa` gets a margin of exactly zero, so it is decided as before.
+
+
+@wp.kernel
+def compute_twist_rel(mcol: CollisionModel, dcol: CollisionData):
+    """
+    A `toa` segment's relative motion in its SDF geometry's body frame.
+
+    The vertex geometry A's material point at world x moves at `v_A + w_A x (x - p_A)`, with
+    (w_A, v_A) its body's `cvel`, taken about its tree root's subtree COM p_A; the SDF
+    geometry B's at `v_B + w_B x (x - p_B)`. Their difference is `a_w + W x x`, with
+    `W = w_A - w_B` and `a_w = v_A - v_B - w_A x p_A + w_B x p_B`. In B's body frame
+    (rotation R, origin x_B), at `y = R^T (x - x_B)`, it is `a + Omega x y` with
+    `Omega = R^T W` and `a = R^T (a_w + W x x_B)`, stored as the spatial vector (Omega, a).
+
+    Launch: dim=(B, nSEG), a thread per world and segment, by `collide.broadphase_bbox` in a
+    context with a `toa` pair; a segment that is not `toa` is left as it is.
+    Reads: dcol.cvel (B, nbody) wp.spatial_vector, dcol.subtree_com (B, nbody) wp.vec3, dcol.T_w
+    (B, nB) wp.transformf; mcol.seg_toa, seg_g_v, seg_g_s (nSEG,) and g_bid, g_root (nB,) int.
+    Writes: dcol.twist_rel (B, nSEG) wp.spatial_vector.
+    """
+    b, s = wp.tid()  # int, int: the world, the segment
+    if mcol.seg_toa[s] == 0:
+        return
+    ga = mcol.seg_g_v[s]  # int: the vertex geometry
+    gb = mcol.seg_g_s[s]  # int: the SDF geometry
+    va = dcol.cvel[b, mcol.g_bid[ga]]  # wp.spatial_vector: A's body velocity, [angular, linear]
+    vb = dcol.cvel[b, mcol.g_bid[gb]]  # wp.spatial_vector: B's
+    wa, la = wp.spatial_top(va), wp.spatial_bottom(va)  # wp.vec3, wp.vec3
+    wb, lb = wp.spatial_top(vb), wp.spatial_bottom(vb)  # wp.vec3, wp.vec3
+    pa = dcol.subtree_com[b, mcol.g_root[ga]]  # wp.vec3: the point A's linear velocity is taken at
+    pb = dcol.subtree_com[b, mcol.g_root[gb]]  # wp.vec3: B's
+    W = wa - wb  # wp.vec3: the relative angular velocity, world frame (rad/s)
+    a_w = la - lb - wp.cross(wa, pa) + wp.cross(wb, pb)  # wp.vec3: the relative velocity at the world origin
+    T_b = dcol.T_w[b, gb]  # wp.transformf: B's body pose
+    q_inv = wp.quat_inverse(wp.transform_get_rotation(T_b))  # wp.quat: world to B's frame
+    omega = wp.quat_rotate(q_inv, W)  # wp.vec3: Omega, B's frame
+    a = wp.quat_rotate(q_inv, a_w + wp.cross(W, wp.transform_get_translation(T_b)))  # wp.vec3: at B's origin
+    dcol.twist_rel[b, s] = wp.spatial_vector(omega, a)
+
+
+@wp.func
+def toa_margin(b: int, s: int, y: wp.vec3, R: float, mcol: CollisionModel, dcol: CollisionData):  # type: ignore
+    """
+    How far segment s's relative motion can carry any point of the sphere (y, R) over the
+    horizon: `(|a + Omega x y| + |Omega| R) toa_h` -- a point of the sphere moves at most
+    |Omega| R faster than its centre. Zero for a segment that is not `toa`.
+
+    Called by `obb_filter_toa`, `sphere_survives_toa`, the `toa` voxel prefilters and
+    `narrowphase`'s `toa` kernels.
+    In: b int, the world; s int, the segment; y wp.vec3, the sphere's centre in the SDF geometry's
+    body frame (m); R float, its radius (m); mcol, read for seg_toa and toa_h; dcol, read for
+    twist_rel. Out: float, the distance (m).
+    """
+    if mcol.seg_toa[s] == 0:
+        return float(0.0)
+    tw = dcol.twist_rel[b, s]  # wp.spatial_vector: (Omega, a)
+    omega = wp.spatial_top(tw)  # wp.vec3
+    return (wp.length(wp.spatial_bottom(tw) + wp.cross(omega, y)) + wp.length(omega) * R) * mcol.toa_h
+
+
+@wp.func
+def obb_separating_m(Aa: wp.mat33, ha: wp.vec3, Ab: wp.mat33, hb: wp.vec3, t: wp.vec3, L: wp.vec3, m: float):  # type: ignore
+    """
+    `obb_separating` with the boxes apart by more than m along L: `|L.t| > ra + rb + m |L|`
+    (L is not normalized, so the margin is scaled with it).
+
+    Called by `obb_filter_toa`.
+    In: as `obb_separating`; m float, the margin (m). Out: bool.
+    """
+    if wp.dot(L, L) <= 1.0e-12:
+        return False
+    ra = obb_axis_radius(Aa, ha, L)  # float: box a's projection radius
+    rb = obb_axis_radius(Ab, hb, L)  # float: box b's
+    return wp.abs(wp.dot(L, t)) > ra + rb + m * wp.length(L)
+
+
+@wp.kernel
+def obb_filter_toa(mcol: CollisionModel, dcol: CollisionData):
+    """
+    `obb_filter` for a context with a `toa` pair: a `toa` pair stays active while its boxes are
+    within the distance its motion can close over the horizon, the largest of its segments'
+    `toa_margin` over its vertex geometry's box sphere; any other pair has margin 0 and is
+    tested exactly as `obb_filter` tests it.
+
+    Launch: dim=(B, nCPR), by `collide.broadphase_bbox`, after `compute_T_rel` and
+    `compute_twist_rel`. Reads and writes: as `obb_filter`; also mcol.cpr_toa, cpr_seg_beg,
+    seg_g_v, dcol.T_rel and twist_rel.
+    """
+    b, j = wp.tid()  # int, int: the world, the pair
+    cpr = mcol.cprs[j]  # wp.vec2i
+    ia, ib = cpr[0], cpr[1]  # int, int: the vertex geometry, the SDF geometry
+    m = float(0.0)  # float: the distance the pair's motion can close over the horizon (m)
+    if mcol.cpr_toa[j] == 1:
+        for s in range(mcol.cpr_seg_beg[j], mcol.cpr_seg_beg[j + 1]):  # s: int, a direction of the pair
+            gv = mcol.seg_g_v[s]  # int: its vertex geometry
+            y = wp.transform_point(dcol.T_rel[b, s], mcol.g_obb_c[gv])  # wp.vec3: its box centre, SDF frame
+            m = wp.max(m, toa_margin(b, s, y, wp.length(mcol.g_obb_h[gv]), mcol, dcol))
+    if mcol.g_plane[ib] == 1:
+        T_rel = wp.transform_inverse(dcol.T_w[b, ib]) * dcol.T_w[b, ia]  # wp.transformf: a's frame to the plane's
+        c = wp.transform_point(T_rel, mcol.g_obb_c[ia])  # wp.vec3: a's box centre, in the plane's frame
+        q_rel = wp.transform_get_rotation(T_rel)  # wp.quat
+        A, h = mcol.g_obb_A[ia], mcol.g_obb_h[ia]  # wp.mat33, wp.vec3: a's box axes (rows), half-extents (m)
+        reach = float(0.0)  # float: the box's half-extent along the plane normal (m)
+        for i in range(3):  # i: int, a box axis
+            axis = wp.quat_rotate(q_rel, wp.vec3(A[i, 0], A[i, 1], A[i, 2]))  # wp.vec3: axis i in the plane's frame
+            reach += h[i] * wp.abs(axis[2])
+        dcol.cpr_active[b, j] = c[2] - reach < m
+        return
+    T_a, T_b = dcol.T_w[b, ia], dcol.T_w[b, ib]  # wp.transformf, wp.transformf: the two world poses
+    q_a, q_b = wp.transform_get_rotation(T_a), wp.transform_get_rotation(T_b)  # wp.quat, wp.quat
+    ca = wp.transform_point(T_a, mcol.g_obb_c[ia])  # wp.vec3: a's box centre, in world
+    cb = wp.transform_point(T_b, mcol.g_obb_c[ib])  # wp.vec3: b's
+    ha, hb = mcol.g_obb_h[ia], mcol.g_obb_h[ib]  # wp.vec3, wp.vec3: the half-extents (m)
+    d2 = wp.length_sq(cb - ca)  # float: the squared centre distance (m^2)
+    rr = wp.length(ha) + wp.length(hb) + m  # float: the two bounding spheres' radii and the margin, summed (m)
+    if d2 > rr * rr:
+        dcol.cpr_active[b, j] = False
+        return
+    Ab_a, Ab_b = mcol.g_obb_A[ia], mcol.g_obb_A[ib]  # wp.mat33, wp.mat33: the body-frame axes, as rows
+    a0 = wp.quat_rotate(q_a, wp.vec3(Ab_a[0, 0], Ab_a[0, 1], Ab_a[0, 2]))  # wp.vec3
+    a1 = wp.quat_rotate(q_a, wp.vec3(Ab_a[1, 0], Ab_a[1, 1], Ab_a[1, 2]))  # wp.vec3
+    a2 = wp.quat_rotate(q_a, wp.vec3(Ab_a[2, 0], Ab_a[2, 1], Ab_a[2, 2]))  # wp.vec3
+    b0 = wp.quat_rotate(q_b, wp.vec3(Ab_b[0, 0], Ab_b[0, 1], Ab_b[0, 2]))  # wp.vec3
+    b1 = wp.quat_rotate(q_b, wp.vec3(Ab_b[1, 0], Ab_b[1, 1], Ab_b[1, 2]))  # wp.vec3
+    b2 = wp.quat_rotate(q_b, wp.vec3(Ab_b[2, 0], Ab_b[2, 1], Ab_b[2, 2]))  # wp.vec3
+    Aa = wp.mat33(a0[0], a0[1], a0[2], a1[0], a1[1], a1[2], a2[0], a2[1], a2[2])  # wp.mat33: a's world axes, as rows
+    Ab = wp.mat33(b0[0], b0[1], b0[2], b1[0], b1[1], b1[2], b2[0], b2[1], b2[2])  # wp.mat33: b's
+    t = cb - ca  # wp.vec3: b's centre less a's (m)
+    sep = False  # bool: whether some axis separates the boxes by more than m
+    for i in range(3):
+        La = wp.vec3(Aa[i, 0], Aa[i, 1], Aa[i, 2])  # wp.vec3: a face normal of a
+        if obb_separating_m(Aa, ha, Ab, hb, t, La, m):
+            sep = True
+        Lb = wp.vec3(Ab[i, 0], Ab[i, 1], Ab[i, 2])  # wp.vec3: a face normal of b
+        if obb_separating_m(Aa, ha, Ab, hb, t, Lb, m):
+            sep = True
+    for i in range(3):
+        La = wp.vec3(Aa[i, 0], Aa[i, 1], Aa[i, 2])
+        for k in range(3):  # k: int, an axis of b
+            Lb = wp.vec3(Ab[k, 0], Ab[k, 1], Ab[k, 2])
+            if obb_separating_m(Aa, ha, Ab, hb, t, wp.cross(La, Lb), m):
+                sep = True
+    dcol.cpr_active[b, j] = not sep
+
+
+#######################################################################################
 # SDF-Based Filtering
 #######################################################################################
 
@@ -461,7 +617,110 @@ def tile_filter_seg(mcol: CollisionModel, dcol: CollisionData):
         wp.atomic_add(dcol.gcnt, k, 1)
 
 
-def _make_tiled_sdf_filter(with_radius: bool, partition: bool = False):
+@wp.func
+def sphere_survives_toa(  # type: ignore
+    b: int,
+    s: int,
+    c_b: wp.vec3,
+    r: float,
+    mcol: CollisionModel,
+    dcol: CollisionData,
+):
+    """
+    `sphere_survives` for a context with a `toa` pair: the margin also holds the distance segment
+    s's motion can carry the sphere over the horizon (`toa_margin`, zero for a segment that is not
+    `toa`). The derivation is `sphere_survives`'s with the prefilter's threshold raised by the
+    same bound for each primitive, which is at most the sphere's.
+
+    Called by `tile_survives_toa` and `gen_weights_toa`.
+    In: as `sphere_survives`; also reads mcol.seg_toa, toa_h and dcol.twist_rel. Out: int, 1 or 0.
+    """
+    c = wp.transform_point(dcol.T_rel[b, s], c_b)  # wp.vec3: the centre, in the SDF geometry's body frame
+    id_nB_2 = mcol.seg_g_s[s]  # int: the SDF geometry
+    m = toa_margin(b, s, c, r, mcol, dcol)  # float: the distance the motion can close (m)
+    if mcol.g_plane[id_nB_2] == 1:
+        if c[2] - r < m:
+            return 1
+        return 0
+    if eval_sdf_vox(c, id_nB_2, mcol) < r + 3.0 * mcol.g_Vox_r[id_nB_2] + m:
+        return 1
+    return 0
+
+
+@wp.func
+def tile_survives_toa(b: int, s: int, j: int, mcol: CollisionModel, dcol: CollisionData):  # type: ignore
+    """
+    `tile_survives` through `sphere_survives_toa`.
+
+    Called by `tile_filter_toa` and `tile_filter_seg_toa`.
+    In, Out: as `tile_survives`.
+    """
+    return sphere_survives_toa(b, s, mcol.tile_c[j], mcol.tile_r[j], mcol, dcol)
+
+
+@wp.kernel
+def gen_weights_toa(mcol: CollisionModel, dcol: CollisionData):
+    """
+    `gen_weights` for a context with a `toa` pair: a super-tile is tested with `sphere_survives_toa`.
+
+    Launch, Reads, Writes: as `gen_weights`, by `collide.broadphase_bbox`.
+    """
+    i = wp.tid()  # int: the (world, generator) slot, b * nG_world + g
+    dcol.gcnt[i] = 0
+    b = i / mcol.nG_world  # int: the world
+    g = i - b * mcol.nG_world  # int: the generator
+    s = mcol.gen_seg[g]  # int: its segment
+    w = int(0)  # int: the tiles it contributes
+    if dcol.cpr_active[b, mcol.seg_cpr[s]]:
+        w = mcol.gen_nT[g]
+        if mcol.gen_sup[g] == 1:
+            if sphere_survives_toa(b, s, mcol.gen_c[g], mcol.gen_r[g], mcol, dcol) == 0:
+                w = 0
+    dcol.gen_w[i] = w
+
+
+@wp.kernel
+def tile_filter_toa(mcol: CollisionModel, dcol: CollisionData):
+    """
+    `tile_filter` for a context with a `toa` pair: a tile is tested with `tile_survives_toa`.
+
+    Launch, Reads, Writes: as `tile_filter`, by `collide.broadphase_bbox`.
+    """
+    b, j = wp.tid()  # int, int: the world, the dense tile
+    s = mcol.tile_seg[j]  # int: the tile's segment
+    keep = int(0)  # int: 1 if the tile survives
+    if dcol.cpr_active[b, mcol.seg_cpr[s]]:
+        keep = 1
+        if mcol.has_super == 1:
+            if dcol.gen_w[b * mcol.nG_world + mcol.tile_gen[j]] == 0:
+                keep = 0
+        if keep == 1:
+            keep = tile_survives_toa(b, s, j, mcol, dcol)
+    dcol.tflag[b * mcol.nT_world + j] = keep
+    if keep == 1:
+        wp.atomic_add(dcol.gcnt, b * mcol.nG_world + mcol.tile_gen[j], 1)
+
+
+@wp.kernel
+def tile_filter_seg_toa(mcol: CollisionModel, dcol: CollisionData):
+    """
+    `tile_filter_seg` for a context with a `toa` pair: a tile is tested with `tile_survives_toa`.
+
+    Launch, Reads, Writes: as `tile_filter_seg`, by `collide.broadphase_bbox`.
+    """
+    i = wp.tid()  # int: the tile candidate
+    if i >= dcol.ct[4]:
+        return
+    b, s, t, k = resolve_nTb(i, mcol, dcol)  # int, int, int, int: world, segment, tile within it, generator slot
+    j = mcol.seg_nT_beg[s] + t  # int: the dense tile
+    keep = tile_survives_toa(b, s, j, mcol, dcol)  # int: 1 if the tile survives
+    dcol.tflag[i] = keep
+    dcol.tslot[i] = b * mcol.nT_world + j
+    if keep == 1:
+        wp.atomic_add(dcol.gcnt, k, 1)
+
+
+def _make_tiled_sdf_filter(with_radius: bool, partition: bool = False, toa: bool = False):
     """The voxel prefilter, with or without the per-primitive radius read.
 
     Two kernels rather than a branch: this is the widest launch in the pipeline
@@ -473,7 +732,8 @@ def _make_tiled_sdf_filter(with_radius: bool, partition: bool = False):
 
     Called by this module at import, for the four kernels below it.
     In: with_radius bool, read `mcol.prim_r`; partition bool, resolve a slot by block partition rather than by
-    dividing by `tile_K`. Out: the `tiled_sdf_filter` kernel.
+    dividing by `tile_K`; toa bool, add each `toa` segment's motion margin (`toa_margin`) to the threshold.
+    Out: the `tiled_sdf_filter` kernel.
     """
 
     @wp.func
@@ -510,6 +770,10 @@ def _make_tiled_sdf_filter(with_radius: bool, partition: bool = False):
             r = float(0.0)  # float: the primitive's radius (m), 0 for a vertex
             if wp.static(with_radius):
                 r = mcol.prim_r[id_nV]
+            if wp.static(toa):
+                # A `toa` segment keeps it from as far again as its motion can carry it over the
+                # horizon; the threshold is all `r` is used for below.
+                r += toa_margin(id_Batch, id_SEG, v_b, 0.0, mcol, dcol)
 
             if mcol.g_plane[id_nB_2] == 1:
                 if v_b[2] < r:
@@ -577,6 +841,11 @@ tiled_sdf_filter = _make_tiled_sdf_filter(False)  # the stage-1 filter: no radiu
 tiled_sdf_filter_r = _make_tiled_sdf_filter(True)  # with the radius read, tile by division
 tiled_sdf_filter_p = _make_tiled_sdf_filter(False, partition=True)  # no radius read, tile by block partition
 tiled_sdf_filter_rp = _make_tiled_sdf_filter(True, partition=True)  # with the radius read, tile by block partition
+# The same four for a context with a `toa` pair, whose `toa` segments' thresholds take the motion margin.
+tiled_sdf_filter_t = _make_tiled_sdf_filter(False, toa=True)
+tiled_sdf_filter_rt = _make_tiled_sdf_filter(True, toa=True)
+tiled_sdf_filter_pt = _make_tiled_sdf_filter(False, partition=True, toa=True)
+tiled_sdf_filter_rpt = _make_tiled_sdf_filter(True, partition=True, toa=True)
 
 
 def sdf_filter_kernel(mcol: CollisionModel):
@@ -584,9 +853,14 @@ def sdf_filter_kernel(mcol: CollisionModel):
     The stage-1 filter this context runs.
 
     Called by `collide.broadphase_sdf`.
-    In: mcol, read for has_spheres and partition. Out: one of the four `tiled_sdf_filter*` kernels.
+    In: mcol, read for has_spheres, partition and has_toa. Out: one of the eight `tiled_sdf_filter*` kernels; the
+    four `toa` ones only for a context with a `toa` pair.
     """
     r, p = int(mcol.has_spheres), int(mcol.partition)  # int, int: read radii, resolve by block partition
+    if int(mcol.has_toa):
+        if p:
+            return tiled_sdf_filter_rpt if r else tiled_sdf_filter_pt
+        return tiled_sdf_filter_rt if r else tiled_sdf_filter_t
     if p:
         return tiled_sdf_filter_rp if r else tiled_sdf_filter_p
     return tiled_sdf_filter_r if r else tiled_sdf_filter

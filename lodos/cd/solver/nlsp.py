@@ -4099,6 +4099,7 @@ def _update_gradient_JTCJ_dense(
   # Data in:
   contact_dist_in: wp.array[float],
   contact_includemargin_in: wp.array[float],
+  contact_type_in: wp.array[int],
   contact_friction_in: wp.array[vec5],
   contact_dim_in: wp.array[int],
   contact_efc_address_in: wp.array2d[int],
@@ -4128,6 +4129,7 @@ def _update_gradient_JTCJ_dense(
     dof_tri_col: (nv*(nv+1)/2,) column of each upper-triangle dof pair.
     contact_dist_in: (naconmax,) contact distances.
     contact_includemargin_in: (naconmax,) inclusion margins.
+    contact_type_in: (naconmax,) ContactType flags.
     contact_friction_in: (naconmax,) vec5 contact friction.
     contact_dim_in: (naconmax,) contact dimensionalities.
     contact_efc_address_in: (naconmax, ncondmax) efc row id of each contact row.
@@ -4163,9 +4165,10 @@ def _update_gradient_JTCJ_dense(
     if condim == 1:
       continue
 
-    # check contact status
+    # check contact status: a positive gap has no rows, but for a speculative contact's (a `toa` pair's)
     if contact_dist_in[conid] - contact_includemargin_in[conid] >= 0.0:
-      continue
+      if not (contact_type_in[conid] & ContactType.SPECULATIVE):
+        continue
 
     efcid0 = contact_efc_address_in[conid, 0]
     if efcid0 < 0:
@@ -5247,6 +5250,7 @@ def _newton_hessian_solve(m: Model, d: Data, ctx: SolverContext, compact: bool =
         m.dof_tri_col,
         d.contact.dist,
         d.contact.includemargin,
+        d.contact.type,
         d.contact.friction,
         d.contact.dim,
         d.contact.efc_address,

@@ -21,6 +21,7 @@ import warp as wp
 from lodos.col.sdf.spline.c0 import cell_cs1, basis_w_cs1, basis_dw_cs1
 from lodos.col.sdf.spline.c2 import eval_basis_1d_wp, eval_basis_1d_d_wp
 from lodos.col.sdf.compact import resolve_nCa1
+from lodos.col.sdf.broadphase import toa_margin
 from lodos.col.sdf.types import (
     CONTACT_POINTS,
     CollisionModel,
@@ -333,7 +334,7 @@ def eval_nsdf_c0(p_b: wp.vec3, B_id: int, mcol: CollisionModel):  # type: ignore
     return sdf + out, n
 
 
-def _make_nsdf_kernel(eval_nsdf, with_radius: bool = False):
+def _make_nsdf_kernel(eval_nsdf, with_radius: bool = False, toa: bool = False):
     """The narrowphase, bound to one SDF evaluator and one radius policy.
 
     `with_radius` is a separate specialization for the same reason the filter has
@@ -404,6 +405,12 @@ def _make_nsdf_kernel(eval_nsdf, with_radius: bool = False):
             dcol.flag2[id_nCa2] = 1
         else:
             dcol.flag2[id_nCa2] = 0
+        if wp.static(toa):
+            # So does a `toa` segment's primitive whose gap its motion could close over the horizon:
+            # a speculative contact, its positive gap kept, which the solver lets close by at most
+            # that much in a step. A segment that is not `toa` has margin 0: the test above.
+            if sdf < toa_margin(id_Batch, id_SEG, v_b, 0.0, mcol, dcol):
+                dcol.flag2[id_nCa2] = 1
 
     return compute_nsdf
 
@@ -412,6 +419,11 @@ compute_nsdf = _make_nsdf_kernel(eval_nsdf_c2)  # the narrowphase: tricubic SDF,
 compute_nsdf_c0 = _make_nsdf_kernel(eval_nsdf_c0)  # trilinear SDF, no radius read
 compute_nsdf_r = _make_nsdf_kernel(eval_nsdf_c2, with_radius=True)  # tricubic, with the radius read
 compute_nsdf_c0_r = _make_nsdf_kernel(eval_nsdf_c0, with_radius=True)  # trilinear, with the radius read
+# The same four for a context with a `toa` pair, admitting its speculative contacts.
+compute_nsdf_t = _make_nsdf_kernel(eval_nsdf_c2, toa=True)
+compute_nsdf_c0_t = _make_nsdf_kernel(eval_nsdf_c0, toa=True)
+compute_nsdf_r_t = _make_nsdf_kernel(eval_nsdf_c2, with_radius=True, toa=True)
+compute_nsdf_c0_r_t = _make_nsdf_kernel(eval_nsdf_c0, with_radius=True, toa=True)
 
 
 #######################################################################################
@@ -429,6 +441,12 @@ def nsdf_kernel(mcol: CollisionModel):
     Called by `collide.narrowphase_sdf`.
     In: mcol, read for has_spheres and spline. Out: one of the four `compute_nsdf*` kernels.
     """
+    c0 = int(mcol.spline) == 1  # bool: the trilinear representation
+    if int(mcol.has_toa):
+        # A context with a `toa` pair: the same four, admitting its speculative contacts.
+        if int(mcol.has_spheres):
+            return compute_nsdf_c0_r_t if c0 else compute_nsdf_r_t
+        return compute_nsdf_c0_t if c0 else compute_nsdf_t
     if int(mcol.has_spheres):
         return compute_nsdf_c0_r if int(mcol.spline) == 1 else compute_nsdf_r
     return compute_nsdf_c0 if int(mcol.spline) == 1 else compute_nsdf

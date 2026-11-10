@@ -1299,6 +1299,8 @@ class Model:
     qLD_block_total: packed length of the dense region per world (also the offset of the LDL region)
     qLD_block_adr: packed factor offset; Q_LD_BLOCK_* sentinel otherwise (nv,)
     flg_adhesion: flag indicating if model has passive adhesion
+    flg_speculative: flag indicating if Lodos's `toa` pairs make speculative contacts (ContactType.SPECULATIVE),
+      set by lodos.sim.make_sim
     has_fluid: True if wind, density, or viscosity are non-zero at put_model time
     flg_surfacevel: whether model has non-zero surfacevel
     has_sdf_geom: whether the model contains SDF geoms
@@ -1803,6 +1805,7 @@ class Model:
   qLD_block_total: int
   qLD_block_adr: array("nv", int)
   flg_adhesion: bool
+  flg_speculative: bool
   has_fluid: bool
   flg_surfacevel: bool
   has_sdf_geom: bool
@@ -1927,12 +1930,16 @@ class ContactType(enum.IntFlag):
       two geoms: its rows are the members' rows weighted and summed (make_constraint), and
       the prox solver takes its stabilization and De Saxce terms from the members. Its
       pos, frame and dist are nominal: the members' weighted mean point, normal and depth
+    SPECULATIVE: a speculative contact of a `toa` pair (lodos.col.sdf): its rows exist at a
+      positive gap too, which the exact mode's Baumgarte term lets the contact close by at
+      most in a step; allocated only when the model's `flg_speculative` is set
   """
 
   CONSTRAINT = 1 << 0
   SENSOR = 1 << 1
   NOCARRY = 1 << 2
   GROUP = 1 << 3
+  SPECULATIVE = 1 << 4
 
 
 @dataclasses.dataclass
