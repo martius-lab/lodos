@@ -200,6 +200,11 @@ class CollisionModel:
     toa_h: wp.float32  # the horizon (s) a `toa` segment's motion is bounded over, the timestep by default
     cpr_toa: wp.array(dtype=int)  # (nCPR,), 1 when a segment of the pair is `toa` # type: ignore
     seg_toa: wp.array(dtype=int)  # (nSEG,), 1 for a `toa` segment # type: ignore
+    # (nSEG,) each with a `toa` pair, (1,) without: how a `toa` segment's speculative contacts are traced along
+    # their path (`toa_trace`: 0 not, 1 sphere tracing, 2 over-relaxed) and at most how many field evaluations
+    # a trace takes (`toa_trace_iters`). Read only by the `toa` narrowphase kernels, at run time.
+    seg_trace: wp.array(dtype=int)  # type: ignore
+    seg_trace_iters: wp.array(dtype=int)  # type: ignore
     # (nB,), the root body of each geometry's kinematic tree, whose subtree COM the
     # rigid-body velocities `cvel` are taken about; read only by `toa` kernels.
     g_root: wp.array(dtype=int)  # type: ignore
@@ -511,6 +516,10 @@ class CollisionData:
     n_nCa2: wp.array(dtype=wp.vec3)  # (nCa2_max, 3), # type: ignore
     flag2: wp.array(dtype=int)  # (nCa2_max,), 1 where sdf < 0 # type: ignore
     off2: wp.array(dtype=int)  # (nCa2_max,), exclusive scan of flag2 # type: ignore
+    # A `toa` context's speculative candidates to trace (`narrowphase.trace_toa`), listed by the narrowphase as
+    # stage-2 slots: (nCa2_max,), at most every candidate, (1,) without a `toa` pair; and their count, (1,).
+    trace_list: wp.array(dtype=int)  # type: ignore
+    trace_ct: wp.array(dtype=int)  # type: ignore
     idm_nCa3_to_nCa2: wp.array(
         dtype=int
     )  # (nCa3_max,), maps nCa3 index to nCa2 index # type: ignore
@@ -600,6 +609,8 @@ def make_collision_context(
     mempool_release_threshold=1 << 30,
     toa=None,
     toa_horizon=None,
+    toa_trace="relaxed",
+    toa_trace_iters=128,
 ):
     """
     - `cprs` indexes `surfaces`, not the MuJoCo model's geoms
@@ -825,8 +836,8 @@ def make_collision_context(
         step and at the horizon's end under the free motion (`qacc_smooth`), so the
         step's own acceleration is inside them, though not its contact forces. A
         speculative contact is kept only if its vertex's path over the step can reach
-        the surface (a sphere trace along it, `narrowphase._make_toa_trace`), and is
-        linearized where the path arrives: a vertex passing an edge is not stopped. With no
+        the surface (a sphere trace along it, `toa_trace`), and is linearized where the
+        path arrives: a vertex passing an edge is not stopped. With no
         `toa` pair the context compiles and runs exactly the kernels it did before.
         **Bake `toa` surfaces with a wide band.** The baked field exists only inside
         its grid, the mesh's box plus a band (`create_surface_data.py`'s `--dilation`
@@ -836,6 +847,21 @@ def make_collision_context(
         meets. `collide.check_toa_band` reports the geometries where it happened.
 
     toa_horizon: the horizon (s) of the motion bound, `m.opt.timestep` if None.
+
+    toa_trace: how a `toa` pair's speculative contacts are traced along their path over the
+        horizon (`narrowphase._make_toa_trace`), in `toa`'s spellings (one value for every
+        pair, a list of nCPR, or the dict). False: not at all -- every admitted contact is
+        kept, linearized at its start, which stops a body passing an edge as if it hit it.
+        "sphere": sphere tracing, each step the distance to the surface, so no surface is
+        skipped; a path proved clear drops its contact. "relaxed" or True (the default):
+        over-relaxed sphere tracing, steps of `narrowphase.TOA_RELAX` (1.6) times that,
+        each kept only if the clear spheres about its two ends overlap and else redone as a
+        plain step: the same contacts in fewer steps, about half when it grazes a surface,
+        where plain steps shrink to the clearance.
+
+    toa_trace_iters: the most field evaluations one trace takes, in `toa`'s spellings (128 by
+        default). A graze takes about its path length over its clearance; a trace that runs
+        out keeps its contact, linearized at the last point it reached.
 
     Called by `lodos.sim.make_sim` and `tools.performance_tuning.tune.time_collision`.
     In: m, reads nbody; drbd, reads qpos (B, nq) float32 for B and binds xpos (B, nbody) wp.vec3 and xquat
@@ -1080,18 +1106,19 @@ def make_collision_context(
     # scene.
     assert 0.0 < capacity1 <= 1.0, "capacity1 must be in (0, 1]"
 
-    def _per_seg(spec, name, fallback):
+    def _per_seg(spec, name, fallback, conv=int):
         """A scalar, or a {(vertex geom, SDF geom): value} dict, read per segment.
 
         The tuple is the key because a segment *is* a directional pair, and it is
         the only key that tells a symmetric pair's two directions apart.
 
-        Called by `make_collision_context`, for `tile_size` and `super_size`.
+        Called by `make_collision_context`, for `tile_size` and `super_size`, and by `_per_pair`.
         In: spec, an int or a dict; name, str, the option's name, for the message; fallback, int, the value for a
-        segment the dict does not name and no `None` key covers. Out: a list of nSEG ints.
+        segment the dict does not name and no `None` key covers; conv, a value to its int (int by default).
+        Out: a list of nSEG ints.
         """
         if not isinstance(spec, dict):
-            return [int(spec)] * nSEG
+            return [conv(spec)] * nSEG
 
         keys = {(seg_g_v[s], seg_g_s[s]) for s in range(nSEG)}  # set of (int, int): the directional pairs
         unknown = sorted(  # list of str: the keys that name no directional pair
@@ -1105,21 +1132,43 @@ def make_collision_context(
         )
         named = {tuple(k): v for k, v in spec.items() if k is not None}  # {(int, int): value}: the named pairs
         dflt = spec.get(None, fallback)  # the value for the pairs not named
-        return [int(named.get((seg_g_v[s], seg_g_s[s]), dflt)) for s in range(nSEG)]
+        return [conv(named.get((seg_g_v[s], seg_g_s[s]), dflt)) for s in range(nSEG)]
 
     seg_K = _per_seg(tile_size, "tile_size", 8)  # nSEG ints: primitives per tile
     seg_SK = _per_seg(super_size, "super_size", 0)  # nSEG ints: tiles per super-tile, 0 for none
 
     # Time of arrival, per segment: a bool for every pair, a list of nCPR bools (a symmetric pair's
     # two directions take its flag), or `tile_size`'s per-direction dict.
-    if toa is None or isinstance(toa, (bool, np.bool_)):
-        seg_toa = [int(bool(toa))] * nSEG  # nSEG ints: 1 for a `toa` segment
-    elif isinstance(toa, dict):
-        seg_toa = [int(bool(x)) for x in _per_seg(toa, "toa", 0)]
-    else:
-        toa = [bool(x) for x in toa]
-        assert len(toa) == nCPR, f"toa has {len(toa)} entries for {nCPR} pairs"
-        seg_toa = [int(toa[seg_cpr[s]]) for s in range(nSEG)]
+    def _per_pair(spec, name, fallback, conv):
+        """`toa`'s spellings, read per segment through `conv`: one value for every pair, a list of nCPR values (a
+        symmetric pair's two directions take its value), or `_per_seg`'s dict.
+
+        Called by `make_collision_context`, for `toa`, `toa_trace` and `toa_trace_iters`.
+        In: spec; name str, the option's name, for messages; fallback, a dict's value for the segments it does not
+        name; conv, a value to its int code. Out: a list of nSEG ints.
+        """
+        if isinstance(spec, dict):
+            return _per_seg(spec, name, fallback, conv)
+        if isinstance(spec, (list, tuple, np.ndarray)):
+            assert len(spec) == nCPR, f"{name} has {len(spec)} entries for {nCPR} pairs"
+            return [conv(spec[seg_cpr[s]]) for s in range(nSEG)]
+        return [conv(spec)] * nSEG
+
+    def _trace_mode(x):
+        """`toa_trace`'s value as its code: 0 no trace, 1 sphere tracing, 2 over-relaxed (True's)."""
+        if isinstance(x, str):
+            assert x in ("sphere", "relaxed"), f"toa_trace: {x!r}, expected False, True, 'sphere' or 'relaxed'"
+            return 1 if x == "sphere" else 2
+        return 2 if bool(x) else 0
+
+    def _trace_iters(x):
+        """`toa_trace_iters`'s value, checked."""
+        assert int(x) >= 1, f"toa_trace_iters must be at least 1, got {x}"
+        return int(x)
+
+    seg_toa = _per_pair(toa, "toa", False, lambda x: int(bool(x)))  # nSEG ints: 1 for a `toa` segment
+    seg_trace = _per_pair(toa_trace, "toa_trace", "relaxed", _trace_mode)  # nSEG ints: each segment's trace
+    seg_trace_iters = _per_pair(toa_trace_iters, "toa_trace_iters", 128, _trace_iters)  # nSEG ints
     cpr_toa = [int(any(seg_toa[cpr_seg_beg[j]:cpr_seg_beg[j + 1]])) for j in range(nCPR)]  # nCPR ints
     has_toa = int(any(seg_toa))  # int: 1 when some segment is `toa`
     toa_h = 0.0  # float: the motion bound's horizon (s)
@@ -1132,6 +1181,8 @@ def make_collision_context(
     mcol.toa_h = toa_h
     mcol.cpr_toa = wp.array(cpr_toa, dtype=wp.int32)
     mcol.seg_toa = wp.array(seg_toa, dtype=wp.int32)
+    mcol.seg_trace = wp.array(seg_trace if has_toa else [0], dtype=wp.int32)
+    mcol.seg_trace_iters = wp.array(seg_trace_iters if has_toa else [0], dtype=wp.int32)
     mcol.g_root = wp.array(g_root, dtype=wp.int32)
     tree = [np.zeros(1, dtype=np.int32)] * 3  # body_parentid, body_dofadr, body_dofnum: (1,) without `toa`
     if has_toa:
@@ -1465,6 +1516,8 @@ def make_collision_context(
     # The stage-2 -> stage-3 compaction tables, which every context allocates.
     dcol.flag2 = wp.zeros(nCa2_max, dtype=wp.int32)
     dcol.off2 = wp.zeros(nCa2_max, dtype=wp.int32)
+    dcol.trace_list = wp.zeros(nCa2_max if has_toa else 1, dtype=wp.int32)
+    dcol.trace_ct = wp.zeros(1, dtype=wp.int32)
     dcol.idm_nCa3_to_nCa2 = wp.zeros(nCa3_max, dtype=wp.int32)
     dcol.idul_B_nSEG_to_nCa3 = wp.zeros((B, nSEG + 1), dtype=wp.int32)
 

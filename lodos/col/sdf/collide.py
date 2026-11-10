@@ -94,11 +94,21 @@ def narrowphase_sdf(mcol: CollisionModel, dcol: CollisionData):
 
     Called by `collide` and `tools.performance_tuning.profile_scene.stages_of`.
     In: mcol, dcol, after `broadphase_sdf`: the stage-2 candidates and dcol.ct[1]. Out: dcol.sdf_nCa2 (nCa2_max,)
-    float32, dcol.n_nCa2 (nCa2_max,) wp.vec3, dcol.flag2 and off2 (nCa2_max,) int32; the contacts dcol.p_nCa3 and
+    float32, dcol.n_nCa2 (nCa2_max,) wp.vec3, dcol.flag2 and off2 (nCa2_max,) int32 (with a `toa` pair, the
+    speculative candidates traced, `narrowphase.trace_toa`, through dcol.trace_list and trace_ct); the contacts
+    dcol.p_nCa3 and
     n_nCa3 (nCa3_max,) wp.vec3, sdf_nCa3 (nCa3_max,) float32, b_nCa3, seg_nCa3 and v_nCa3 (nCa3_max,) int32, their
     count dcol.ct[2] and segment bounds dcol.idul_B_nSEG_to_nCa3 (B, nSEG+1) int32.
     """
+    toa = int(mcol.has_toa)  # int: 1 in a context with a `toa` pair
+    if toa:
+        dcol.trace_ct.zero_()
     wp.launch(sdf_narrowphase.nsdf_kernel(mcol), dim=(dcol.nCa2_max,), inputs=(mcol, dcol))
+    if toa:
+        # The speculative candidates the narrowphase listed, traced along their paths by a kernel of their own,
+        # so that the narrowphase does not carry the trace's registers for every candidate.
+        width = min(int(dcol.nCa2_max), sdf_narrowphase.TOA_TRACE_GRID)  # int: the trace's launch, grid-strided
+        wp.launch(sdf_narrowphase.trace_kernel(mcol), dim=(width,), inputs=(mcol, dcol, width))
     sdf_compact.compact_nCa3(mcol, dcol)
     wp.launch(sdf_narrowphase.contact_kernel(mcol), dim=(dcol.nCa3_max,),
               inputs=(mcol, dcol))
@@ -466,6 +476,8 @@ def resize_context(mcol, dcol, capacity1=None, capacity2=None,
         dcol.n_nCa2 = wp.zeros(nCa2_max, dtype=wp.vec3)
         dcol.flag2 = wp.zeros(nCa2_max, dtype=wp.int32)
         dcol.off2 = wp.zeros(nCa2_max, dtype=wp.int32)
+        if int(mcol.has_toa):
+            dcol.trace_list = wp.zeros(nCa2_max, dtype=wp.int32)
 
         if contacts:
             # `make_collision_context`'s own rule, `nCa3_max = nCa2_max`. The
