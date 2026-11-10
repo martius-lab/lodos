@@ -30,13 +30,20 @@ def broadphase_bbox(mcol: CollisionModel, dcol: CollisionData):
     """
     wp.launch(sdf_broadphase.compute_T_w, dim=(mcol.B, mcol.nB), inputs=(mcol, dcol))
     wp.launch(sdf_broadphase.compute_T_rel, dim=(mcol.B, mcol.nCPR), inputs=(mcol, dcol))
-    wp.launch(sdf_broadphase.obb_filter, dim=(mcol.B, mcol.nCPR), inputs=(mcol, dcol))
+    # A context with a `toa` pair runs the `toa` variants of the filters, which also keep what the
+    # pair's motion could bring within reach over the horizon; without one, the kernels as before.
+    toa = int(mcol.has_toa)  # int: 1 when some pair is `toa`
+    if toa:
+        wp.launch(sdf_broadphase.compute_body_acc, dim=dcol.acc_free.shape, inputs=(mcol, dcol))
+        wp.launch(sdf_broadphase.compute_twist_rel, dim=(mcol.B, mcol.nSEG), inputs=(mcol, dcol))
+    wp.launch(sdf_broadphase.obb_filter_toa if toa else sdf_broadphase.obb_filter, dim=(mcol.B, mcol.nCPR),
+              inputs=(mcol, dcol))
 
     # The level above the tiles, which decides how many of them each generator
     # hands down, and clears the counter each accumulates its survivors into --
     # on both paths, since `compact_nTa` scans those counters whichever filter
     # produced them.
-    wp.launch(sdf_broadphase.gen_weights, dim=(mcol.B * mcol.nG_world,),
+    wp.launch(sdf_broadphase.gen_weights_toa if toa else sdf_broadphase.gen_weights, dim=(mcol.B * mcol.nG_world,),
               inputs=(mcol, dcol))
 
     # `capacity1 < 1.0` compacts the box filter's survivors first, so the tile
@@ -45,13 +52,14 @@ def broadphase_bbox(mcol: CollisionModel, dcol: CollisionData):
     # whole grid -- so the dense launch runs unchanged.
     if mcol.seg_compact:
         sdf_compact.compact_nTb(mcol, dcol)
-        wp.launch(sdf_broadphase.tile_filter_seg, dim=(dcol.nTb_max,), inputs=(mcol, dcol))
+        wp.launch(sdf_broadphase.tile_filter_seg_toa if toa else sdf_broadphase.tile_filter_seg,
+                  dim=(dcol.nTb_max,), inputs=(mcol, dcol))
     else:
         # Densely there is no candidate list to shorten, so the level's weights
         # are read only where a super-tile could reject something -- the tile
         # filter reads that verdict rather than a scan of it.
         wp.launch(
-            sdf_broadphase.tile_filter,
+            sdf_broadphase.tile_filter_toa if toa else sdf_broadphase.tile_filter,
             dim=(mcol.B, mcol.nT_world),
             inputs=(mcol, dcol),
         )
@@ -87,14 +95,28 @@ def narrowphase_sdf(mcol: CollisionModel, dcol: CollisionData):
 
     Called by `collide` and `tools.performance_tuning.profile_scene.stages_of`.
     In: mcol, dcol, after `broadphase_sdf`: the stage-2 candidates and dcol.ct[1]. Out: dcol.sdf_nCa2 (nCa2_max,)
-    float32, dcol.n_nCa2 (nCa2_max,) wp.vec3, dcol.flag2 and off2 (nCa2_max,) int32; the contacts dcol.p_nCa3 and
+    float32, dcol.n_nCa2 (nCa2_max,) wp.vec3, dcol.flag2 and off2 (nCa2_max,) int32 (with a `toa` pair, the
+    speculative candidates traced, `narrowphase.trace_toa`, through dcol.trace_list and trace_ct); the contacts
+    dcol.p_nCa3 and
     n_nCa3 (nCa3_max,) wp.vec3, sdf_nCa3 (nCa3_max,) float32, b_nCa3, seg_nCa3 and v_nCa3 (nCa3_max,) int32, their
     count dcol.ct[2] and segment bounds dcol.idul_B_nSEG_to_nCa3 (B, nSEG+1) int32.
     """
+    toa = int(mcol.has_toa)  # int: 1 in a context with a `toa` pair
+    if toa:
+        dcol.trace_ct.zero_()
     wp.launch(sdf_narrowphase.nsdf_kernel(mcol), dim=(dcol.nCa2_max,), inputs=(mcol, dcol))
+    if toa:
+        # The speculative candidates the narrowphase listed, traced along their paths by a kernel of their own,
+        # so that the narrowphase does not carry the trace's registers for every candidate.
+        width = min(int(dcol.nCa2_max), sdf_narrowphase.TOA_TRACE_GRID)  # int: the trace's launch, grid-strided
+        wp.launch(sdf_narrowphase.trace_kernel(mcol), dim=(width,), inputs=(mcol, dcol, width))
     sdf_compact.compact_nCa3(mcol, dcol)
     wp.launch(sdf_narrowphase.contact_kernel(mcol), dim=(dcol.nCa3_max,),
               inputs=(mcol, dcol))
+    if int(mcol.has_side):
+        # This step's stage-2 candidates, remembered for the next one's `toa_side`.
+        wp.launch(sdf_narrowphase.side_snapshot, dim=(dcol.nCa2_max,), inputs=(mcol, dcol))
+        wp.copy(dcol.side_idul, dcol.idul_B_nSEG_to_nCa2)
 
 
 def collide(mcol: CollisionModel, dcol: CollisionData):
@@ -253,6 +275,85 @@ def check_overflow(dcol: CollisionData, raise_on_overflow=True):
 
     if raise_on_overflow:
         raise RuntimeError(msg)
+    return msg
+
+
+def check_toa_band(mcol: CollisionModel, dcol: CollisionData, warn=True):
+    """
+    Reports the SDF geometries a `toa` pair's speculative gap has been read outside of.
+
+    The baked field exists only inside a geometry's grid, its bounding box plus a band. A
+    `toa` vertex whose motion reaches it from farther out gets its gap from the bounding box
+    instead (`narrowphase.box_gap`): never too large, so never an overshoot, but where the box
+    is far from the mesh a fast body is slowed a step before it would arrive. A band wider than
+    the largest speed x timestep the surface meets avoids it: rebake with a larger `--d-max`
+    (`tools/mesh_processing/create_surface_data.py`). The flags are sticky.
+
+    Synchronizes, so this is a check for the end of a run, like `check_overflow`.
+
+    Not called in the repository.
+    In: mcol, read for has_toa and the geometries' grids (g_Vox_pmin, g_Vox_h, g_Vox_N) and bounding boxes (g_obb_c,
+    g_obb_A, g_obb_h); dcol, read for toa_band (nB,) int32; warn bool, also issue a `UserWarning`.
+    Out: None if no geometry was reached outside its band, else the message (str).
+    """
+    if not int(mcol.has_toa):
+        return None
+    flags = dcol.toa_band.numpy()  # (nB,) int32: 1 where a gap was read outside the grid
+    if not flags.any():
+        return None
+    pmin = mcol.g_Vox_pmin.numpy()  # (nB, 3) float32: the grids' lower corners
+    pmax = pmin + mcol.g_Vox_h.numpy() * mcol.g_Vox_N.numpy()  # (nB, 3): their upper corners
+    c, A, h = mcol.g_obb_c.numpy(), mcol.g_obb_A.numpy(), mcol.g_obb_h.numpy()  # the bounding boxes
+    e = np.einsum("gkj,gk->gj", np.abs(A), h)  # (nB, 3): each box's half-extents along the body axes
+    band = np.minimum(c - e - pmin, pmax - c - e).min(axis=1)  # (nB,): the narrowest band around the box (m)
+    detail = ", ".join(f"geometry {g} (band {band[g] * 1e3:.1f} mm)" for g in np.flatnonzero(flags))  # str
+    msg = (f"`toa` gaps were read outside the baked SDF grid of {detail}: the bounding box's distance stood in, "
+           "which can slow a fast body a step early. Rebake with a band wider than the largest speed x timestep "
+           "(`create_surface_data.py --d-max`).")  # str
+    if warn:
+        import warnings
+
+        warnings.warn(msg, stacklevel=2)
+    return msg
+
+
+def check_toa_bend(mcol: CollisionModel, dcol: CollisionData, tol=None, warn=True):
+    """
+    Reports the `toa` pairs whose predicted bend in a step exceeded `tol`: how far the arcs the integrator moves
+    a rotating body's points on strayed from the straight lines `toa`'s margins, trace and speculative rows take
+    (`broadphase.compute_twist_rel`'s bound, about w^2 r dt^2 / 2). Where that exceeds half a feature's thickness,
+    on the side the arc bends to, the feature can be crossed in one step. The remedy is a smaller timestep: the
+    bend goes with its square. The maxima are sticky, over every world and step since the context was made.
+
+    Synchronizes, so this is a check for the end of a run, like `check_overflow`.
+
+    Not called in the repository.
+    In: mcol, read for has_toa, seg_toa, seg_g_v, seg_g_s (nSEG,), g_plane and g_Vox_h (nB,); dcol, read for
+    toa_bend (nSEG,) float32; tol float (m), or None for half the SDF geometry's smallest voxel edge (the
+    half-thickness of the thinnest feature its field resolves is about a voxel); warn bool, also issue a
+    `UserWarning`. Out: None if no pair exceeded it, else the message (str).
+    """
+    if not int(mcol.has_toa):
+        return None
+    bend = dcol.toa_bend.numpy()  # (nSEG,) float32: each segment's largest bend (m)
+    seg_toa, gv, gs = mcol.seg_toa.numpy(), mcol.seg_g_v.numpy(), mcol.seg_g_s.numpy()  # (nSEG,) int32 each
+    plane, vox = mcol.g_plane.numpy(), mcol.g_Vox_h.numpy()  # (nB,) int32, (nB, 3) float32
+    over = []  # list of str: the pairs past the tolerance
+    for sg in range(bend.shape[0]):
+        if not seg_toa[sg] or plane[gs[sg]]:  # a half-space has no thin feature
+            continue
+        t = float(tol) if tol is not None else 0.5 * float(vox[gs[sg]].min())  # float: the tolerance (m)
+        if bend[sg] > t:
+            over.append(f"geometry {gv[sg]} against {gs[sg]}: {bend[sg] * 1e3:.2f} mm (tolerance {t * 1e3:.2f} mm)")
+    if not over:
+        return None
+    msg = ("`toa` pairs bent off their straight-line motion by more than the tolerance in a step (a rotating "
+           "body's arc): " + "; ".join(over) + ". A feature thinner than twice the bend, on the side the arc "
+           "bends to, can be crossed in one step; lower the timestep (the bend goes with its square).")  # str
+    if warn:
+        import warnings
+
+        warnings.warn(msg, stacklevel=2)
     return msg
 
 
@@ -420,6 +521,13 @@ def resize_context(mcol, dcol, capacity1=None, capacity2=None,
         dcol.n_nCa2 = wp.zeros(nCa2_max, dtype=wp.vec3)
         dcol.flag2 = wp.zeros(nCa2_max, dtype=wp.int32)
         dcol.off2 = wp.zeros(nCa2_max, dtype=wp.int32)
+        if int(mcol.has_toa):
+            dcol.trace_list = wp.zeros(nCa2_max, dtype=wp.int32)
+            dcol.e_nCa2 = wp.zeros(nCa2_max, dtype=wp.float32)
+            dcol.side_v = wp.zeros(nCa2_max, dtype=wp.int32)  # the last step's candidates, for `toa_side`: forgotten
+            dcol.side_nB = wp.zeros(nCa2_max, dtype=wp.vec3)
+            dcol.side_c = wp.zeros(nCa2_max, dtype=wp.float32)
+            dcol.side_idul.zero_()
 
         if contacts:
             # `make_collision_context`'s own rule, `nCa3_max = nCa2_max`. The

@@ -466,6 +466,7 @@ def put_model(mjm: mujoco.MjModel, batch_sizes: dict[str, int] | None = None) ->
     m.block_dim.linesearch_iterative = 256
   m.is_sparse = is_sparse(mjm)
   m.has_fluid = bool(mjm.opt.wind.any() or mjm.opt.density > 0 or mjm.opt.viscosity > 0)
+  m.flg_speculative = False  # lodos.sim.make_sim sets it where a Lodos pair is `toa`
   m.nflexintcell = _get_nflexintcell(mjm)
 
   # Precompute flex_cell_map

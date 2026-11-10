@@ -4099,6 +4099,7 @@ def _update_gradient_JTCJ_dense(
   # Data in:
   contact_dist_in: wp.array[float],
   contact_includemargin_in: wp.array[float],
+  contact_type_in: wp.array[int],
   contact_friction_in: wp.array[vec5],
   contact_dim_in: wp.array[int],
   contact_efc_address_in: wp.array2d[int],
@@ -4128,6 +4129,7 @@ def _update_gradient_JTCJ_dense(
     dof_tri_col: (nv*(nv+1)/2,) column of each upper-triangle dof pair.
     contact_dist_in: (naconmax,) contact distances.
     contact_includemargin_in: (naconmax,) inclusion margins.
+    contact_type_in: (naconmax,) ContactType flags.
     contact_friction_in: (naconmax,) vec5 contact friction.
     contact_dim_in: (naconmax,) contact dimensionalities.
     contact_efc_address_in: (naconmax, ncondmax) efc row id of each contact row.
@@ -4163,9 +4165,10 @@ def _update_gradient_JTCJ_dense(
     if condim == 1:
       continue
 
-    # check contact status
+    # check contact status: a positive gap has no rows, but for a speculative contact's (a `toa` pair's)
     if contact_dist_in[conid] - contact_includemargin_in[conid] >= 0.0:
-      continue
+      if not (contact_type_in[conid] & ContactType.SPECULATIVE):
+        continue
 
     efcid0 = contact_efc_address_in[conid, 0]
     if efcid0 < 0:
@@ -5247,6 +5250,7 @@ def _newton_hessian_solve(m: Model, d: Data, ctx: SolverContext, compact: bool =
         m.dof_tri_col,
         d.contact.dist,
         d.contact.includemargin,
+        d.contact.type,
         d.contact.friction,
         d.contact.dim,
         d.contact.efc_address,
@@ -6680,7 +6684,7 @@ def _group_bias(
 
 # Lodos's proximal solve.
 @cache_kernel
-def _prox_init(baumgarte: bool, carry: bool, desaxce: bool, soft: bool, groups: bool):
+def _prox_init(baumgarte: bool, carry: bool, desaxce: bool, soft: bool, groups: bool, drift: bool = False):
   """Builds the per-contact init kernel, specialized on (baumgarte, carry, desaxce, soft).
 
   Args:
@@ -6695,6 +6699,11 @@ def _prox_init(baumgarte: bool, carry: bool, desaxce: bool, soft: bool, groups: 
       its Baumgarte bias and De Saxce term from its members (_group_bias, _group_gamma) and
       starts cold.
 
+    drift: bool; compiles in the second-order drift (the model's flg_speculative): a DRIFT contact
+      (lodos.col.sdf's `toa_drift`) carries in its margin the drift its gap is predicted to close by
+      in a step, which the normal row's bias takes as a feed-forward velocity, drift/dt, on the
+      Baumgarte bias of its true gap -- outside the depenetration gain, so that the drift is
+      corrected the step it happens.
   Returns:
     A kernel over contacts (dim = naconmax) that overwrites the contact rows of
     (efc_D, efc_aref) with the prox rewrite D = dt/rho_i, aref = aref0 - Gamma/dt + z/D,
@@ -6706,6 +6715,7 @@ def _prox_init(baumgarte: bool, carry: bool, desaxce: bool, soft: bool, groups: 
   DESAXCE = desaxce  # bool: compile-time De Saxce switch
   SOFT = soft  # bool: compile-time MuJoCo-softness switch
   GROUPS = groups  # bool: compile-time contact-group switch
+  DRIFT = drift  # bool: compile-time second-order-drift switch
 
   @wp.kernel(module="unique", enable_backward=False, grid_stride=True)
   def kernel(
@@ -6952,6 +6962,13 @@ def _prox_init(baumgarte: bool, carry: bool, desaxce: bool, soft: bool, groups: 
       # Inside the slop a resting contact holds its depth instead of being pushed out to
       # zero, where it would vanish, drop a step and come back: a contact that flickers.
       bias_n = alpha * wp.min(0.0, (pos + slop) / timestep) + wp.max(0.0, pos / timestep)  # scalar: Baumgarte bias velocity
+      if wp.static(DRIFT):
+        if type_in[conid] & ContactType.DRIFT:
+          # Its margin is its predicted second-order drift (m), not a margin: the bias is its true gap's, less
+          # the drift over the step as a feed-forward velocity, which the depenetration gain must not scale.
+          gap = efc_pos_in[worldid, efcid0]  # scalar: the true gap
+          bias_n = (alpha * wp.min(0.0, (gap + slop) / timestep) + wp.max(0.0, gap / timestep)
+                    - efc_margin_in[worldid, efcid0] / timestep)
       if wp.static(GROUPS):
         if is_group:
           bias_n = _group_bias(
@@ -7701,7 +7718,8 @@ def solve_prox(m: Model, d: Data, ctx: SolverContext):
   soft = bool(m.opt.prox_soft)  # bool: MuJoCo's softness kept on the contact rows
 
   wp.launch(
-    _prox_init(bool(m.opt.prox_baumgarte), carry, desaxce, soft, d.contact_group_adr.shape[0] > 0),
+    _prox_init(bool(m.opt.prox_baumgarte), carry, desaxce, soft, d.contact_group_adr.shape[0] > 0,
+               bool(m.flg_speculative)),
     dim=d.contact.dist.shape[0],
     inputs=[
       m.opt.timestep,

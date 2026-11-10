@@ -93,7 +93,7 @@ class Surfaces:
     pairs: directional `[vertex surface, SDF surface]` index pairs.
     params: `(len(pairs), 13)` pair parameters, or None for the defaults with `mu`.
     mu: friction for the default parameters.
-    col_kwargs: `make_collision_context` options (capacities, tiles, contact point).
+    col_kwargs: `make_collision_context` options (capacities, tiles, contact point, the `toa` pairs).
 
     Built by the viewer's scenes (`viewer.scenes.nist.surfaces`, `viewer.scenes.sharpa.surfaces` and 11 others) and
     three of the notebooks; read by `make_sim`.
@@ -300,6 +300,10 @@ def make_sim(
         params13 = (default_pair_params(surfaces.mu, nCPR) if surfaces.params is None
                     else np.asarray(surfaces.params, dtype=np.float32).reshape(nCPR, 13))
     sim.params = params13
+    if sim.mcol is not None and int(sim.mcol.has_toa) and not sim.options["baumgarte"]:
+        # MuJoCo's soft rows would pull at a positive gap, and the velocity-level target would hold the bodies there
+        raise ValueError("`toa` pairs need mode='exact' with baumgarte=True: its bias's positive-gap term is what "
+                         "lets a speculative contact close")
 
     # ------------------------------------------------------------------------------
     # MJWarp: model, data and collision.
@@ -311,6 +315,8 @@ def make_sim(
         m.opt.shared_hessian = cd_driver.shared_hessian_default(m, condim if g_geom is not None else None,
                                                            sim.options["fused_newton"], sim.options["row_space"])
     sim.options["shared_hessian"] = bool(m.opt.shared_hessian)
+    # A `toa` pair's speculative contacts (`lodos.col.sdf`, ContactType.SPECULATIVE) take rows at a positive gap
+    m.flg_speculative = bool(g_geom is not None and int(sim.mcol.has_toa))
     caps = dict(nconmax=nconmax, njmax=njmax, nccdmax=nccdmax, naconmax=naconmax, njmax_nnz=njmax_nnz)
     # Lodos's pairs collide outside the MJCF's own geom pairs; a sparse Jacobian's nonzeros must hold their rows too
     body_pairs = ()  # (nCPR,) (int, int): each Lodos pair's bodies; () without Lodos pairs
@@ -336,8 +342,13 @@ def make_sim(
             raise ValueError("groups gather Lodos's contacts: the scene has no Lodos surfaces")
         from lodos.cd import groups as cd_groups
 
-        groups = dict(kinds=cd_groups.resolve_kinds(o["groups"], int(sim.mcol.nCPR)), params13=params13,
-                      nnorm=o["normal_bins"], nmom=o["moment_bins"])
+        kinds = cd_groups.resolve_kinds(o["groups"], int(sim.mcol.nCPR))  # (nCPR,) list of int, 0: per contact
+        cpr_toa = sim.mcol.cpr_toa.numpy()  # (nCPR,) int32: 1 where the pair is `toa`
+        grouped_toa = [j for j, k in enumerate(kinds) if k != 0 and cpr_toa[j]]  # list of int: refused pairs
+        if grouped_toa:
+            raise ValueError(f"groups: Lodos pairs {grouped_toa} are `toa`, whose speculative contacts are solved one "
+                             "by one: their kind must be 'contact'")
+        groups = dict(kinds=kinds, params13=params13, nnorm=o["normal_bins"], nmom=o["moment_bins"])
     sim.solver = cd_driver.SolverDriver(mjm, m, d, mrbd, drbd, lodos=lodos, reduce=contact_reduction,
                                fused=o["fused_newton"], groups=groups, row_space=o["row_space"])
     return sim

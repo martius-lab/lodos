@@ -3111,7 +3111,8 @@ def _group_jac_side(cdof: wp.spatial_vector, affect: int, force: wp.vec3, moment
 
 
 @cache_kernel
-def _efc_contact_init(cone_type: ConeType, is_sparse: bool, newton: bool, flg_adhesion: bool):
+def _efc_contact_init(cone_type: ConeType, is_sparse: bool, newton: bool, flg_adhesion: bool,
+                      flg_speculative: bool = False):
   IS_ELLIPTIC = cone_type == ConeType.ELLIPTIC
   IS_SPARSE = is_sparse
 
@@ -3163,6 +3164,10 @@ def _efc_contact_init(cone_type: ConeType, is_sparse: bool, newton: bool, flg_ad
       active = (pos < 0.0) or (adhesion_in[conid] != 0.0)
     else:
       active = pos < 0.0
+    if wp.static(flg_speculative):
+      # A `toa` pair's speculative contact (lodos.col.sdf) takes rows at its positive gap too.
+      if type_in[conid] & ContactType.SPECULATIVE:
+        active = True
 
     if not active:
       return
@@ -6104,7 +6109,8 @@ def make_constraint(m: Model, d: Data):
         )
       else:
         wp.launch(
-          _efc_contact_init(m.opt.cone, m.is_sparse, newton, m.flg_adhesion),
+          _efc_contact_init(m.opt.cone, m.is_sparse, newton, m.flg_adhesion,
+                            m.flg_speculative),
           dim=d.naconmax,
           inputs=[
             m.body_weldid,

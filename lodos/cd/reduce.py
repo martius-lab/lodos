@@ -15,9 +15,11 @@ segment) -- a segment being one direction of a Lodos pair -- instead of per shap
         the deepest contact, for cover inside a large patch
 
 At most 240 contacts per segment, each one Lodos found; `lodos.cd.driver.export_lodos`
-skips the others. Newton lets only contacts within a depth threshold compete for the
-extremes, which keeps its speculative ones out; every Lodos contact penetrates, so all
-of them compete here.
+skips the others. As in Newton, only contacts nearer than `BETA` (0.1 mm, Newton's
+`BETA_THRESHOLD`) compete for the extremes, the outline of what touches: a `toa` pair's
+speculative contacts (`lodos.col.sdf`, at a positive gap) stay out of it and compete only
+for the depth slots, the nearest first. Every other Lodos contact penetrates and competes
+for all of them, as before the threshold existed.
 
 **Deterministic.** A slot's winner is the atomic max of one 64-bit word -- the score,
 quantized at 0.1 um, in the high half and the contact's index inverted in the low half
@@ -45,6 +47,7 @@ NDIR = 6  # scan directions per bin, Newton's NUM_SPATIAL_DIRECTIONS
 NVOX = 100  # voxel slots per segment, Newton's NUM_VOXEL_DEPTH_SLOTS
 NSLOT = NBIN * (NDIR + 1) + NVOX  # slots per reduced segment, 240: each bin's 6 corners and deepest, then the voxels
 QUANT = 1.0e7  # scores per metre: 0.1 um, over +-214 m
+BETA = 1.0e-4  # m: the largest gap that competes for a bin's extremes, Newton's BETA_THRESHOLD
 EMPTY_VALUE = -(2**63)  # an empty slot: below every packed word
 EMPTY = wp.constant(wp.int64(EMPTY_VALUE))  # EMPTY_VALUE, for the kernels
 
@@ -235,7 +238,7 @@ def score_contacts(
     T_w: wp.array2d(dtype=wp.transformf),  # (B, nB) geometry poses # type: ignore
 ):
     """
-    A run of contacts' bids for their bins' corners and depth, and their voxels' depth.
+    A run of contacts' bids for their bins' corners (those nearer than `BETA`) and depth, and their voxels' depth.
 
     Launch: dim=(ceil(nCa3_max / RUN),), a thread per run of RUN contacts, by `reduce`.
     Reads: ct (5,) int32 (ct[2] the contacts), b_nCa3 and seg_nCa3 (nCa3_max,) int32, p_nCa3 and n_nCa3
@@ -268,7 +271,7 @@ def score_contacts(
             rd.keep[i] = wp.uint8(1)
             continue
         p = p_nCa3[i]  # wp.vec3: the contact point
-        depth = -sdf_nCa3[i]  # float: its penetration (m), > 0
+        depth = -sdf_nCa3[i]  # float: its penetration (m), > 0 but for a speculative contact's negated gap
         kn = _bin_of(rm, n_nCa3[i])  # int: its normal bin
         if b != cb or row != crow or kn != ckn:
             if ckn >= 0:
@@ -280,11 +283,12 @@ def score_contacts(
             ckn = kn
             for j in range(NDIR + 1):
                 best[j] = EMPTY
-        u = wp.dot(p, rm.bin_t1[kn])  # float: p's coordinates in the bin's plane (m)
-        v = wp.dot(p, rm.bin_t2[kn])  # float
-        for j in range(NDIR):
-            a = float(j) * (2.0 * wp.pi / float(NDIR))  # float: the scan direction's angle (rad)
-            best[j] = wp.max(best[j], _pack(u * wp.cos(a) + v * wp.sin(a), i))
+        if sdf_nCa3[i] < BETA:  # a speculative contact does not outline what touches
+            u = wp.dot(p, rm.bin_t1[kn])  # float: p's coordinates in the bin's plane (m)
+            v = wp.dot(p, rm.bin_t2[kn])  # float
+            for j in range(NDIR):
+                a = float(j) * (2.0 * wp.pi / float(NDIR))  # float: the scan direction's angle (rad)
+                best[j] = wp.max(best[j], _pack(u * wp.cos(a) + v * wp.sin(a), i))
         packed_depth = _pack(depth, i)  # wp.int64: the contact's depth bid
         best[NDIR] = wp.max(best[NDIR], packed_depth)
 

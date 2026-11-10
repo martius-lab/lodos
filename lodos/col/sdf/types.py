@@ -191,6 +191,37 @@ class CollisionModel:
     # tile sizes are uniform, and the partition is what per-segment sizes need.
     # Host-side, like the fields above.
     partition: wp.int32
+    # 1 when some pair is marked `toa` (time of arrival): such a pair's candidates are kept
+    # wherever their motion over `toa_h` could close the distance a test measures, and its
+    # vertices become speculative contacts before they penetrate. Host-side, like the fields
+    # above: it picks the kernels, so a context without a `toa` pair runs the kernels it ran
+    # before the option existed.
+    has_toa: wp.int32
+    toa_h: wp.float32  # the horizon (s) a `toa` segment's motion is bounded over, the timestep by default
+    cpr_toa: wp.array(dtype=int)  # (nCPR,), 1 when a segment of the pair is `toa` # type: ignore
+    seg_toa: wp.array(dtype=int)  # (nSEG,), 1 for a `toa` segment # type: ignore
+    # (nSEG,) each with a `toa` pair, (1,) without: how a `toa` segment's speculative contacts are traced along
+    # their path (`toa_trace`: 0 not, 1 sphere tracing, 2 over-relaxed) and at most how many field evaluations
+    # a trace takes (`toa_trace_iters`). Read only by the `toa` narrowphase kernels, at run time.
+    seg_trace: wp.array(dtype=int)  # type: ignore
+    seg_trace_iters: wp.array(dtype=int)  # type: ignore
+    # (nSEG,) with a `toa` pair, (1,) without: 1 where a `toa` segment's contacts carry their predicted
+    # second-order drift (`toa_drift`, `narrowphase._make_trace_kernel`); and the timestep (s) it is taken over.
+    seg_drift: wp.array(dtype=int)  # type: ignore
+    toa_dt: wp.float32
+    # (nSEG,) with a `toa` pair, (1,) without: 1 where a `toa` segment's penetrating contacts keep the side they
+    # came from (`toa_side`, `narrowphase.trace_toa`).
+    seg_side: wp.array(dtype=int)  # type: ignore
+    has_side: wp.int32  # 1 when some segment has `toa_side`: the last step's candidates are remembered (host-side)
+    # (nB,), the root body of each geometry's kinematic tree, whose subtree COM the
+    # rigid-body velocities `cvel` are taken about; read only by `toa` kernels.
+    g_root: wp.array(dtype=int)  # type: ignore
+    # The kinematic tree, for a body's velocity at the end of the free (contact-free) step: the
+    # sum of `cdof * qacc_smooth` over the dofs from the body to its root (`broadphase.body_acc`).
+    # (nbody,) each, with a `toa` pair; (1,) zeros without. Read only by `toa` kernels.
+    body_parentid: wp.array(dtype=int)  # type: ignore
+    body_dofadr: wp.array(dtype=int)  # type: ignore
+    body_dofnum: wp.array(dtype=int)  # type: ignore
     g_nV_cumsum: wp.array(
         dtype=int
     )  # (nB+1), cumsum of g_nV, leading zero # type: ignore
@@ -379,6 +410,36 @@ class CollisionData:
     T_rel: wp.array(
         dtype=wp.transformf, ndim=2
     )  # (B, nSEG), pose of a segment's vertex geom in its SDF geom's frame # type: ignore
+    # Velocities, which only `toa` kernels read. `cvel` (each body's [angular, linear]
+    # velocity about its tree root's subtree COM) and `subtree_com` are bound to
+    # `RbdData`'s like the poses. `twist_rel` is a segment's relative motion in its SDF
+    # geometry's body frame, `broadphase.compute_twist_rel`'s: the vertex geometry's
+    # material point at y moves at `a + Omega x y` relative to the SDF geometry, stored as
+    # the spatial vector (Omega, a); (1, 1) without a `toa` pair.
+    cvel: wp.array(dtype=wp.spatial_vector, ndim=2)  # (B, nbody) # type: ignore
+    subtree_com: wp.array(dtype=wp.vec3, ndim=2)  # (B, nbody) # type: ignore
+    twist_rel: wp.array(dtype=wp.spatial_vector, ndim=2)  # (B, nSEG) # type: ignore
+    # The same at the end of the horizon under the free motion, `cvel + toa_h J qacc_smooth`
+    # (`cdof` and `qacc_smooth` bound to `RbdData`'s): `toa_margin` bounds a point's speed by
+    # the larger of the two, so that a step's own acceleration is inside the margin.
+    cdof: wp.array(dtype=wp.spatial_vector, ndim=2)  # (B, nv) # type: ignore
+    qacc_smooth: wp.array(dtype=float, ndim=2)  # (B, nv) # type: ignore
+    twist_end: wp.array(dtype=wp.spatial_vector, ndim=2)  # (B, nSEG), (1, 1) without a `toa` pair # type: ignore
+    # (nB,) sticky flags, 1 once a `toa` contact's gap to SDF geometry g was read outside g's
+    # grid, where the narrowphase falls back to the distance to g's bounding box (a bound that
+    # can only under-estimate); (1,) without a `toa` pair. `collide.check_toa_band` reports them.
+    toa_band: wp.array(dtype=int)  # type: ignore
+    # The rotation limit (`collide.check_toa_bend`): each `toa` segment's largest predicted bend of a step (m), how
+    # far the arcs the integrator moves the vertex geometry's points on stray from the straight lines the margins,
+    # the trace and the speculative rows assume (`broadphase.compute_twist_rel`); sticky, (nSEG,), (1,) without
+    # a `toa` pair. Taken from `cdof_dot` and `qvel`, bound to `RbdData`'s.
+    toa_bend: wp.array(dtype=float)  # type: ignore
+    cdof_dot: wp.array(dtype=wp.spatial_vector, ndim=2)  # (B, nv) # type: ignore
+    qvel: wp.array(dtype=float, ndim=2)  # (B, nv) # type: ignore
+    # Each body's free-motion and bias accelerations (`broadphase.compute_body_acc`), once per body rather than once
+    # per segment, for `compute_twist_rel`; (B, nbody) with a `toa` pair, (1, 1) without.
+    acc_free: wp.array(dtype=wp.spatial_vector, ndim=2)  # type: ignore
+    acc_bias: wp.array(dtype=wp.spatial_vector, ndim=2)  # type: ignore
     # --------------------------------------------------------------------------------------
     # Capacities (host-side constants, mirrored here so kernels can clamp).
     nCa1_max: wp.int32  # stage-1 slots: the primitives of the surviving tiles
@@ -474,6 +535,22 @@ class CollisionData:
     n_nCa2: wp.array(dtype=wp.vec3)  # (nCa2_max, 3), # type: ignore
     flag2: wp.array(dtype=int)  # (nCa2_max,), 1 where sdf < 0 # type: ignore
     off2: wp.array(dtype=int)  # (nCa2_max,), exclusive scan of flag2 # type: ignore
+    # A `toa` context's speculative candidates to trace (`narrowphase.trace_toa`), listed by the narrowphase as
+    # stage-2 slots: (nCa2_max,), at most every candidate, (1,) without a `toa` pair; and their count, (1,).
+    trace_list: wp.array(dtype=int)  # type: ignore
+    trace_ct: wp.array(dtype=int)  # type: ignore
+    # (nCa2_max,) with a `toa` pair, (1,) without: each stage-2 contact's predicted second-order drift (m), 0 unless
+    # its segment has `toa_drift`; read by the export (`lodos.cd.driver.export_lodos_toa`).
+    e_nCa2: wp.array(dtype=float)  # type: ignore
+    # The last step's stage-2 candidates, for `toa_side` -- every vertex near a surface, contact or not (a trace
+    # drops a vertex whose straight path misses, though its arc may not): each one's vertex, its normal in its SDF
+    # geometry's body frame, and its plane, gap(y) = side_nB . y + side_c; each (world, segment)'s run of them,
+    # sorted by vertex (`idul_B_nSEG_to_nCa2`'s). (nCa2_max,) and (B, nSEG+1) with a `toa` pair, (1,) and (1, 1)
+    # without.
+    side_v: wp.array(dtype=int)  # type: ignore
+    side_nB: wp.array(dtype=wp.vec3)  # type: ignore
+    side_c: wp.array(dtype=float)  # type: ignore
+    side_idul: wp.array(dtype=int, ndim=2)  # type: ignore
     idm_nCa3_to_nCa2: wp.array(
         dtype=int
     )  # (nCa3_max,), maps nCa3 index to nCa2 index # type: ignore
@@ -561,12 +638,18 @@ def make_collision_context(
     dyn_scan=True,
     grid_stride=True,
     mempool_release_threshold=1 << 30,
+    toa=None,
+    toa_horizon=None,
+    toa_trace="relaxed",
+    toa_trace_iters=128,
+    toa_drift=False,
+    toa_side=False,
 ):
     """
     - `cprs` indexes `surfaces`, not the MuJoCo model's geoms
 
     m: any model with MuJoCo's field names, a `mujoco.MjModel` for one. Only
-        `nbody` is read.
+        `nbody` is read, and with a `toa` pair `body_rootid` and `opt.timestep`.
 
     drbd: the batched Warp rigid-body state from
         `lodos.rbd.types.make_rbd_context`. Its `xpos`/`xquat` are *bound*
@@ -770,6 +853,78 @@ def make_collision_context(
         temporary allocation inside every `wp.utils.array_scan` round-trip to
         the driver -- a fixed ~0.6 ms per scan, i.e. far more than the scans
         themselves cost. Pass None to leave the device setting untouched.
+
+    toa: which pairs run on time of arrival, for thin features: None or False for
+        none (the default), True for every pair, a list of nCPR bools (a symmetric
+        pair's two directions take its flag), or `tile_size`'s dict keyed by
+        `(vertex geometry, SDF geometry)` with an optional `None` default. A `toa`
+        pair's every test -- the box test, super-tiles, tiles, the voxel prefilter --
+        also keeps what its relative motion could bring within reach over
+        `toa_horizon` (each level bounding its sphere's speed by the segment's relative
+        twist, `broadphase.compute_twist_rel`), and its narrowphase admits a vertex
+        whose distance that motion could close: a speculative contact with a positive
+        gap, which the exact mode's Baumgarte term lets close by at most the gap in a
+        step. The bounds are path-length bounds on a 1-Lipschitz field, so they hold
+        under rotation; a point's speed is the larger of its speed at the start of the
+        step and at the horizon's end under the free motion (`qacc_smooth`), so the
+        step's own acceleration is inside them, though not its contact forces. A
+        speculative contact is kept only if its vertex's path over the step can reach
+        the surface (a sphere trace along it, `toa_trace`), and is linearized where the
+        path arrives: a vertex passing an edge is not stopped. With no
+        `toa` pair the context compiles and runs exactly the kernels it did before.
+        **Bake `toa` surfaces with a wide band.** The baked field exists only inside
+        its grid, the mesh's box plus a band (`create_surface_data.py`'s `--dilation`
+        and `--d-max`). A speculative gap read outside it comes from the bounding box
+        instead (`narrowphase.box_gap`), which is safe but can stop a fast body a step
+        early; give a `toa` surface a band wider than the largest speed x timestep it
+        meets. `collide.check_toa_band` reports the geometries where it happened.
+        **A rotation's arc is the limit.** Everything here is first order in the motion: a
+        point of a body turning at w at radius r strays from the straight line it is taken
+        to move on by about w^2 r dt^2 / 2 a step, and where that exceeds half a feature's
+        thickness, on the side the arc bends to, the feature can be crossed in one step (or,
+        with `toa_side`, past its thickness). For a robot's links that is microns; spinning
+        parts reach it. `collide.check_toa_bend` reports the pairs whose predicted bend
+        exceeded a tolerance: lower the timestep there (the bend goes with its square).
+
+    toa_horizon: the horizon (s) of the motion bound, `m.opt.timestep` if None.
+
+    toa_trace: how a `toa` pair's speculative contacts are traced along their path over the
+        horizon (`narrowphase._make_toa_trace`), in `toa`'s spellings (one value for every
+        pair, a list of nCPR, or the dict). False: not at all -- every admitted contact is
+        kept, linearized at its start, which stops a body passing an edge as if it hit it.
+        "sphere": sphere tracing, each step the distance to the surface, so no surface is
+        skipped; a path proved clear drops its contact. "relaxed" or True (the default):
+        over-relaxed sphere tracing, steps of `narrowphase.TOA_RELAX` (1.6) times that,
+        each kept only if the clear spheres about its two ends overlap and else redone as a
+        plain step: the same contacts in fewer steps, about half when it grazes a surface,
+        where plain steps shrink to the clearance.
+
+    toa_trace_iters: the most field evaluations one trace takes, in `toa`'s spellings (128 by
+        default). A graze takes about its path length over its clearance; a trace that runs
+        out keeps its contact, linearized at the last point it reached.
+
+    toa_drift: whether a `toa` pair's contacts carry their predicted second-order drift, in
+        `toa`'s spellings (False by default): how much faster than first order the gap of a
+        vertex sliding along a concave surface closes in a step, as the surface curves into its
+        path -- e = dt^2/2 |u_t|^2 max(0, -kappa), about v^2 dt^2/(2 rho) on a curve of radius
+        rho (`narrowphase._make_trace_kernel`'s `toa_drift`). The exact mode's bias corrects it as a
+        feed-forward in the step it happens; uncorrected, the depenetration gain lets it settle at
+        about e / baumgarte_alpha in sustained sliding. Measured: a cube sliding inside a 10 cm
+        ring with a 1 cm wall holds at 40 m/s with it, sticks at 10 m/s without. Off by default:
+        on a hand scene it raised the mean depth by about 15% (the one-voxel curvature reads
+        sharp detail as curving the whole step). A rotating body's own arc is not covered.
+
+    toa_side: whether a `toa` pair's penetrating contacts keep the side they came from, in
+        `toa`'s spellings (False by default): a safety net for thin features. A vertex pushed
+        past a thin feature's midsurface, by whatever error, reads the field of the far side,
+        whose normal turned against the one it had, and would be pushed on through. Such a
+        contact (the normal turned by more than 90 degrees since the step before, and the vertex
+        behind the plane it had then) takes the last step's normal instead, its depth measured
+        from that plane, and is pushed back the way it came (`narrowphase.trace_toa`; the last
+        step's candidates kept by `narrowphase.side_snapshot`). It catches a step's overshoot
+        between the feature's half-thickness and its thickness; a vertex carried past the far face
+        has no flip left to catch. Off by default: the snapshot sweeps every stage-2 candidate a
+        step (about a tenth of the collision time on a scene of many candidates).
 
     Called by `lodos.sim.make_sim` and `tools.performance_tuning.tune.time_collision`.
     In: m, reads nbody; drbd, reads qpos (B, nq) float32 for B and binds xpos (B, nbody) wp.vec3 and xquat
@@ -1014,18 +1169,19 @@ def make_collision_context(
     # scene.
     assert 0.0 < capacity1 <= 1.0, "capacity1 must be in (0, 1]"
 
-    def _per_seg(spec, name, fallback):
+    def _per_seg(spec, name, fallback, conv=int):
         """A scalar, or a {(vertex geom, SDF geom): value} dict, read per segment.
 
         The tuple is the key because a segment *is* a directional pair, and it is
         the only key that tells a symmetric pair's two directions apart.
 
-        Called by `make_collision_context`, for `tile_size` and `super_size`.
+        Called by `make_collision_context`, for `tile_size` and `super_size`, and by `_per_pair`.
         In: spec, an int or a dict; name, str, the option's name, for the message; fallback, int, the value for a
-        segment the dict does not name and no `None` key covers. Out: a list of nSEG ints.
+        segment the dict does not name and no `None` key covers; conv, a value to its int (int by default).
+        Out: a list of nSEG ints.
         """
         if not isinstance(spec, dict):
-            return [int(spec)] * nSEG
+            return [conv(spec)] * nSEG
 
         keys = {(seg_g_v[s], seg_g_s[s]) for s in range(nSEG)}  # set of (int, int): the directional pairs
         unknown = sorted(  # list of str: the keys that name no directional pair
@@ -1039,10 +1195,68 @@ def make_collision_context(
         )
         named = {tuple(k): v for k, v in spec.items() if k is not None}  # {(int, int): value}: the named pairs
         dflt = spec.get(None, fallback)  # the value for the pairs not named
-        return [int(named.get((seg_g_v[s], seg_g_s[s]), dflt)) for s in range(nSEG)]
+        return [conv(named.get((seg_g_v[s], seg_g_s[s]), dflt)) for s in range(nSEG)]
 
     seg_K = _per_seg(tile_size, "tile_size", 8)  # nSEG ints: primitives per tile
     seg_SK = _per_seg(super_size, "super_size", 0)  # nSEG ints: tiles per super-tile, 0 for none
+
+    # Time of arrival, per segment: a bool for every pair, a list of nCPR bools (a symmetric pair's
+    # two directions take its flag), or `tile_size`'s per-direction dict.
+    def _per_pair(spec, name, fallback, conv):
+        """`toa`'s spellings, read per segment through `conv`: one value for every pair, a list of nCPR values (a
+        symmetric pair's two directions take its value), or `_per_seg`'s dict.
+
+        Called by `make_collision_context`, for `toa`, `toa_trace` and `toa_trace_iters`.
+        In: spec; name str, the option's name, for messages; fallback, a dict's value for the segments it does not
+        name; conv, a value to its int code. Out: a list of nSEG ints.
+        """
+        if isinstance(spec, dict):
+            return _per_seg(spec, name, fallback, conv)
+        if isinstance(spec, (list, tuple, np.ndarray)):
+            assert len(spec) == nCPR, f"{name} has {len(spec)} entries for {nCPR} pairs"
+            return [conv(spec[seg_cpr[s]]) for s in range(nSEG)]
+        return [conv(spec)] * nSEG
+
+    def _trace_mode(x):
+        """`toa_trace`'s value as its code: 0 no trace, 1 sphere tracing, 2 over-relaxed (True's)."""
+        if isinstance(x, str):
+            assert x in ("sphere", "relaxed"), f"toa_trace: {x!r}, expected False, True, 'sphere' or 'relaxed'"
+            return 1 if x == "sphere" else 2
+        return 2 if bool(x) else 0
+
+    def _trace_iters(x):
+        """`toa_trace_iters`'s value, checked."""
+        assert int(x) >= 1, f"toa_trace_iters must be at least 1, got {x}"
+        return int(x)
+
+    seg_toa = _per_pair(toa, "toa", False, lambda x: int(bool(x)))  # nSEG ints: 1 for a `toa` segment
+    seg_trace = _per_pair(toa_trace, "toa_trace", "relaxed", _trace_mode)  # nSEG ints: each segment's trace
+    seg_trace_iters = _per_pair(toa_trace_iters, "toa_trace_iters", 128, _trace_iters)  # nSEG ints
+    seg_drift = [x & t for x, t in zip(_per_pair(toa_drift, "toa_drift", False, lambda x: int(bool(x))), seg_toa)]
+    seg_side = [x & t for x, t in zip(_per_pair(toa_side, "toa_side", False, lambda x: int(bool(x))), seg_toa)]
+    cpr_toa = [int(any(seg_toa[cpr_seg_beg[j]:cpr_seg_beg[j + 1]])) for j in range(nCPR)]  # nCPR ints
+    has_toa = int(any(seg_toa))  # int: 1 when some segment is `toa`
+    toa_h = 0.0  # float: the motion bound's horizon (s)
+    g_root = [0] * nB  # nB ints: each geometry's tree root, read only by `toa` kernels
+    if has_toa:
+        toa_h = float(m.opt.timestep) if toa_horizon is None else float(toa_horizon)
+        assert toa_h > 0.0, f"toa_horizon must be positive, got {toa_h}"
+        g_root = [int(m.body_rootid[int(b)]) for b in surface_body_ids]
+    mcol.has_toa = wp.int32(has_toa)
+    mcol.toa_h = toa_h
+    mcol.cpr_toa = wp.array(cpr_toa, dtype=wp.int32)
+    mcol.seg_toa = wp.array(seg_toa, dtype=wp.int32)
+    mcol.seg_trace = wp.array(seg_trace if has_toa else [0], dtype=wp.int32)
+    mcol.seg_trace_iters = wp.array(seg_trace_iters if has_toa else [0], dtype=wp.int32)
+    mcol.seg_drift = wp.array(seg_drift if has_toa else [0], dtype=wp.int32)
+    mcol.seg_side = wp.array(seg_side if has_toa else [0], dtype=wp.int32)
+    mcol.has_side = wp.int32(int(any(seg_side)))
+    mcol.toa_dt = float(m.opt.timestep)
+    mcol.g_root = wp.array(g_root, dtype=wp.int32)
+    tree = [np.zeros(1, dtype=np.int32)] * 3  # body_parentid, body_dofadr, body_dofnum: (1,) without `toa`
+    if has_toa:
+        tree = [np.asarray(x, dtype=np.int32) for x in (m.body_parentid, m.body_dofadr, m.body_dofnum)]
+    mcol.body_parentid, mcol.body_dofadr, mcol.body_dofnum = (wp.array(x, dtype=wp.int32) for x in tree)
 
     for s in range(nSEG):  # s: int, a segment
         assert seg_K[s] >= 1, (
@@ -1327,6 +1541,19 @@ def make_collision_context(
     dcol.xquat = drbd.xquat
     dcol.T_w = wp.zeros((B, nB), dtype=wp.transformf)
     dcol.T_rel = wp.zeros((B, nSEG), dtype=wp.transformf)
+    # Velocities, bound like the poses; only `toa` kernels read them.
+    dcol.cvel = drbd.cvel
+    dcol.subtree_com = drbd.subtree_com
+    dcol.twist_rel = wp.zeros((B, nSEG) if has_toa else (1, 1), dtype=wp.spatial_vector)
+    dcol.cdof = drbd.cdof
+    dcol.qacc_smooth = drbd.qacc_smooth
+    dcol.twist_end = wp.zeros((B, nSEG) if has_toa else (1, 1), dtype=wp.spatial_vector)
+    dcol.toa_band = wp.zeros(nB if has_toa else 1, dtype=wp.int32)
+    dcol.toa_bend = wp.zeros(nSEG if has_toa else 1, dtype=wp.float32)
+    dcol.cdof_dot = drbd.cdof_dot
+    dcol.qvel = drbd.qvel
+    dcol.acc_free = wp.zeros((B, int(m.nbody)) if has_toa else (1, 1), dtype=wp.spatial_vector)
+    dcol.acc_bias = wp.zeros((B, int(m.nbody)) if has_toa else (1, 1), dtype=wp.spatial_vector)
 
     dcol.cpr_active = wp.zeros((B, nCPR), dtype=wp.bool)
     # `B * nG_world`, which is `B * nSEG` exactly when no segment has
@@ -1363,7 +1590,14 @@ def make_collision_context(
     # The stage-2 -> stage-3 compaction tables, which every context allocates.
     dcol.flag2 = wp.zeros(nCa2_max, dtype=wp.int32)
     dcol.off2 = wp.zeros(nCa2_max, dtype=wp.int32)
+    dcol.trace_list = wp.zeros(nCa2_max if has_toa else 1, dtype=wp.int32)
+    dcol.e_nCa2 = wp.zeros(nCa2_max if has_toa else 1, dtype=wp.float32)
+    dcol.trace_ct = wp.zeros(1, dtype=wp.int32)
     dcol.idm_nCa3_to_nCa2 = wp.zeros(nCa3_max, dtype=wp.int32)
+    dcol.side_v = wp.zeros(nCa2_max if has_toa else 1, dtype=wp.int32)
+    dcol.side_nB = wp.zeros(nCa2_max if has_toa else 1, dtype=wp.vec3)
+    dcol.side_c = wp.zeros(nCa2_max if has_toa else 1, dtype=wp.float32)
+    dcol.side_idul = wp.zeros((B, nSEG + 1) if has_toa else (1, 1), dtype=wp.int32)
     dcol.idul_B_nSEG_to_nCa3 = wp.zeros((B, nSEG + 1), dtype=wp.int32)
 
     dcol.p_nCa3 = wp.zeros(nCa3_max, dtype=wp.vec3)

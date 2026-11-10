@@ -21,6 +21,7 @@ import warp as wp
 from lodos.col.sdf.spline.c0 import cell_cs1, basis_w_cs1, basis_dw_cs1
 from lodos.col.sdf.spline.c2 import eval_basis_1d_wp, eval_basis_1d_d_wp
 from lodos.col.sdf.compact import resolve_nCa1
+from lodos.col.sdf.broadphase import toa_margin
 from lodos.col.sdf.types import (
     CONTACT_POINTS,
     CollisionModel,
@@ -333,7 +334,154 @@ def eval_nsdf_c0(p_b: wp.vec3, B_id: int, mcol: CollisionModel):  # type: ignore
     return sdf + out, n
 
 
-def _make_nsdf_kernel(eval_nsdf, with_radius: bool = False):
+@wp.func
+def box_gap(p_b: wp.vec3, B_id: int, mcol: CollisionModel):  # type: ignore
+    """
+    The signed distance from `p_b` to geometry `B_id`'s bounding box (`g_obb_*`, which holds
+    every vertex, so the mesh) and its gradient: a distance that can only *under*-estimate the
+    gap to the surface, where `grid_excess`'s extrapolation over-estimates it.
+
+    For a speculative contact that is the safe side: the solver lets a vertex close its gap
+    in one step, and an over-estimate lets it overshoot into the surface. And the box's signed
+    distance is convex, so the linearized constraint keeps the vertex out of the box itself:
+    `d(p + delta) >= d(p) + grad . delta >= 0` whenever the constraint holds. Its price is a
+    vertex near the box but far from the mesh slowed early, which a wider band avoids.
+
+    Called by the `toa` narrowphase kernels, for a vertex outside the grid.
+    In: p_b wp.vec3, the point in the geometry's body frame (m); B_id int, the geometry; mcol, read for g_obb_c,
+    g_obb_A and g_obb_h (nB,). Out: (float, wp.vec3), the signed distance (m) and its gradient, a unit vector in the
+    body frame (meaningful outside the box).
+    """
+    A = mcol.g_obb_A[B_id]  # wp.mat33: the box's axes, as rows
+    q = A * (p_b - mcol.g_obb_c[B_id])  # wp.vec3: the point along the box's axes
+    h = mcol.g_obb_h[B_id]  # wp.vec3: the half-extents
+    e = wp.vec3(wp.abs(q[0]) - h[0], wp.abs(q[1]) - h[1], wp.abs(q[2]) - h[2])  # wp.vec3: past each face pair
+    o = wp.vec3(wp.max(e[0], 0.0), wp.max(e[1], 0.0), wp.max(e[2], 0.0))  # wp.vec3: the outside part
+    lo = wp.length(o)  # float: the distance from outside
+    d = lo + wp.min(wp.max(e[0], wp.max(e[1], e[2])), 0.0)  # float: signed, negative inside
+    g = wp.vec3(wp.sign(q[0]) * o[0], wp.sign(q[1]) * o[1], wp.sign(q[2]) * o[2]) / wp.max(lo, 1.0e-12)  # wp.vec3
+    return d, wp.transpose(A) * g
+
+
+TOA_EPS = 1.0e-4  # m: a path that comes this near the surface reaches it
+TOA_STEP = 0.9  # of the distance per step: room for a fitted field whose slope exceeds 1 a little
+TOA_RELAX = 1.6  # over-relaxed tracing's step over the plain one, in [1, 2) (Keinert et al. 2014)
+TOA_TRACE_GRID = 1 << 16  # the trace kernel's most threads, striding over the listed contacts
+# The steepest closing (gap lost per unit of path) at which a TOA_RELAX step still passes its check, on a flat
+# surface: gap d - TOA_RELAX TOA_STEP d g left after the step must be at least (TOA_RELAX - 1) d.
+TOA_GRAZE = (2.0 - TOA_RELAX) / (TOA_STEP * TOA_RELAX)
+
+
+def _make_toa_trace(eval_nsdf):
+    """
+    `toa_trace` and its sampler `toa_sample`, bound to one SDF evaluator.
+
+    Called by `_make_trace_kernel`.
+    In: eval_nsdf, as `_make_nsdf_kernel`'s. Out: the `toa_trace` and `toa_sample` wp.funcs.
+    """
+
+    @wp.func
+    def toa_sample(q: wp.vec3, r: float, B_id: int, mcol: CollisionModel):  # type: ignore
+        """
+        A traced path's gap at q and its normal: the field's, or outside the grid the bounding box's
+        (`box_gap`), as in the kernels; less the sphere's radius.
+
+        Called by `toa_trace`.
+        In: q wp.vec3, the point in the SDF geometry's body frame (m); r float, the radius (m); B_id int, the SDF
+        geometry; mcol, its tables and box. Out: (float, wp.vec3, int): the gap (m), the normal, 1 if q is outside
+        the grid.
+        """
+        dq, nq = eval_nsdf(q, B_id, mcol)  # float, wp.vec3: the field there
+        out_q = int(0)  # int: 1 if read from the box
+        _, out = grid_excess(q, B_id, mcol)  # wp.vec3 (unused), float: how far outside the grid (m)
+        if out > 0.0:
+            lb, n_lb = box_gap(q, B_id, mcol)  # float, wp.vec3: the bounding box's
+            if lb > 0.0:
+                dq = lb
+                nq = n_lb
+                out_q = int(1)
+        return dq - r, nq, out_q
+
+    @wp.func
+    def toa_trace(p: wp.vec3, u: wp.vec3, h: float, d0: float, n0: wp.vec3, r: float, B_id: int,  # type: ignore
+                  mcol: CollisionModel, relaxed: int, iters: int):  # type: ignore
+        """
+        Whether a speculative contact's vertex reaches the surface along its path over the
+        horizon, `p + u t` for t in [0, h], and where to linearize it if it may.
+
+        A contact linearized at the start, `gap + n . delta >= 0`, forbids every motion that
+        closes the distance along the start's normal n -- a vertex passing a convex edge
+        among them, which would have missed it: a ghost collision, as strong as a real one.
+        Sphere tracing settles it: each step advances by the distance, which no surface
+        lies within, so reaching t = h is a proof of a miss (on the linear path; under the
+        first-order assumptions of the margins). A path that reaches the surface, or that the
+        steps do not settle, is linearized at its last sample, which is as far as the path is
+        proved clear: a hit's is where it arrives, with the surface's normal there; a graze's
+        lies beside the surface, its normal square to the motion, and one moving away has the
+        motion leaving along its normal, which the constraint then does not resist either.
+
+        Over-relaxed (Keinert et al. 2014, "Enhanced Sphere Tracing"): a step may be `TOA_RELAX`
+        times the plain one, kept only if the clear spheres about its two ends overlap along
+        the path -- then nothing lies between them; else a surface may, and the step is redone
+        as a plain one. A long step is tried only where it is likely to pass: after a step
+        that closed the gap by at most `TOA_GRAZE` of its length (a graze, a shallow
+        approach); where the path closes faster (an approach) the steps are plain, so that an
+        approach costs what the plain trace does. Exact like the plain trace, every step being
+        checked; fewer steps where the path runs along a surface, whose distance changes
+        little from step to step.
+
+        Called by the `toa` narrowphase kernels, for a contact at a positive gap.
+        In: p wp.vec3, the vertex (or sphere centre), u wp.vec3 its velocity relative to the SDF geometry (m/s),
+        both in that geometry's body frame; h float, the horizon (s); d0 float and n0 wp.vec3, the gap and normal
+        at p; r float, the sphere's radius (0 for a vertex); B_id int, the SDF geometry; mcol, the SDF tables and
+        bounding boxes; relaxed int, 1 to over-relax; iters int, the most field evaluations. Out: (int, float,
+        wp.vec3, int): 1 for a miss; the gap from p to the tangent plane at the last sample, along its normal (m,
+        at least 0), and that normal; 1 if a sample was read outside the grid.
+        """
+        ul = wp.length(u)  # float: the speed (m/s)
+        if ul * h <= d0:  # the path is shorter than the gap
+            return int(1), d0, n0, int(0)
+        w = float(1.0)  # float: the next step over the plain one: plain first, TOA_RELAX while it grazes
+        t = float(0.0)  # float: the time along the path of the last sample (s)
+        d = float(d0)  # float: the gap there (m)
+        nl = wp.vec3(n0)  # wp.vec3: the normal there
+        out_any = int(0)  # int: 1 if a sample was read outside the grid
+        miss = int(0)  # int: 1 once the path is proved clear
+        k = int(0)  # int: the field evaluations so far
+        while k < iters:
+            if d < TOA_EPS:
+                break
+            step = TOA_STEP * d / ul  # float: the plain step (s): no surface lies within it
+            if t + step >= h:
+                miss = int(1)
+                break
+            t1 = wp.min(t + w * step, h)  # float: the step tried (s)
+            # One evaluation site: the field inlined twice would make the kernel heavier for every candidate.
+            d1, n1, o1 = toa_sample(p + u * t1, r, B_id, mcol)  # float, wp.vec3, int: the gap there
+            k += 1
+            if w > 1.0 and TOA_STEP * (d + d1) < ul * (t1 - t):  # a long step whose clear spheres do not meet
+                w = 1.0  # not kept: the next pass redoes it as a plain step
+            else:
+                if relaxed != 0:
+                    # The next step long only if this one closed the gap slowly enough for a long one to pass (a
+                    # graze, a shallow approach); plain where it closes fast (an approach), which long ones
+                    # overshoot.
+                    w = 1.0
+                    if d - d1 <= TOA_GRAZE * ul * (t1 - t):
+                        w = TOA_RELAX
+                t = t1
+                d = d1
+                nl = n1
+                if o1 == 1:
+                    out_any = int(1)
+        # The tangent plane at the last sample, measured from p along its normal: `d` there, plus what the
+        # path covers along the normal to get there.
+        return miss, wp.max(d - t * wp.dot(nl, u), 0.0), nl, out_any
+
+    return toa_trace, toa_sample
+
+
+def _make_nsdf_kernel(eval_nsdf, with_radius: bool = False, toa: bool = False):
     """The narrowphase, bound to one SDF evaluator and one radius policy.
 
     `with_radius` is a separate specialization for the same reason the filter has
@@ -343,7 +491,8 @@ def _make_nsdf_kernel(eval_nsdf, with_radius: bool = False):
 
     Called by this module at import, for the four kernels below it.
     In: eval_nsdf, a `wp.func` (p_b wp.vec3, B_id int, mcol) -> (float, wp.vec3): `eval_nsdf_c2` or
-    `eval_nsdf_c0`; with_radius bool, subtract `mcol.prim_r`. Out: the `compute_nsdf` kernel.
+    `eval_nsdf_c0`; with_radius bool, subtract `mcol.prim_r`; toa bool, admit `toa` segments' speculative
+    contacts. Out: the `compute_nsdf` kernel.
     """
 
     @wp.kernel
@@ -355,8 +504,10 @@ def _make_nsdf_kernel(eval_nsdf, with_radius: bool = False):
         Launch: dim=(nCa2_max,), a thread per stage-2 slot, by `collide.narrowphase_sdf` (through `nsdf_kernel`).
         Reads: dcol.ct[1] and dyn_scan, dcol.idm_nCa2_to_nCa1 (nCa2_max,) int32, dcol.T_rel (B, nSEG) wp.transformf;
         mcol.idm_nC_to_prim (nC,) int32, v_b (nV,) wp.vec3, prim_r (nV,) float32 if `with_radius`, seg_g_s (nSEG,)
-        int32, g_plane (nB,) int32 and the SDF tables. Writes: dcol.sdf_nCa2 (nCa2_max,) float32, n_nCa2
-        (nCa2_max,) wp.vec3 in the SDF geometry's body frame, and flag2 (nCa2_max,) int32.
+        int32, g_plane (nB,) int32 and the SDF tables; a `toa` kernel also mcol.seg_toa, seg_trace, seg_trace_iters
+        (nSEG,), toa_h and the bounding boxes, and dcol.twist_rel and twist_end (B, nSEG). Writes: dcol.sdf_nCa2
+        (nCa2_max,) float32, n_nCa2 (nCa2_max,) wp.vec3 in the SDF geometry's body frame, and flag2 (nCa2_max,)
+        int32; a `toa` kernel also dcol.toa_band (nB,) int32.
         """
         id_nCa2 = wp.tid()  # int: the stage-2 slot
 
@@ -387,6 +538,19 @@ def _make_nsdf_kernel(eval_nsdf, with_radius: bool = False):
             sdf = v_b[2]
         else:
             sdf, n = eval_nsdf(v_b, id_nB_2, mcol)
+        if wp.static(toa):
+            outside = False  # bool: a `toa` gap read outside the grid, from the bounding box
+            # Outside the grid the field's value is an upper bound (`grid_excess`); a speculative
+            # contact needs one that can only under-estimate, the bounding box's (`box_gap`). It is
+            # positive there: the grid holds the box with a band around it.
+            if mcol.seg_toa[id_SEG] != 0 and mcol.g_plane[id_nB_2] == 0:
+                _, out = grid_excess(v_b, id_nB_2, mcol)  # wp.vec3 (unused), float: how far outside the grid (m)
+                if out > 0.0:
+                    lb, n_lb = box_gap(v_b, id_nB_2, mcol)  # float, wp.vec3: the box's distance and normal
+                    if lb > 0.0:
+                        sdf = lb
+                        n = n_lb
+                        outside = True
 
         # A sphere of radius `r` centred at `p` is the r-offset of `p`, so its
         # gap to the surface is exactly `sdf(p) - r` -- one evaluation, no
@@ -404,6 +568,25 @@ def _make_nsdf_kernel(eval_nsdf, with_radius: bool = False):
             dcol.flag2[id_nCa2] = 1
         else:
             dcol.flag2[id_nCa2] = 0
+        if wp.static(toa):
+            # So does a `toa` segment's primitive whose gap its motion could close over the horizon:
+            # a speculative contact, its positive gap kept, which the solver lets close by at most
+            # that much in a step. A segment that is not `toa` has margin 0: the test above.
+            if sdf < toa_margin(id_Batch, id_SEG, v_b, 0.0, mcol, dcol):
+                dcol.flag2[id_nCa2] = 1
+                dcol.e_nCa2[id_nCa2] = 0.0  # no drift unless `trace_toa` finds one
+                if outside:
+                    # Reported by `collide.check_toa_band`: the margin reaches past the band.
+                    dcol.toa_band[id_nB_2] = 1
+                traced = sdf >= 0.0 and mcol.g_plane[id_nB_2] == 0 and mcol.seg_trace[id_SEG] != 0  # bool
+                sided = sdf < 0.0 and mcol.seg_side[id_SEG] != 0  # bool: a penetrating one to check (`toa_side`)
+                if traced or sided or mcol.seg_drift[id_SEG] != 0:
+                    # Listed for `trace_toa`: a speculative contact the segment traces (`toa_trace`), which it
+                    # drops if its path misses the surface (a half-space is linear: nothing to trace); a
+                    # penetrating one of a segment with `toa_side`, which it checks against the side it came
+                    # from; and any contact of a segment with `toa_drift`, which it gives its second-order
+                    # drift. Here, the trace's registers would slow this kernel for every candidate.
+                    dcol.trace_list[wp.atomic_add(dcol.trace_ct, 0, 1)] = id_nCa2
 
     return compute_nsdf
 
@@ -412,6 +595,183 @@ compute_nsdf = _make_nsdf_kernel(eval_nsdf_c2)  # the narrowphase: tricubic SDF,
 compute_nsdf_c0 = _make_nsdf_kernel(eval_nsdf_c0)  # trilinear SDF, no radius read
 compute_nsdf_r = _make_nsdf_kernel(eval_nsdf_c2, with_radius=True)  # tricubic, with the radius read
 compute_nsdf_c0_r = _make_nsdf_kernel(eval_nsdf_c0, with_radius=True)  # trilinear, with the radius read
+# The same four for a context with a `toa` pair, admitting its speculative contacts.
+compute_nsdf_t = _make_nsdf_kernel(eval_nsdf_c2, toa=True)
+compute_nsdf_c0_t = _make_nsdf_kernel(eval_nsdf_c0, toa=True)
+compute_nsdf_r_t = _make_nsdf_kernel(eval_nsdf_c2, with_radius=True, toa=True)
+compute_nsdf_c0_r_t = _make_nsdf_kernel(eval_nsdf_c0, with_radius=True, toa=True)
+
+
+@wp.func
+def side_find(b: int, s: int, v: int, dcol: CollisionData):  # type: ignore
+    """
+    The last step's candidate of vertex v in world b's segment s, for `toa_side`: a binary search of that
+    (world, segment)'s run of the last step's stage-2 candidates, sorted by vertex.
+
+    Called by `trace_toa`.
+    In: b, s, v int, the world, segment and vertex (an index into mcol.v_b); dcol, read for side_idul (B, nSEG+1)
+    and side_v (nCa2_max,) int32. Out: int, its slot in the side_* arrays, -1 if it had none.
+    """
+    lo = dcol.side_idul[b, s]  # int: the run's first slot
+    hi = dcol.side_idul[b, s + 1]  # int: one past its last
+    while lo < hi:
+        mid = (lo + hi) / 2  # int: the middle slot
+        vm = dcol.side_v[mid]  # int: its vertex
+        if vm == v:
+            return mid
+        if vm < v:
+            lo = mid + 1
+        else:
+            hi = mid
+    return -1
+
+
+@wp.kernel
+def side_snapshot(mcol: CollisionModel, dcol: CollisionData):
+    """
+    This step's stage-2 candidates, remembered for the next step's `toa_side`: each one's vertex, its normal in
+    its SDF geometry's body frame, and its plane's offset, so that the plane's gap at y is `side_nB . y + side_c`.
+    Candidates rather than contacts: a vertex near a surface whose straight path misses it is no contact (its
+    trace drops it), yet an arc may carry it in.
+
+    Launch: dim=(nCa2_max,), a thread per candidate slot, by `collide.narrowphase_sdf` in a context with a `toa`
+    pair, after the trace (the runs' bounds, `idul_B_nSEG_to_nCa2`, are copied beside it).
+    Reads: dcol.ct[1], idm_nCa2_to_nCa1 (nCa2_max,) int32, sdf_nCa2 and n_nCa2, dcol.T_rel; mcol.v_b and the
+    stage-1 tables (`resolve_nCa1`). Writes: dcol.side_v, side_nB and side_c (nCa2_max,).
+    """
+    i = wp.tid()  # int: the candidate
+    if i >= dcol.ct[1]:
+        return
+    id_Batch, id_nC, id_SEG, id_Tile = resolve_nCa1(dcol.idm_nCa2_to_nCa1[i], mcol, dcol)  # int x 4
+    id_nV = mcol.idm_nC_to_prim[id_nC]  # int: its vertex
+    y = wp.transform_point(dcol.T_rel[id_Batch, id_SEG], mcol.v_b[id_nV])  # wp.vec3: in the SDF frame
+    nb = dcol.n_nCa2[i]  # wp.vec3: its normal, SDF frame
+    dcol.side_v[i] = id_nV
+    dcol.side_nB[i] = nb
+    dcol.side_c[i] = dcol.sdf_nCa2[i] - wp.dot(nb, y)
+
+
+def _make_trace_kernel(eval_nsdf, with_radius: bool = False):
+    """
+    The trace of a `toa` context's speculative contacts, bound to one SDF evaluator and one radius policy.
+
+    Called by this module at import, for the four kernels below it.
+    In: eval_nsdf, with_radius, as `_make_nsdf_kernel`'s. Out: the `trace_toa` kernel.
+    """
+    toa_trace, toa_sample = _make_toa_trace(eval_nsdf)  # the path test and its sampler
+
+    @wp.func
+    def toa_drift(y: wp.vec3, n0: wp.vec3, b: int, s: int, B_id: int, mcol: CollisionModel,  # type: ignore
+                  dcol: CollisionData):  # type: ignore
+        """
+        A contact's predicted second-order drift (`toa_drift`): how much faster than first order its gap
+        closes in a step as it slides along a concave surface, e = dt^2/2 max(0, -K), with
+
+            K = |u_t|^2 kappa
+
+        the surface's curvature along the tangential velocity u_t, kappa from the field's normal one voxel
+        further along it. Taken locally and extrapolated over the step: measured at the step's end instead,
+        the field there lies past a thin feature's midsurface exactly when the drift exceeds its half-thickness.
+        Capped at half the step's travel, |u| dt / 2: a noisy curvature (a sharp inside corner) must not throw a
+        contact out. A half-space has none. The path's own bend (a rotating body's arc) is not taken: a row
+        anchored at the vertex's start cannot answer it -- grazing a surface, its normal velocity barely depends
+        on the rotation that bends the path, and a feed-forward there stops the body short.
+
+        Called by `trace_toa`.
+        In: y wp.vec3, the vertex (or sphere centre) in the SDF geometry's body frame; n0 wp.vec3, the field's
+        normal there; b, s int, its world and segment; B_id int, the SDF geometry; mcol, read for g_plane, g_Vox_h
+        and toa_dt; dcol, read for twist_rel. Out: float, e (m).
+        """
+        if mcol.g_plane[B_id] != 0:
+            return float(0.0)
+        tw = dcol.twist_rel[b, s]  # wp.spatial_vector: (Omega, a), the step's start
+        u = wp.spatial_bottom(tw) + wp.cross(wp.spatial_top(tw), y)  # wp.vec3: the vertex's velocity
+        ut = u - wp.dot(u, n0) * n0  # wp.vec3: its tangential part
+        lt = wp.length(ut)  # float: its speed along the surface (m/s)
+        kappa = float(0.0)  # float: the surface's curvature along ut, < 0 where it curves into the path (1/m)
+        if lt > 1.0e-9:
+            off0, out0 = grid_excess(y, B_id, mcol)  # wp.vec3 (unused), float: how far outside the grid (m)
+            if out0 == 0.0:
+                th = ut / lt  # wp.vec3: the sliding direction
+                hv = mcol.g_Vox_h[B_id]  # wp.vec3: the voxel edges (m)
+                dl = wp.min(hv[0], wp.min(hv[1], hv[2]))  # float: the difference step, a voxel (m)
+                d1, n1, o1 = toa_sample(y + th * dl, 0.0, B_id, mcol)  # float (unused), wp.vec3, int
+                if o1 == 0:
+                    kappa = wp.dot(n1 - n0, th) / dl
+        dt = mcol.toa_dt  # float: the timestep (s)
+        return wp.min(0.5 * dt * dt * wp.max(0.0, -lt * lt * kappa), 0.5 * wp.length(u) * dt)
+
+    @wp.kernel
+    def trace_toa(mcol: CollisionModel, dcol: CollisionData, width: int):
+        """
+        The `toa` contacts the narrowphase listed: a penetrating one checked against the side it came from
+        where its segment has `toa_side` (`side_find`); a speculative one traced along its path over the
+        horizon (`toa_trace`) -- dropped from stage 3 if it misses the surface, else linearized where its
+        path arrives; and every one kept given its predicted second-order drift where its segment has
+        `toa_drift` (`toa_drift`). A kernel of its own, over the list alone: the trace needs far more
+        registers than the narrowphase, and would slow it for every candidate.
+
+        Launch: dim=(width,), at most `TOA_TRACE_GRID` threads striding over the list, by
+        `collide.narrowphase_sdf` in a context with a `toa` pair, after the narrowphase.
+        Reads: dcol.trace_list (nCa2_max,) and trace_ct (1,) int32, the candidates' slots and their gaps and normals
+        (dcol.sdf_nCa2, n_nCa2), dcol.T_rel and twist_end (B, nSEG); mcol.seg_trace and seg_trace_iters (nSEG,),
+        toa_h and the SDF tables; with `toa_drift`, mcol.seg_drift and toa_dt, and dcol.twist_rel; with `toa_side`,
+        mcol.seg_side and the last step's contacts (dcol.side_*).
+        Writes: dcol.flag2 (nCa2_max,) int32, 0 for a miss; dcol.sdf_nCa2 and n_nCa2 for the rest; dcol.e_nCa2
+        (nCa2_max,) float32; dcol.toa_band (nB,) int32.
+        """
+        i = wp.tid()  # int: the list entry, then every `width`-th after it
+        while i < dcol.trace_ct[0]:
+            id_nCa2 = dcol.trace_list[i]  # int: the stage-2 slot
+            id_nCa1 = dcol.idm_nCa2_to_nCa1[id_nCa2]  # int: its stage-1 slot
+            id_Batch, id_nC, id_SEG, id_Tile = resolve_nCa1(id_nCa1, mcol, dcol)  # int x 4: as in the narrowphase
+            id_nV = mcol.idm_nC_to_prim[id_nC]  # int: the primitive
+            v_b = wp.transform_point(dcol.T_rel[id_Batch, id_SEG], mcol.v_b[id_nV])  # wp.vec3: SDF body frame
+            id_nB_2 = mcol.seg_g_s[id_SEG]  # int: the SDF geometry
+            d0 = dcol.sdf_nCa2[id_nCa2]  # float: its gap
+            n0 = dcol.n_nCa2[id_nCa2]  # wp.vec3: the field's normal at it
+            keep = int(1)  # int: 0 once its path is proved to miss
+            if d0 < 0.0 and mcol.seg_side[id_SEG] != 0:
+                # `toa_side`: a vertex past a thin feature's midsurface reads the far side's field, its normal
+                # turned against the last step's. Behind the plane it had then, it keeps that side: the last
+                # step's normal, its depth measured from that plane.
+                j = side_find(id_Batch, id_SEG, id_nV, dcol)  # int: its last contact, -1 for none
+                if j >= 0:
+                    nb = dcol.side_nB[j]  # wp.vec3: the last step's normal
+                    if wp.dot(n0, nb) < 0.0:
+                        g = wp.dot(nb, v_b) + dcol.side_c[j]  # float: its gap to the last step's plane
+                        if g < 0.0:
+                            dcol.sdf_nCa2[id_nCa2] = g
+                            dcol.n_nCa2[id_nCa2] = nb
+                            d0 = g
+                            n0 = nb
+            if d0 >= 0.0 and mcol.g_plane[id_nB_2] == 0 and mcol.seg_trace[id_SEG] != 0:
+                tw = dcol.twist_end[id_Batch, id_SEG]  # wp.spatial_vector: (Omega, a) at the step's end
+                u = wp.spatial_bottom(tw) + wp.cross(wp.spatial_top(tw), v_b)  # wp.vec3: the vertex's velocity
+                r = float(0.0)  # float: the sphere's radius
+                if wp.static(with_radius):
+                    r = mcol.prim_r[id_nV]
+                miss, g, ng, out_t = toa_trace(v_b, u, mcol.toa_h, d0, n0, r, id_nB_2, mcol,
+                                               mcol.seg_trace[id_SEG] - 1, mcol.seg_trace_iters[id_SEG])
+                if miss == 1:
+                    dcol.flag2[id_nCa2] = 0
+                    keep = int(0)
+                else:
+                    dcol.sdf_nCa2[id_nCa2] = g
+                    dcol.n_nCa2[id_nCa2] = ng
+                    if out_t == 1:
+                        dcol.toa_band[id_nB_2] = 1
+            if keep == 1 and mcol.seg_drift[id_SEG] != 0:
+                dcol.e_nCa2[id_nCa2] = toa_drift(v_b, n0, id_Batch, id_SEG, id_nB_2, mcol, dcol)
+            i += width
+
+    return trace_toa
+
+
+trace_toa = _make_trace_kernel(eval_nsdf_c2)  # the trace: tricubic SDF, no radius read
+trace_toa_c0 = _make_trace_kernel(eval_nsdf_c0)  # trilinear SDF, no radius read
+trace_toa_r = _make_trace_kernel(eval_nsdf_c2, with_radius=True)  # tricubic, with the radius read
+trace_toa_c0_r = _make_trace_kernel(eval_nsdf_c0, with_radius=True)  # trilinear, with the radius read
 
 
 #######################################################################################
@@ -422,6 +782,19 @@ compute_nsdf_c0_r = _make_nsdf_kernel(eval_nsdf_c0, with_radius=True)  # triline
 # reason for each specialization sits beside the specialization itself.
 
 
+def trace_kernel(mcol: CollisionModel):
+    """
+    The trace of a `toa` context's speculative contacts, for its SDF representation and primitives.
+
+    Called by `collide.narrowphase_sdf`.
+    In: mcol, read for has_spheres and spline. Out: one of the four `trace_toa*` kernels.
+    """
+    c0 = int(mcol.spline) == 1  # bool: the trilinear representation
+    if int(mcol.has_spheres):
+        return trace_toa_c0_r if c0 else trace_toa_r
+    return trace_toa_c0 if c0 else trace_toa
+
+
 def nsdf_kernel(mcol: CollisionModel):
     """
     The narrowphase for this context's SDF representation and primitives.
@@ -429,6 +802,12 @@ def nsdf_kernel(mcol: CollisionModel):
     Called by `collide.narrowphase_sdf`.
     In: mcol, read for has_spheres and spline. Out: one of the four `compute_nsdf*` kernels.
     """
+    c0 = int(mcol.spline) == 1  # bool: the trilinear representation
+    if int(mcol.has_toa):
+        # A context with a `toa` pair: the same four, admitting its speculative contacts.
+        if int(mcol.has_spheres):
+            return compute_nsdf_c0_r_t if c0 else compute_nsdf_r_t
+        return compute_nsdf_c0_t if c0 else compute_nsdf_t
     if int(mcol.has_spheres):
         return compute_nsdf_c0_r if int(mcol.spline) == 1 else compute_nsdf_r
     return compute_nsdf_c0 if int(mcol.spline) == 1 else compute_nsdf

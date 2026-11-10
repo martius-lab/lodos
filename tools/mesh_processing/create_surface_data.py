@@ -251,7 +251,8 @@ def main():
                     help="voxels along the longest grid edge")
     ap.add_argument("--dilation", type=float, default=2.0, help="grid AABB / mesh AABB")
     ap.add_argument("--d-max", type=float, default=0.0,
-                    help="extra margin on every side [m], beyond the dilation")
+                    help="extra margin on every side [m], beyond the dilation; a surface in a `toa` pair "
+                         "wants more than the largest speed x timestep it meets")
     ap.add_argument("--encoding", choices=("hilbert", "morton"), default="hilbert")
     ap.add_argument("--depth", type=int, default=16, help="curve encoding depth")
     ap.add_argument("--eps-divisor", type=int, default=50,

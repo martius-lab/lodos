@@ -1,6 +1,6 @@
 """
 The collision pairs whose contact parameters the viewer's Collision pairs folder sets: friction, solref and
-solimp per pair, and whether a Lodos pair is one- or two-sided.
+solimp per pair, whether a Lodos pair is one- or two-sided, and a Lodos pair's time of arrival.
 
 Three kinds of pair, the first two under Lodos, the third under Newton's MuJoCo Warp:
 
@@ -20,14 +20,24 @@ Three kinds of pair, the first two under Lodos, the third under Newton's MuJoCo 
   their average, by default). Each shape takes the mode of what is set on its pairs, on the running model
   (`set_shape_params`).
 
+A Lodos pair's time of arrival (`TOA_FIELDS`, `lodos.col.sdf.types.make_collision_context`'s options of the same
+names) is set per pair too: whether the pair runs it (`toa`), how its speculative contacts' paths are traced
+(`toa_trace`, `TRACE_MODES`), the trace's most field evaluations (`toa_trace_iters`), and the opt-in drift and side
+memory (`toa_drift`, `toa_side`), all of them read where the pair's `toa` is on; and its horizon (`toa_horizon`, s),
+one value for every pair, which Lodos takes once per collision context. Like sidedness each is a rebuild.
+
 A configuration's overrides (`no_overrides`, its `pairs`) hold, per kind, a value for every pair of the kind
 (`all`, by field) and each pair's own (by field, by pair index), which applies over it: friction a float,
-solref two, solimp five, sidedness 1 or 2 (for all, the pairs without a plane). A scene's twenty piled hands
-as convex pieces have a million MJCF pairs, which is why an edit of all of them is one value, not a million.
-The exact mode applies friction and sidedness alone: it takes no MuJoCo impedance.
+solref two, solimp five, sidedness 1 or 2 (for all, the pairs without a plane), `toa`, `toa_drift` and
+`toa_side` 0 or 1, `toa_trace` an index into `TRACE_MODES`, `toa_trace_iters` an int, `toa_horizon` a float, for
+all alone. A scene's twenty piled hands as convex pieces have a million MJCF pairs, which is why an edit of all of
+them is one value, not a million. The exact mode applies friction, sidedness and time of arrival alone: it takes
+no MuJoCo impedance, and time of arrival takes the exact mode (`lodos.sim.make_sim`).
 """
 
 from __future__ import annotations
+
+import inspect
 
 import mujoco
 import numpy as np
@@ -39,11 +49,22 @@ FIELDS = ("mu", "solref", "solimp")
 WIDTH = {"mu": 1, "solref": 2, "solimp": 5}
 GEOM_MODES = ("min", "max", "mean")
 MINVAL = 1e-15  # MuJoCo's mjMINVAL: solmix below it counts as none (`collision_core`)
+# A Lodos pair's time of arrival, per pair, and its horizon, one value for every pair (s; 0 in `values`: the step's).
+TOA_FIELDS = ("toa", "toa_trace", "toa_trace_iters", "toa_drift", "toa_side")
+TOA_ALL = TOA_FIELDS + ("toa_horizon",)
+TRACE_MODES = ("off", "sphere", "relaxed")  # `toa_trace` 0, 1, 2: make_collision_context's False, "sphere", "relaxed"
+# What a scene that does not spell an option gives a pair: `make_collision_context`'s defaults (toa None: off).
+TOA_DEFAULTS = {f: inspect.signature(sdf_types.make_collision_context).parameters[f].default for f in TOA_ALL}
+# Lodos's fields that rebuild its runner: sidedness and time of arrival.
+REBUILD_FIELDS = ("sided",) + TOA_ALL
+# How a take's label and the list name them.
+NAMES = {"toa": "toa", "toa_trace": "toa trace", "toa_trace_iters": "toa trace iters", "toa_drift": "toa drift",
+         "toa_side": "toa side", "toa_horizon": "toa horizon"}
 
 
 def kind_fields(kind):
-    """What a kind of pair takes: friction, solref, solimp, and Lodos's sidedness."""
-    return FIELDS + (("sided",) if kind == "lodos" else ())
+    """What a kind of pair takes: friction, solref, solimp, and Lodos's sidedness and time of arrival."""
+    return FIELDS + (REBUILD_FIELDS if kind == "lodos" else ())
 
 
 def no_overrides():
@@ -58,11 +79,39 @@ def has_overrides(ov, exact):
 
 
 def check(field, value):
-    """`value` as a configuration holds it: a float, a tuple of two or five, or 1 or 2; ValueError else."""
+    """
+    `value` as a configuration holds it: a float, a tuple of two or five, 1 or 2 (sidedness), 0 or 1 (`toa`,
+    `toa_drift`, `toa_side`), an index into `TRACE_MODES` (`toa_trace`, which also takes a mode's name, or
+    make_collision_context's True and False), an int of at least 1 (`toa_trace_iters`) or a positive float
+    (`toa_horizon`, s); ValueError else.
+    """
     if field == "sided":
         if value not in (1, 2):
             raise ValueError(f"a pair is one-sided (1) or two-sided (2), not {value!r}")
         return int(value)
+    if field in ("toa", "toa_drift", "toa_side"):
+        if isinstance(value, str) or value not in (0, 1):
+            raise ValueError(f"{field} is on (1) or off (0), not {value!r}")
+        return int(value)
+    if field == "toa_trace":
+        if isinstance(value, (bool, np.bool_)):  # make_collision_context's: True over-relaxed, False none
+            return 2 if value else 0
+        if isinstance(value, str):
+            if value not in TRACE_MODES:
+                raise ValueError(f"toa_trace is one of {TRACE_MODES}, not {value!r}")
+            return TRACE_MODES.index(value)
+        if value not in (0, 1, 2):
+            raise ValueError(f"toa_trace is 0, 1 or 2 ({', '.join(TRACE_MODES)}), not {value!r}")
+        return int(value)
+    if field == "toa_trace_iters":
+        if isinstance(value, (bool, np.bool_, str)) or not float(value).is_integer() or int(value) < 1:
+            raise ValueError(f"toa_trace_iters is a whole number of field evaluations, at least 1, not {value!r}")
+        return int(value)
+    if field == "toa_horizon":
+        v = float(value)
+        if not (np.isfinite(v) and v > 0.0):
+            raise ValueError(f"the toa horizon is a time, more than 0 s, not {value!r}")
+        return v
     v = np.asarray(value, dtype=np.float64).reshape(-1)
     if v.size != WIDTH[field] or not np.isfinite(v).all():
         raise ValueError(f"{field} takes {WIDTH[field]} finite numbers, not {value!r}")
@@ -101,6 +150,136 @@ def sided_changes(surfaces, ov):
     return {int(j): int(now[j]) for j in np.nonzero(now != own)[0]}
 
 
+def _spelled(spec, j, gv, gs, fallback):
+    """
+    What an option spelled `spec` -- make_collision_context's spellings: one value, a list by pair, or a dict by
+    (vertex geometry, SDF geometry) with an optional `None` default -- gives the directional pair (gv, gs) of pair
+    j; `fallback` where a dict names neither it nor a default.
+    """
+    if isinstance(spec, dict):
+        return spec[(gv, gs)] if (gv, gs) in spec else spec.get(None, fallback)
+    if isinstance(spec, (list, tuple, np.ndarray)):
+        return spec[j]
+    return spec
+
+
+def _code(field, x):
+    """A time-of-arrival value as make_collision_context reads it, as the viewer codes it (`check`)."""
+    if field == "toa_trace":
+        return TRACE_MODES.index(x) if isinstance(x, str) else (2 if bool(x) else 0)
+    if field == "toa_trace_iters":
+        return int(x)
+    return int(bool(x))
+
+
+def _option(field, code):
+    """A time-of-arrival value the viewer codes, as make_collision_context takes it."""
+    if field == "toa_trace":
+        return (False, "sphere", "relaxed")[int(code)]
+    if field == "toa_trace_iters":
+        return int(code)
+    return bool(code)
+
+
+def scene_toa(surfaces):
+    """
+    `{field: (npairs,)}`: each Lodos pair's time of arrival as the scene builds it (`TOA_FIELDS`, coded as `check`
+    holds them; an option spelled per direction gives a pair its first direction's), and `toa_horizon`, the
+    scene's (s), 0 for the timestep.
+    """
+    col, n = surfaces.col_kwargs, len(surfaces.pairs)
+    out = {f: np.array([_code(f, _spelled(col.get(f, TOA_DEFAULTS[f]), j, int(a), int(b), TOA_DEFAULTS[f]))
+                        for j, (a, b) in enumerate(surfaces.pairs)], dtype=int).reshape(n) for f in TOA_FIELDS}
+    h = col.get("toa_horizon")
+    out["toa_horizon"] = np.full(n, 0.0 if h is None else float(h))
+    return out
+
+
+def lodos_values(surfaces, ov):
+    """
+    `{field: (npairs,)}`: Lodos's rebuild fields (`REBUILD_FIELDS`) on each pair under the overrides `ov` (a
+    configuration's `pairs["lodos"]`): the value for all over the scene's, a pair's own over that.
+    """
+    out = scene_toa(surfaces)
+    for f in TOA_ALL:
+        if f in ov["all"]:
+            out[f][:] = ov["all"][f]
+        for j, x in ov[f].items():
+            out[f][j] = x
+    out["sided"] = sided(surfaces, ov)
+    return out
+
+
+def rebuild_changes(surfaces, ov):
+    """
+    What the overrides `ov` (a configuration's `pairs["lodos"]`) make of Lodos's pairs other than the scene builds
+    them: `{"sided": {pair: 1 or 2}, field: {pair: value}, ..., "toa_horizon": s}`, each field with a change only.
+    """
+    own, now = scene_toa(surfaces), lodos_values(surfaces, ov)
+    out: dict = {"sided": sided_changes(surfaces, ov)}
+    for f in TOA_FIELDS:
+        out[f] = {int(j): int(now[f][j]) for j in np.nonzero(now[f] != own[f])[0]}
+    if len(own["toa_horizon"]) and now["toa_horizon"][0] != own["toa_horizon"][0]:
+        out["toa_horizon"] = float(now["toa_horizon"][0])
+    return {f: v for f, v in out.items() if v or f == "toa_horizon"}
+
+
+def toa_col_kwargs(surfaces, changes):
+    """
+    The `make_collision_context` options that give the Lodos pairs of `surfaces` the time of arrival `changes`
+    (`rebuild_changes`'s, without sidedness: `{field: {pair: value}}` and `toa_horizon`) over the scene's own.
+
+    An option a change touches is spelled per pair, a list, whose value a symmetric pair takes both ways: a pair
+    changed takes its value, every other what the scene's own spelling gives it -- as `cpr_is_symmetric` has the
+    pairs in `surfaces`. Only where the scene's spelling gives a symmetric pair's two directions different values
+    is it spelled per direction instead, a dict keyed by (vertex geometry, SDF geometry), which cannot tell apart
+    two pairs of the same direction (a pair made two-sided beside its own reverse): that is refused.
+    """
+    n = len(surfaces.pairs)
+    bad = sorted(int(j) for f in TOA_FIELDS for j in changes.get(f, {}) if not 0 <= int(j) < n)
+    if bad:
+        raise ValueError(f"time of arrival on pairs {bad}: the scene has {n} Lodos pairs")
+    col = surfaces.col_kwargs
+    sym = [bool(x) for x in (col.get("cpr_is_symmetric") or [False] * n)]
+    dirs = [[(int(a), int(b)), (int(b), int(a))] if sym[j] else [(int(a), int(b))]
+            for j, (a, b) in enumerate(surfaces.pairs)]  # each pair's directional pairs
+    out = {}
+    for f in TOA_FIELDS:
+        own = changes.get(f)
+        if not own:
+            continue
+        spec = col.get(f, TOA_DEFAULTS[f])
+        per = [[_option(f, own[j])] * len(dirs[j]) if j in own else
+               [_spelled(spec, j, *key, TOA_DEFAULTS[f]) for key in dirs[j]] for j in range(n)]  # by direction
+        if all(len({_code(f, x) for x in p}) == 1 for p in per):
+            out[f] = [p[0] for p in per]
+            continue
+        d = {}
+        for j in range(n):
+            for key, x in zip(dirs[j], per[j]):
+                if key in d and _code(f, d[key]) != _code(f, x):
+                    raise ValueError(f"{f}: the scene sets it per direction, and two pairs collide {key[0]} against "
+                                     f"{key[1]}, which that spelling cannot tell apart")
+                d[key] = x
+        out[f] = d
+    if "toa_horizon" in changes:
+        out["toa_horizon"] = float(changes["toa_horizon"])
+    return out
+
+
+def show(field, value):
+    """A Lodos field's value in words, for the list and a take's label."""
+    if field == "sided":
+        return "two-sided" if value == 2 else "one-sided"
+    if field == "toa_trace":
+        return TRACE_MODES[int(value)]
+    if field == "toa_trace_iters":
+        return str(int(value))
+    if field == "toa_horizon":
+        return "the timestep" if not value else f"{1e3 * value:.3g} ms"
+    return "on" if value else "off"
+
+
 def geom_label(mjm, g):
     """A geom's name, else its body's and its index."""
     name = mujoco.mj_id2name(mjm, mujoco.mjtObj.mjOBJ_GEOM, int(g))
@@ -129,7 +308,7 @@ def label(pairs, exact, kinds=("lodos", "prim")):
                                                                                  else ""))
             elif own:
                 vals = set(own.values())
-                parts.append(f"{name} {f} {_fmt(next(iter(vals))) if len(vals) == 1 else 'set'} on {len(own)} pairs")
+                parts.append(f"{name} {f} {_fmt(next(iter(vals))) if len(vals) == 1 else 'set'} on {_pairs(len(own))}")
     if "lodos" in kinds:
         ov = pairs["lodos"]
         if "sided" in ov["all"]:
@@ -137,11 +316,30 @@ def label(pairs, exact, kinds=("lodos", "prim")):
         for s, name in ((2, "two-sided"), (1, "one-sided")):
             n = sum(1 for v in ov["sided"].values() if v == s)
             if n:
-                parts.append(f"{n} Lodos pairs {name}")
+                parts.append(f"{n} Lodos pair{'' if n == 1 else 's'} {name}")
+        for f in TOA_ALL:  # "Lodos toa on for all pairs", "Lodos toa trace sphere on 2 pairs", "Lodos toa horizon 4 ms"
+            own, every = ov[f], ov["all"].get(f)
+            if f == "toa_horizon":
+                if every is not None:
+                    parts.append(f"Lodos {NAMES[f]} {show(f, every)}")
+                continue
+            on = "for" if f in ("toa", "toa_drift", "toa_side") else "on"
+            if every is not None:
+                parts.append(f"Lodos {NAMES[f]} {show(f, every)} {on} all pairs" + (f", {len(own)} their own" if own
+                                                                                   else ""))
+            elif own:
+                vals = set(own.values())
+                v = show(f, next(iter(vals))) if len(vals) == 1 else "set"
+                parts.append(f"Lodos {NAMES[f]} {v} {on} {_pairs(len(own))}")
     for kind, name in (("prim", "MJCF geoms"), ("newton", "Newton shapes")):
         if kind in kinds and has_overrides(pairs[kind], exact):
             parts.append(f"{name} by {pairs['mode']}")
     return parts
+
+
+def _pairs(n):
+    """"1 pair", "3 pairs"."""
+    return f"{n} pair" + ("" if n == 1 else "s")
 
 
 def _reduce(base, idx, vals, mode):
@@ -186,6 +384,7 @@ class PairTable:
         self._lower = [s.lower() for s in names]
         self.mu, self.solref, self.solimp = mu, solref, solimp
         self.sided = self.plane = None  # Lodos's: (n,) 1 or 2 as the scene builds it, and the pairs with a plane
+        self.toa = None  # Lodos's: its time of arrival as the scene builds it, `{field: (n,)}` (`scene_toa`)
         # MJWarp's: each pair's explicit pair id (-1 for none); the scene's geom parameters (`friction`, `solref`,
         # `solimp`), solmix and priority; the explicit pairs' own
         self.pairid = self.geom = self.solmix = self.priority = self.pair = None
@@ -201,7 +400,8 @@ class PairTable:
     def lodos(cls, sim, defaults, scene):
         """
         Lodos's pairs of `sim`, at the parameters it was built with (`Runner._read_defaults`), and their
-        sidedness as the scene's surfaces `scene` have it (a sim built with pairs made two-sided has others).
+        sidedness and time of arrival as the scene's surfaces `scene` have them (a sim built with pairs made
+        two-sided, or with their time of arrival set, has others).
         """
         s, mjm = sim.surfaces, sim.mjm
         fr = np.asarray(defaults["cpr_friction"], np.float64)
@@ -209,6 +409,7 @@ class PairTable:
                 fr[:, 0].copy(), np.asarray(defaults["cpr_solref"], np.float64),
                 np.asarray(defaults["cpr_solimp"], np.float64))
         t.sided, t.plane = scene_sided(scene), plane_pairs(s)
+        t.toa = scene_toa(scene)
         return t
 
     @classmethod
@@ -301,6 +502,13 @@ class PairTable:
             for j, x in ov["sided"].items():
                 s[j] = x
             out["sided"] = s
+            for f in TOA_ALL:  # time of arrival: the value for all over the scene's, a pair's own over it
+                x = self.toa[f].copy()
+                if f in ov["all"]:
+                    x[:] = ov["all"][f]
+                for j, y in ov[f].items():
+                    x[j] = y
+                out[f] = x
             return out
         g = self.geom_arrays(pairs, exact)
         mu, solref, solimp = self._resolve(g, g["pair"])
@@ -399,4 +607,12 @@ class PairTable:
             txt += f"   solref{mark('solref')} {_fmt(vals['solref'][i])}   solimp{mark('solimp')} {_fmt(vals['solimp'][i])}"
         if self.kind == "lodos":
             txt += ("   two-sided" if vals["sided"][i] == 2 else "   one-sided") + mark("sided")
+            if vals["toa"][i]:  # "toa: relaxed 128 drift": the trace, its budget, the opt-ins on
+                txt += f"   toa{mark('toa')}: {show('toa_trace', vals['toa_trace'][i])}{mark('toa_trace')}"
+                if vals["toa_trace"][i]:
+                    txt += f" {vals['toa_trace_iters'][i]}{mark('toa_trace_iters')}"
+                txt += "".join(f" {w}{mark(f)}" for f, w in (("toa_drift", "drift"), ("toa_side", "side"))
+                               if vals[f][i])
+            elif marks["toa"][i]:
+                txt += "   no toa*"
         return txt

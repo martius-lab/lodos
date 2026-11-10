@@ -6,6 +6,7 @@ Scene builders.
   representations   one drop of armadillos or cubes in either collision representation, with or without walls
   mixed             both at once: armadillo surfaces supplemented by their convex pieces, among MJCF cubes and walls
   fbf               the FBF paper's exactness scenes: incline, backspin, Painleve, cards, arch; either representation
+  toa               thin features under time of arrival: cubes at a card, past its edge, in rings, on hammers; a bullet
   sharpa            SHARPA hands dropped on a floor or into a walled box
   sharpa_armadillo  the SHARPA hand holding a 70 mm armadillo, palm up
   shadow            Shadow hands dropped on a floor or into a walled box
