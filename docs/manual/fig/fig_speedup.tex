@@ -1,0 +1,44 @@
+\documentclass[tikz,border=4pt]{standalone}
+\input{fig/common.tex}
+% Time per world-step by part of the step, each simulator at the batch size the benchmark found best, Lodos per
+% contact (bench/lodos_mjwarp/profile/results.json: scenes.*.best.*.categories; "rest" is rigid body, assembly and
+% other). The threading's middle bar is MuJoCo Warp with the pairs of bodies fixed to the world left out
+% (scenes.nist_threading_m8.weld.B1024).
+\begin{document}
+\begin{tikzpicture}[font=\small\sffamily]
+\begin{groupplot}[
+  group style={group size=3 by 1, horizontal sep=9mm},
+  width=5.9cm, height=5.6cm,
+  ybar, /pgf/bar width=5.5pt, ymode=log, log origin=infty, ymin=0.03, ymax=80,
+  symbolic x coords={collision,solve,rest}, xtick=data, enlarge x limits=0.24,
+  ytick={0.1,1,10}, yticklabels={0.1,1,10},
+  ymajorgrids, grid style={ourlightgray2!70},
+  axis line style={ourgray}, tick style={ourgray}, tick label style={font=\footnotesize\sffamily},
+  title style={font=\small\sffamily\bfseries, yshift=-2pt},
+  legend style={font=\footnotesize\sffamily, draw=none, fill=none, legend columns=3, at={(0,1.13)},
+                anchor=south west, cells={anchor=west}, /tikz/every even column/.append style={column sep=10pt}},
+]
+\nextgroupplot[title={threading}, ylabel={$\mu$s per world-step}]
+\addplot[fill=ourorange, draw=ourorange!70!black] coordinates {(collision,17.660) (solve,1.255) (rest,0.504)};
+\addplot[fill=ourorange!35, draw=ourorange!70!black, postaction={pattern=north east lines, pattern color=ourorange!80!black}]
+  coordinates {(collision,9.372) (solve,1.314) (rest,0.516)};
+\addplot[fill=ourblue, draw=ourblue!70!black] coordinates {(collision,0.301) (solve,0.182) (rest,0.104)};
+\legend{MuJoCo Warp, {MuJoCo Warp, fixed pairs left out}, Lodos}
+\node[font=\scriptsize\sffamily, text=ourgray] at (axis cs:collision,38) {59$\times$};
+\node[font=\scriptsize\sffamily, text=ourgray] at (axis cs:solve,2.6) {6.9$\times$};
+\node[font=\scriptsize\sffamily, text=ourgray] at (axis cs:rest,1.05) {4.8$\times$};
+\nextgroupplot[title={armadillos, surfaces}]
+\addplot[fill=ourorange, draw=ourorange!70!black] coordinates {(collision,1.680) (solve,2.408) (rest,0.210)};
+\addplot[fill=ourblue, draw=ourblue!70!black] coordinates {(collision,0.258) (solve,0.484) (rest,0.079)};
+\node[font=\scriptsize\sffamily, text=ourgray] at (axis cs:collision,3.4) {6.5$\times$};
+\node[font=\scriptsize\sffamily, text=ourgray] at (axis cs:solve,4.9) {5.0$\times$};
+\node[font=\scriptsize\sffamily, text=ourgray] at (axis cs:rest,0.43) {2.7$\times$};
+\nextgroupplot[title={armadillos, hulls}]
+\addplot[fill=ourorange, draw=ourorange!70!black] coordinates {(collision,3.617) (solve,2.374) (rest,0.271)};
+\addplot[fill=ourblue, draw=ourblue!70!black] coordinates {(collision,0.363) (solve,0.592) (rest,0.069)};
+\node[font=\scriptsize\sffamily, text=ourgray] at (axis cs:collision,7.3) {10$\times$};
+\node[font=\scriptsize\sffamily, text=ourgray] at (axis cs:solve,4.8) {4.0$\times$};
+\node[font=\scriptsize\sffamily, text=ourgray] at (axis cs:rest,0.55) {3.9$\times$};
+\end{groupplot}
+\end{tikzpicture}
+\end{document}

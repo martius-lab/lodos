@@ -15,7 +15,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 P=${PYTHON:-$(cd ../.. && pwd)/.venv/bin/python}
-DOCS=${*:-installation_guide development_guide collision_detection contact_dynamics creating_new_sim_from_mjcf performance_tuning visualizer reading_guide}
+DOCS=${*:-installation_guide development_guide collision_detection contact_dynamics creating_new_sim_from_mjcf performance_tuning speedup_analysis visualizer reading_guide}
 mkdir -p build fig
 
 # The data figures, when their script or their data changed (make_figures.py needs no GPU).

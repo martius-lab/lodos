@@ -30,3 +30,4 @@ timed run (`points/`, an overflowed one kept as `*.overflowed*.json`), each proc
 - `newton_point.py`: one MuJoCo Warp measurement (`measure`, `point`), in Newton's environment.
 - `run.py`: the driver.
 - `report.py`, `report/report.tex`: the report.
+- `profile/`: where each simulator's step spends its time, kernel (recorded in `docs/speedup_analysis.pdf`)

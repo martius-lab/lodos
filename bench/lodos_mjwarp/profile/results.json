@@ -1,0 +1,2559 @@
+{
+ "source": "bench/lodos_mjwarp/profile (run_profiles.py, summary.py)",
+ "scenes": {
+  "nist_threading_m8": {
+   "best": {
+    "lodos_contact": {
+     "B": 8192,
+     "world_steps_per_s": 1716301.4527568195,
+     "us_plain": 0.5826482279052692,
+     "us_traced": 0.586224374565063,
+     "categories": {
+      "collision": 0.3007100009710939,
+      "rigid body": 0.06094125006484319,
+      "assembly": 0.0365768743358785,
+      "solve": 0.1817631252015417,
+      "other": 0.006233123991705742
+     },
+     "collision_stages": {
+      "prim_poses": 0.0022581249834274786,
+      "prim_collision/broadphase": 0.0012774999834164191,
+      "prim_collision/hybrid": 0.010718750017986167,
+      "prim_collision/primitive_narrow": 0.007750683605536325,
+      "prim_collision/(self)": 0.0017399414175400824,
+      "lodos_collision/bbox": 0.06282124970311997,
+      "lodos_collision/sdf_prefilter": 0.043229374969087075,
+      "lodos_collision/narrow": 0.11881749956046406,
+      "lodos_collision/(self)": 0.0005331267402652992,
+      "contact_dynamics/reduce": 0.051433124990580836
+     },
+     "counts": {
+      "contacts": {
+       "mean": 11.879027709960937,
+       "max": 39.613525390625
+      },
+      "rows_mean": {
+       "mean": 35.63708312988281,
+       "max": 118.840576171875
+      },
+      "rows_max": {
+       "mean": 114.87,
+       "max": 297.0
+      },
+      "iters_mean": {
+       "mean": 2.944298095703125,
+       "max": 5.421142578125
+      },
+      "iters_max": {
+       "mean": 6.195,
+       "max": 10.0
+      },
+      "lodos_stage1": {
+       "mean": 1565.6095947265626,
+       "max": 2618.078125
+      },
+      "lodos_voxel": {
+       "mean": 306.51316955566404,
+       "max": 582.2310791015625
+      },
+      "lodos_contacts": {
+       "mean": 22.406700439453125,
+       "max": 107.1749267578125
+      },
+      "lodos_tiles": {
+       "mean": 195.70119934082032,
+       "max": 327.259765625
+      }
+     },
+     "variant": "fused_newton",
+     "sizes": {
+      "caps": {
+       "nconmax": 120,
+       "njmax": 360,
+       "nccdmax": 2
+      },
+      "collision": {
+       "capacity_tile": 0.2504970178926441,
+       "capacity2": 0.24516369047619047
+      }
+     },
+     "attempts": 1,
+     "weld_filter": false,
+     "best_json": 1743166.221051759
+    },
+    "lodos_cone": {
+     "B": 8192,
+     "world_steps_per_s": 1901182.4731099557,
+     "us_plain": 0.5259884383239655,
+     "us_traced": 0.5380612511362415,
+     "categories": {
+      "collision": 0.30380875036371435,
+      "rigid body": 0.062120625507304794,
+      "assembly": 0.06541877051859048,
+      "solve": 0.1010393747674243,
+      "other": 0.005673729979207647
+     },
+     "collision_stages": {
+      "prim_poses": 0.0021143750063856714,
+      "prim_collision/broadphase": 0.0016939453053055331,
+      "prim_collision/hybrid": 0.008818125045308989,
+      "prim_collision/primitive_narrow": 0.002977226585016979,
+      "prim_collision/(self)": 0.0016838281393205508,
+      "lodos_collision/bbox": 0.06178687497595093,
+      "lodos_collision/sdf_prefilter": 0.045276249966264004,
+      "lodos_collision/narrow": 0.12548250057079713,
+      "lodos_collision/(self)": 0.0005362496813177044,
+      "contact_dynamics/reduce": 0.053306875088310335
+     },
+     "counts": {
+      "contacts": {
+       "mean": 4.696315307617187,
+       "max": 9.0291748046875
+      },
+      "rows_mean": {
+       "mean": 14.088945922851563,
+       "max": 27.0875244140625
+      },
+      "rows_max": {
+       "mean": 33.195,
+       "max": 63.0
+      },
+      "iters_mean": {
+       "mean": 2.9394427490234376,
+       "max": 5.24267578125
+      },
+      "iters_max": {
+       "mean": 6.78,
+       "max": 11.0
+      },
+      "lodos_stage1": {
+       "mean": 1590.27408203125,
+       "max": 2645.1875
+      },
+      "lodos_voxel": {
+       "mean": 309.0642950439453,
+       "max": 620.149658203125
+      },
+      "lodos_contacts": {
+       "mean": 23.79090576171875,
+       "max": 88.3966064453125
+      },
+      "lodos_tiles": {
+       "mean": 198.78426025390624,
+       "max": 330.6484375
+      }
+     },
+     "variant": "fused_newton",
+     "sizes": {
+      "caps": {
+       "nconmax": 29,
+       "njmax": 86,
+       "nccdmax": 2
+      },
+      "collision": {
+       "capacity_tile": 0.25497017892644136,
+       "capacity2": 0.2408625730994152
+      }
+     },
+     "attempts": 1,
+     "weld_filter": false,
+     "best_json": 1943197.7652357074
+    },
+    "lodos_ray": {
+     "B": 8192,
+     "world_steps_per_s": 1941469.4657403931,
+     "us_plain": 0.51507377151494,
+     "us_traced": 0.5311624995374586,
+     "categories": {
+      "collision": 0.3103343750433396,
+      "rigid body": 0.06269062516821577,
+      "assembly": 0.08956812465839903,
+      "solve": 0.059847500051546376,
+      "other": 0.008721874615957876
+     },
+     "collision_stages": {
+      "prim_poses": 0.0023581250059123704,
+      "prim_collision/broadphase": 0.001266464827267555,
+      "prim_collision/hybrid": 0.008530136676654365,
+      "prim_collision/primitive_narrow": 0.0029293750799297413,
+      "prim_collision/(self)": 0.0019983985161786686,
+      "lodos_collision/bbox": 0.07865874995331978,
+      "lodos_collision/sdf_prefilter": 0.0730800001474563,
+      "lodos_collision/narrow": 0.08140499994624406,
+      "lodos_collision/(self)": 0.0005268748645903467,
+      "contact_dynamics/reduce": 0.05945000002611778
+     },
+     "counts": {
+      "contacts": {
+       "mean": 6.93451171875,
+       "max": 15.8968505859375
+      },
+      "rows_mean": {
+       "mean": 6.96744140625,
+       "max": 15.8968505859375
+      },
+      "rows_max": {
+       "mean": 22.715,
+       "max": 32.0
+      },
+      "iters_mean": {
+       "mean": 2.0957379150390625,
+       "max": 4.532958984375
+      },
+      "iters_max": {
+       "mean": 7.96,
+       "max": 11.0
+      },
+      "lodos_stage1": {
+       "mean": 2443.872578125,
+       "max": 3274.1884765625
+      },
+      "lodos_voxel": {
+       "mean": 429.3738720703125,
+       "max": 696.5274658203125
+      },
+      "lodos_contacts": {
+       "mean": 72.86592895507812,
+       "max": 143.7158203125
+      },
+      "lodos_tiles": {
+       "mean": 305.484072265625,
+       "max": 409.2735595703125
+      }
+     },
+     "variant": "fused_newton",
+     "sizes": {
+      "caps": {
+       "nconmax": 42,
+       "njmax": 45,
+       "nccdmax": 2
+      },
+      "collision": {
+       "capacity_tile": 0.4540258449304175,
+       "capacity2": 0.18073030634573303
+      }
+     },
+     "attempts": 1,
+     "weld_filter": false,
+     "best_json": 1971642.6045073143
+    },
+    "mjwarp": {
+     "B": 1024,
+     "world_steps_per_s": 51539.62480811928,
+     "us_plain": 19.402547141601723,
+     "us_traced": 19.418701883405447,
+     "categories": {
+      "collision": 17.65994143206626,
+      "rigid body": 0.29928562418717775,
+      "assembly": 0.17710812569930567,
+      "solve": 1.2548199929005932,
+      "other": 0.02754670855210483
+     },
+     "collision_stages": {
+      "collide/(self)": 0.020621867683989076,
+      "collide/broadphase": 0.004854531193814182,
+      "collide/narrowphase": 17.634465033188462
+     },
+     "counts": {
+      "contacts_newton": {
+       "mean": 225.3311083984375,
+       "max": 268.59765625
+      },
+      "contacts": {
+       "mean": 165.3311083984375,
+       "max": 208.59765625
+      },
+      "rows_mean": {
+       "mean": 36.58802734375,
+       "max": 107.4619140625
+      },
+      "rows_max": {
+       "mean": 111.235,
+       "max": 274.0
+      },
+      "iters_mean": {
+       "mean": 2.7600244140625,
+       "max": 4.7578125
+      },
+      "iters_max": {
+       "mean": 5.635,
+       "max": 8.0
+      },
+      "shape_pairs": {
+       "mean": 7.3646630859375,
+       "max": 9.0
+      },
+      "triangle_pairs": {
+       "mean": 2760.8779248046876,
+       "max": 3413.99609375
+      },
+      "reducer_input": {
+       "mean": 3094.5362939453125,
+       "max": 3856.958984375
+      }
+     },
+     "variant": null,
+     "sizes": {
+      "contacts_per_world": 425,
+      "triangle_pairs_per_world": 6243,
+      "njmax": 416
+     },
+     "attempts": 1,
+     "weld_filter": false,
+     "best_json": 52030.48330865614
+    }
+   },
+   "equal": {
+    "lodos_contact": {
+     "B": 1024,
+     "world_steps_per_s": 970550.9918421383,
+     "us_plain": 1.0303425666506882,
+     "us_traced": 1.099475002847612,
+     "categories": {
+      "collision": 0.4689200015923234,
+      "rigid body": 0.2838700015854556,
+      "assembly": 0.08733999948162816,
+      "solve": 0.23868499945820076,
+      "other": 0.02066000073000386
+     },
+     "collision_stages": {
+      "prim_poses": 0.006545000076130236,
+      "prim_collision/broadphase": 0.004804999928182951,
+      "prim_collision/hybrid": 0.037764999897262896,
+      "prim_collision/primitive_narrow": 0.01479421893691324,
+      "prim_collision/convex_narrow": 0.0010149999974373713,
+      "prim_collision/(self)": 0.013795781990779693,
+      "lodos_collision/bbox": 0.11981500047113514,
+      "lodos_collision/sdf_prefilter": 0.058824999978241976,
+      "lodos_collision/narrow": 0.12677000029725605,
+      "lodos_collision/(self)": 0.00436999898738576,
+      "contact_dynamics/reduce": 0.08042000103159808
+     },
+     "counts": {
+      "contacts": {
+       "mean": 11.85896484375,
+       "max": 38.5927734375
+      },
+      "rows_mean": {
+       "mean": 35.57689453125,
+       "max": 115.7783203125
+      },
+      "rows_max": {
+       "mean": 101.865,
+       "max": 261.0
+      },
+      "iters_mean": {
+       "mean": 2.945234375,
+       "max": 5.3740234375
+      },
+      "iters_max": {
+       "mean": 5.64,
+       "max": 10.0
+      },
+      "lodos_stage1": {
+       "mean": 1565.6042578125,
+       "max": 2618.484375
+      },
+      "lodos_voxel": {
+       "mean": 306.612255859375,
+       "max": 582.2373046875
+      },
+      "lodos_contacts": {
+       "mean": 22.3385693359375,
+       "max": 104.1240234375
+      },
+      "lodos_tiles": {
+       "mean": 195.7005322265625,
+       "max": 327.310546875
+      }
+     },
+     "variant": "fused_newton",
+     "sizes": {
+      "caps": {
+       "nconmax": 120,
+       "njmax": 360,
+       "nccdmax": 2
+      },
+      "collision": {
+       "capacity_tile": 0.2504970178926441,
+       "capacity2": 0.24516369047619047
+      }
+     },
+     "attempts": 1,
+     "weld_filter": false
+    },
+    "lodos_ray": {
+     "B": 1024,
+     "world_steps_per_s": 937220.7818995275,
+     "us_plain": 1.0669844494626268,
+     "us_traced": 1.1260649940231815,
+     "categories": {
+      "collision": 0.4471500007207396,
+      "rigid body": 0.27457000378490193,
+      "assembly": 0.2746550003212178,
+      "solve": 0.10353499979828484,
+      "other": 0.026154989398037246
+     },
+     "collision_stages": {
+      "prim_poses": 0.005845000152930879,
+      "prim_collision/broadphase": 0.0051449999318720074,
+      "prim_collision/hybrid": 0.031140000137384053,
+      "prim_collision/primitive_narrow": 0.007950000010623626,
+      "prim_collision/convex_narrow": 0.001074999997285886,
+      "prim_collision/(self)": 0.012385000064227823,
+      "lodos_collision/bbox": 0.12937999967107316,
+      "lodos_collision/sdf_prefilter": 0.07086000030540163,
+      "lodos_collision/narrow": 0.0873450003018661,
+      "lodos_collision/(self)": 0.0042799995389942065,
+      "contact_dynamics/reduce": 0.09174500060908031
+     },
+     "counts": {
+      "contacts": {
+       "mean": 7.1137548828125,
+       "max": 15.9052734375
+      },
+      "rows_mean": {
+       "mean": 7.1472607421875,
+       "max": 15.9052734375
+      },
+      "rows_max": {
+       "mean": 21.105,
+       "max": 31.0
+      },
+      "iters_mean": {
+       "mean": 2.1416943359375,
+       "max": 4.5458984375
+      },
+      "iters_max": {
+       "mean": 7.18,
+       "max": 13.0
+      },
+      "lodos_stage1": {
+       "mean": 2418.735859375,
+       "max": 3280.3359375
+      },
+      "lodos_voxel": {
+       "mean": 420.983203125,
+       "max": 702.01953125
+      },
+      "lodos_contacts": {
+       "mean": 74.56740234375,
+       "max": 146.3740234375
+      },
+      "lodos_tiles": {
+       "mean": 302.341982421875,
+       "max": 410.0419921875
+      }
+     },
+     "variant": "fused_newton",
+     "sizes": {
+      "caps": {
+       "nconmax": 42,
+       "njmax": 45,
+       "nccdmax": 2
+      },
+      "collision": {
+       "capacity_tile": 0.4540258449304175,
+       "capacity2": 0.18073030634573303
+      }
+     },
+     "attempts": 1,
+     "weld_filter": false
+    }
+   },
+   "weld": {
+    "B1024": {
+     "B": 1024,
+     "world_steps_per_s": 89795.92670142608,
+     "us_plain": 11.136362602782945,
+     "us_traced": 11.202895001042634,
+     "categories": {
+      "collision": 9.37170030316338,
+      "rigid body": 0.3134748438776569,
+      "assembly": 0.17503062561445404,
+      "solve": 1.3142450005398132,
+      "other": 0.02844422784732941
+     },
+     "collision_stages": {
+      "collide/(self)": 0.020615918149361964,
+      "collide/broadphase": 0.0047243749190784,
+      "collide/narrowphase": 9.34636001009494
+     },
+     "counts": {
+      "contacts_newton": {
+       "mean": 165.3851171875,
+       "max": 208.7666015625
+      },
+      "contacts": {
+       "mean": 165.3851171875,
+       "max": 208.7666015625
+      },
+      "rows_mean": {
+       "mean": 36.5577197265625,
+       "max": 105.16796875
+      },
+      "rows_max": {
+       "mean": 112.255,
+       "max": 268.0
+      },
+      "iters_mean": {
+       "mean": 2.7598291015625,
+       "max": 4.748046875
+      },
+      "iters_max": {
+       "mean": 5.6,
+       "max": 8.0
+      },
+      "shape_pairs": {
+       "mean": 6.365283203125,
+       "max": 8.0
+      },
+      "triangle_pairs": {
+       "mean": 1293.7281298828125,
+       "max": 1944.06640625
+      },
+      "reducer_input": {
+       "mean": 1608.6422607421875,
+       "max": 2368.5732421875
+      }
+     },
+     "variant": null,
+     "sizes": {
+      "contacts_per_world": 425,
+      "triangle_pairs_per_world": 6243,
+      "njmax": 416
+     },
+     "attempts": 1,
+     "weld_filter": true
+    },
+    "B2048": {
+     "B": 2048,
+     "world_steps_per_s": 89553.37786096457,
+     "us_plain": 11.166524634643515,
+     "us_traced": 10.755760550964624,
+     "categories": {
+      "collision": 9.201444995123893,
+      "rigid body": 0.18382601538746712,
+      "assembly": 0.15152164045503014,
+      "solve": 1.204414997191634,
+      "other": 0.014552902806600886
+     },
+     "collision_stages": {
+      "collide/(self)": 0.017866258801860213,
+      "collide/broadphase": 0.002863750034975965,
+      "collide/narrowphase": 9.180714986287057
+     },
+     "counts": {
+      "contacts_newton": {
+       "mean": 165.41146728515625,
+       "max": 208.9931640625
+      },
+      "contacts": {
+       "mean": 165.41146728515625,
+       "max": 208.9931640625
+      },
+      "rows_mean": {
+       "mean": 36.56538818359375,
+       "max": 107.03125
+      },
+      "rows_max": {
+       "mean": 116.92,
+       "max": 268.0
+      },
+      "iters_mean": {
+       "mean": 2.75976318359375,
+       "max": 4.7587890625
+      },
+      "iters_max": {
+       "mean": 5.77,
+       "max": 8.0
+      },
+      "shape_pairs": {
+       "mean": 6.36564453125,
+       "max": 8.0
+      },
+      "triangle_pairs": {
+       "mean": 1294.0081372070313,
+       "max": 1943.96044921875
+      },
+      "reducer_input": {
+       "mean": 1609.2008862304688,
+       "max": 2349.84814453125
+      }
+     },
+     "variant": null,
+     "sizes": {
+      "contacts_per_world": 425,
+      "triangle_pairs_per_world": 6243,
+      "njmax": 416
+     },
+     "attempts": 1,
+     "weld_filter": true
+    }
+   },
+   "compare": {
+    "lodos_contact": {
+     "speedup": 33.12503322266794,
+     "speedup_plain": 33.300619846313715,
+     "ratio": {
+      "collision": 58.727482873986105,
+      "rigid body": 4.911051609028852,
+      "assembly": 4.842079289579403,
+      "solve": 6.9036004498119725,
+      "other": 4.41940647879948
+     },
+     "share": {
+      "collision": 0.921770989661151,
+      "rigid body": 0.012656028608580597,
+      "assembly": 0.007462175451820329,
+      "solve": 0.05697906009420878,
+      "other": 0.0011317461842391165
+     },
+     "with_lodos_collision": 3.5131095561119587
+    },
+    "lodos_cone": {
+     "speedup": 36.090132568361575,
+     "speedup_plain": 36.88778255930286,
+     "ratio": {
+      "collision": 58.128481852231374,
+      "rigid body": 4.817814079350901,
+      "assembly": 2.7072982921465285,
+      "solve": 12.419118742460336,
+      "other": 4.855132100585409
+     },
+     "share": {
+      "collision": 0.919255496661427,
+      "rigid body": 0.012561279211815008,
+      "assembly": 0.005915549019551017,
+      "solve": 0.061109188009289474,
+      "other": 0.0011584870979173092
+     },
+     "with_lodos_collision": 3.833335326317041
+    },
+    "lodos_ray": {
+     "speedup": 36.55887209717447,
+     "speedup_plain": 37.669452833008286,
+     "ratio": {
+      "collision": 56.906172349099165,
+      "rigid body": 4.774009245945691,
+      "assembly": 1.9773566363566573,
+      "solve": 20.966957547430095,
+      "other": 3.158347232108143
+     },
+     "share": {
+      "collision": 0.918574235871157,
+      "rigid body": 0.012526512544087126,
+      "assembly": 0.004634801773897309,
+      "solve": 0.06326776974822264,
+      "other": 0.0009966800626356553
+     },
+     "with_lodos_collision": 3.8954083320722233
+    }
+   },
+   "compare_equal": {
+    "lodos_contact": {
+     "speedup": 17.661794795799366,
+     "speedup_plain": 18.8311613725454,
+     "ratio": {
+      "collision": 37.66088324681813,
+      "rigid body": 1.0543052189932842,
+      "assembly": 2.0278008558559715,
+      "solve": 5.257221843638905,
+      "other": 1.3333353135897823
+     },
+     "share": {
+      "collision": 0.9384141340985706,
+      "rigid body": 0.0008414996278081314,
+      "assembly": 0.004900213682759084,
+      "solve": 0.05546822472736635,
+      "other": 0.00037592786349569267
+     },
+     "with_lodos_collision": 2.026131059971235
+    },
+    "lodos_ray": {
+     "speedup": 17.244743408661265,
+     "speedup_plain": 18.18447040289441,
+     "ratio": {
+      "collision": 39.49444571978318,
+      "rigid body": 1.0900157339169432,
+      "assembly": 0.6448385264865816,
+      "solve": 12.11976621765909,
+      "other": 1.0532104652342937
+     },
+     "share": {
+      "collision": 0.9409682997280985,
+      "rigid body": 0.0013511239823834089,
+      "assembly": -0.005332575899898391,
+      "solve": 0.06293707135085361,
+      "other": 7.608083856272196e-05
+     },
+     "with_lodos_collision": 1.9589548238940402
+    }
+   },
+   "compare_weld": {
+    "lodos_contact": {
+     "speedup": 19.110251103691123,
+     "speedup_plain": 19.113355313583085,
+     "ratio": {
+      "collision": 31.165243167500254,
+      "rigid body": 5.1438860138922475,
+      "assembly": 4.785281104316924,
+      "solve": 7.230536991936942,
+      "other": 4.563398367364329
+     },
+     "share": {
+      "collision": 0.8544100708530584,
+      "rigid body": 0.023786514878120505,
+      "assembly": 0.01304116480107023,
+      "solve": 0.1066701525536551,
+      "other": 0.002092096914095651
+     },
+     "with_lodos_collision": 3.6366701750197117
+    },
+    "lodos_contact_equal": {
+     "speedup": 10.189313055801565,
+     "speedup_plain": 10.808407769644685,
+     "ratio": {
+      "collision": 19.985712427151032,
+      "rigid body": 1.1042901402996228,
+      "assembly": 2.0040145025564318,
+      "solve": 5.506190181716751,
+      "other": 1.3767776787161854
+     },
+     "share": {
+      "collision": 0.8811650216621242,
+      "rigid body": 0.0029301803050343542,
+      "assembly": 0.00867930128100107,
+      "solve": 0.10645504208216242,
+      "other": 0.0007704546696778124
+     },
+     "with_lodos_collision": 2.0920118179261378
+    },
+    "lodos_ray": {
+     "speedup": 21.09127623052874,
+     "speedup_plain": 21.6209079527163,
+     "ratio": {
+      "collision": 30.198718082244607,
+      "rigid body": 5.000346431966817,
+      "assembly": 1.9541619999525242,
+      "solve": 21.95989806437796,
+      "other": 3.261251634515218
+     },
+     "share": {
+      "collision": 0.849099799572562,
+      "rigid body": 0.023499859903166585,
+      "assembly": 0.00800830614373075,
+      "solve": 0.11754394146511286,
+      "other": 0.0018480929154277275
+     },
+     "with_lodos_collision": 4.031777610029809
+    },
+    "lodos_ray_equal": {
+     "speedup": 9.948710829751633,
+     "speedup_plain": 10.43723046609689,
+     "ratio": {
+      "collision": 20.958739322503824,
+      "rigid body": 1.141693701265463,
+      "assembly": 0.6372744913063666,
+      "solve": 12.693726789011738,
+      "other": 1.0875258794585463
+     },
+     "share": {
+      "collision": 0.8856505762452932,
+      "rigid body": 0.003860821316391575,
+      "assembly": -0.009886479640657439,
+      "solve": 0.12014790364610257,
+      "other": 0.0002271784328700094
+     },
+     "with_lodos_collision": 2.0232799267296038
+    }
+   },
+   "collision_kernels": {
+    "lodos": {
+     "prim_collision": {
+      "ms": 0.08874400060449261,
+      "top": [
+       [
+        "memset",
+        0.019028000082471408,
+        9.0
+       ],
+       [
+        "_primitive_narrowphase__locals__primitive_narrowphase",
+        0.011836000136099756,
+        1.0
+       ],
+       [
+        "gjk_kernel",
+        0.010988000023644418,
+        1.0
+       ],
+       [
+        "warm_kernel",
+        0.008683999883942306,
+        1.0
+       ],
+       [
+        "epa_kernel",
+        0.007060000149067491,
+        1.0
+       ],
+       [
+        "geom_kinematics",
+        0.006716000090818852,
+        1.0
+       ],
+       [
+        "manifold_kernel",
+        0.005856000090716407,
+        1.0
+       ],
+       [
+        "clear_cache_kernel",
+        0.005788000125903636,
+        1.0
+       ]
+      ]
+     },
+     "lodos_collision": {
+      "ms": 0.3345520003931597,
+      "top": [
+       [
+        "_make_nsdf_kernel__locals__compute_nsdf",
+        0.10611200053244829,
+        1.0
+       ],
+       [
+        "scatter_nTa",
+        0.06908799987286329,
+        1.0
+       ],
+       [
+        "tile_filter",
+        0.03262399975210428,
+        1.0
+       ],
+       [
+        "_make_tiled_sdf_filter__locals__tiled_sdf_filter",
+        0.03092400007881224,
+        1.0
+       ],
+       [
+        "_scan_add",
+        0.01184799987822771,
+        2.0
+       ],
+       [
+        "scatter_nCa2_tiled",
+        0.009671999898273498,
+        1.0
+       ],
+       [
+        "_reduce",
+        0.008831999904941767,
+        2.0
+       ],
+       [
+        "obb_filter",
+        0.00806000002194196,
+        1.0
+       ]
+      ]
+     },
+     "reduce": {
+      "ms": 0.08238800006802194,
+      "top": [
+       [
+        "score_contacts",
+        0.056167999748140574,
+        1.0
+       ],
+       [
+        "mark_winners",
+        0.01141600008122623,
+        1.0
+       ],
+       [
+        "builtin kernel memtile_value_kernel",
+        0.00853600015398115,
+        1.0
+       ],
+       [
+        "assign_rows",
+        0.003252000024076551,
+        1.0
+       ],
+       [
+        "memset",
+        0.0030160000605974346,
+        1.0
+       ]
+      ]
+     }
+    },
+    "newton": {
+     "collide": {
+      "ms": 17.970579922402976,
+      "top": [
+       [
+        "mesh_triangle_contacts_to_reducer_kernel",
+        12.287871956825256,
+        1.0
+       ],
+       [
+        "create_narrow_phase_process_mesh_mesh_contacts_kernel__locals__mesh_sdf_collision_global_reduce_kernel",
+        2.55608794093132,
+        1.0
+       ],
+       [
+        "narrow_phase_find_mesh_triangle_overlaps_kernel",
+        1.8715520203113556,
+        1.0
+       ],
+       [
+        "reduce_buffered_contacts_kernel",
+        0.599384006112814,
+        1.0
+       ],
+       [
+        "create_export_reduced_contacts_kernel__locals__export_reduced_contacts_kernel",
+        0.43166399747133255,
+        1.0
+       ],
+       [
+        "_clear_active_kernel",
+        0.10163199994713068,
+        1.0
+       ],
+       [
+        "create_narrow_phase_kernel_gjk_mpr__locals__narrow_phase_kernel_gjk_mpr",
+        0.06423600064590573,
+        1.0
+       ],
+       [
+        "compute_shape_aabbs",
+        0.02222000015899539,
+        1.0
+       ]
+      ]
+     },
+     "convert_contacts": {
+      "ms": 0.07640800043009222,
+      "top": [
+       [
+        "convert_newton_contacts_to_mjwarp_kernel",
+        0.07092000031843781,
+        1.0
+       ],
+       [
+        "memset",
+        0.0028520000632852316,
+        1.0
+       ],
+       [
+        "_snapshot_nacon_count",
+        0.0026360000483691692,
+        1.0
+       ]
+      ]
+     }
+    }
+   },
+   "solve_kernels": {
+    "lodos": {
+     "solve": {
+      "ms": 0.17232799902558327,
+      "top": [
+       [
+        "newton_kernel__locals__kernel",
+        0.16841999907046556,
+        1.0
+       ],
+       [
+        "_fill_contact_impratio",
+        0.0039079999551177025,
+        1.0
+       ]
+      ]
+     },
+     "rest": {
+      "ms": 1.0597680012288038,
+      "top": [
+       [
+        "_make_nsdf_kernel__locals__compute_nsdf",
+        0.11800799798220396,
+        1.0
+       ],
+       [
+        "_kinematics_level",
+        0.07360000081826001,
+        11.0
+       ],
+       [
+        "scatter_nTa",
+        0.06529599940404296,
+        1.0
+       ],
+       [
+        "score_contacts",
+        0.055584000423550606,
+        1.0
+       ],
+       [
+        "_com_vel_level",
+        0.05169999969075434,
+        11.0
+       ],
+       [
+        "_cacc_level",
+        0.04492799995932728,
+        11.0
+       ],
+       [
+        "_crb_acc",
+        0.044415999960619956,
+        11.0
+       ],
+       [
+        "_subtree_acc",
+        0.042520000046351925,
+        11.0
+       ]
+      ]
+     },
+     "iters": 2.0079345703125,
+     "rows": 25.3553466796875
+    },
+    "newton": {
+     "solve": {
+      "ms": 1.0629640014085453,
+      "top": [
+       [
+        "_update_gradient_JTCJ_dense",
+        0.6605520010925829,
+        5.375
+       ],
+       [
+        "_linesearch_iterative_kernel__locals__kernel",
+        0.10462799947708845,
+        4.375
+       ],
+       [
+        "_update_gradient_JTDAJ_dense_tiled__locals__kernel",
+        0.062035999551881105,
+        5.375
+       ],
+       [
+        "_update_constraint_efc__locals__kernel",
+        0.04548800049815327,
+        5.375
+       ],
+       [
+        "_update_gradient_cholesky__locals__kernel",
+        0.037840000295545906,
+        5.375
+       ],
+       [
+        "memcpy DtoH",
+        0.032787999662104994,
+        5.375
+       ],
+       [
+        "_update_constraint_init_qfrc_constraint_dense__locals__kernel",
+        0.031340000219643116,
+        5.375
+       ],
+       [
+        "mul_m_kernel__locals___mul_m",
+        0.024339999974472448,
+        5.375
+       ]
+      ]
+     },
+     "rest": {
+      "ms": 0.40009200263011735,
+      "top": [
+       [
+        "_efc_contact_jac_dense__locals__kernel",
+        0.05506000015884638,
+        1.0
+       ],
+       [
+        "_cfrc_backward",
+        0.04221200058236718,
+        11.0
+       ],
+       [
+        "_crb_accumulate",
+        0.04052800030331127,
+        11.0
+       ],
+       [
+        "_subtree_com_acc",
+        0.03232000069692731,
+        11.0
+       ],
+       [
+        "_efc_contact_update__locals__kernel",
+        0.02561999997124076,
+        1.0
+       ],
+       [
+        "_kinematics_branch",
+        0.023111999966204166,
+        1.0
+       ],
+       [
+        "memset",
+        0.02172000017890241,
+        7.0
+       ],
+       [
+        "_comvel_branch",
+        0.010671999887563288,
+        1.0
+       ]
+      ]
+     },
+     "iters": 1.9078369140625,
+     "rows": 29.48974609375
+    }
+   },
+   "pairs": {
+    "scene": "nist_threading_m8",
+    "B": 256,
+    "points": 8,
+    "weld_filter": false,
+    "triangle_pairs": {
+     "lodos_surface@bolt_m8 x board_box@board": 1467.0,
+     "lodos_surface@nut_m8 x board_box@board": 531.26123046875,
+     "lodos_surface@bolt_m8 x right_pad_box@right_finger": 467.08837890625,
+     "lodos_surface@nut_m8 x right_pad_box@right_finger": 147.31689453125,
+     "lodos_surface@bolt_m8 x left_pad_box@left_finger": 21.99560546875,
+     "lodos_surface@nut_m8 x left_pad_box@left_finger": 8.9892578125
+    },
+    "contacts": {
+     "lodos_surface@bolt_m8 x lodos_surface@nut_m8": 125.1083984375,
+     "lodos_surface@bolt_m8 x board_box@board": 60.0,
+     "lodos_surface@nut_m8 x board_box@board": 24.23193359375,
+     "lodos_surface@nut_m8 x right_pad_box@right_finger": 7.5029296875,
+     "lodos_surface@bolt_m8 x right_pad_box@right_finger": 3.7392578125,
+     "board_box@board x right_pad_box@right_finger": 1.0,
+     "board_box@board x left_pad_box@left_finger": 0.75
+    }
+   }
+  },
+  "arm_walled_5_sdf": {
+   "best": {
+    "lodos_contact": {
+     "B": 4096,
+     "world_steps_per_s": 1223746.7368313745,
+     "us_plain": 0.8171625467123059,
+     "us_traced": 0.8210665898595579,
+     "categories": {
+      "collision": 0.25810046749816734,
+      "rigid body": 0.052630840927521835,
+      "assembly": 0.02192990599315992,
+      "solve": 0.48414485930738793,
+      "other": 0.004260516133320869
+     },
+     "collision_stages": {
+      "lodos_collision/bbox": 0.08346261668767536,
+      "lodos_collision/sdf_prefilter": 0.0336927570086152,
+      "lodos_collision/narrow": 0.019143691460897647,
+      "lodos_collision/(self)": 0.0010478976912615273,
+      "contact_dynamics/reduce": 0.12017990651248876
+     },
+     "counts": {
+      "contacts": {
+       "mean": 5.776833792713201,
+       "max": 12.775390625
+      },
+      "rows_mean": {
+       "mean": 17.3305013781396,
+       "max": 38.326171875
+      },
+      "rows_max": {
+       "mean": 41.66355140186916,
+       "max": 60.0
+      },
+      "iters_mean": {
+       "mean": 2.90889675817757,
+       "max": 3.854736328125
+      },
+      "iters_max": {
+       "mean": 8.766355140186915,
+       "max": 13.0
+      },
+      "lodos_stage1": {
+       "mean": 1222.6475065712616,
+       "max": 1774.3203125
+      },
+      "lodos_voxel": {
+       "mean": 33.245232412748244,
+       "max": 54.697509765625
+      },
+      "lodos_contacts": {
+       "mean": 5.776993510879088,
+       "max": 12.775634765625
+      },
+      "lodos_tiles": {
+       "mean": 152.8309383214077,
+       "max": 221.7900390625
+      }
+     },
+     "variant": "default",
+     "sizes": {
+      "caps": {
+       "nconmax": 24,
+       "njmax": 72
+      },
+      "collision": {
+       "capacity_tile": 0.15380116959064327,
+       "capacity2": 0.04129746835443038
+      }
+     },
+     "attempts": 1,
+     "weld_filter": false,
+     "best_json": 1243698.7174068398
+    },
+    "lodos_cone": {
+     "B": 8192,
+     "world_steps_per_s": 1246872.2208312224,
+     "us_plain": 0.802006800130132,
+     "us_traced": 0.8055496477809186,
+     "categories": {
+      "collision": 0.2662079437311126,
+      "rigid body": 0.04043049080520117,
+      "assembly": 0.035288554074859646,
+      "solve": 0.4612564244211018,
+      "other": 0.0023662347486434086
+     },
+     "collision_stages": {
+      "lodos_collision/bbox": 0.10099299079314239,
+      "lodos_collision/sdf_prefilter": 0.03523306063088457,
+      "lodos_collision/narrow": 0.01645210281333327,
+      "lodos_collision/(self)": 0.0005671724017710918,
+      "contact_dynamics/reduce": 0.1126816591452459
+     },
+     "counts": {
+      "contacts": {
+       "mean": 4.6056250456337615,
+       "max": 9.862060546875
+      },
+      "rows_mean": {
+       "mean": 13.816875136901285,
+       "max": 29.586181640625
+      },
+      "rows_max": {
+       "mean": 32.257009345794394,
+       "max": 48.0
+      },
+      "iters_mean": {
+       "mean": 3.294902480651285,
+       "max": 4.296875
+      },
+      "iters_max": {
+       "mean": 9.182242990654206,
+       "max": 14.0
+      },
+      "lodos_stage1": {
+       "mean": 1231.5803108571845,
+       "max": 1786.515625
+      },
+      "lodos_voxel": {
+       "mean": 33.58041809652453,
+       "max": 54.983154296875
+      },
+      "lodos_contacts": {
+       "mean": 5.729437997408002,
+       "max": 12.6866455078125
+      },
+      "lodos_tiles": {
+       "mean": 153.94753885714806,
+       "max": 223.314453125
+      }
+     },
+     "variant": "default",
+     "sizes": {
+      "caps": {
+       "nconmax": 21,
+       "njmax": 63
+      },
+      "collision": {
+       "capacity_tile": 0.15263157894736842,
+       "capacity2": 0.03730867346938776
+      }
+     },
+     "attempts": 1,
+     "weld_filter": false,
+     "best_json": 1250550.5427144703
+    },
+    "lodos_ray": {
+     "B": 8192,
+     "world_steps_per_s": 1937719.894061564,
+     "us_plain": 0.5160704615071824,
+     "us_traced": 0.5183084113099047,
+     "categories": {
+      "collision": 0.2734509346319908,
+      "rigid body": 0.04058878530656253,
+      "assembly": 0.02726051512989756,
+      "solve": 0.17441238278224433,
+      "other": 0.002595793459209435
+     },
+     "collision_stages": {
+      "lodos_collision/bbox": 0.10259579402007267,
+      "lodos_collision/sdf_prefilter": 0.03731191596059128,
+      "lodos_collision/narrow": 0.01836331774956026,
+      "lodos_collision/(self)": 0.0005484817767151024,
+      "contact_dynamics/reduce": 0.11432418213079022
+     },
+     "counts": {
+      "contacts": {
+       "mean": 4.752896032600759,
+       "max": 9.47412109375
+      },
+      "rows_mean": {
+       "mean": 4.752896032600759,
+       "max": 9.47412109375
+      },
+      "rows_max": {
+       "mean": 11.962616822429906,
+       "max": 18.0
+      },
+      "iters_mean": {
+       "mean": 1.7377764265113902,
+       "max": 2.2236328125
+      },
+      "iters_max": {
+       "mean": 5.378504672897196,
+       "max": 8.0
+      },
+      "lodos_stage1": {
+       "mean": 1280.511120947722,
+       "max": 1862.625
+      },
+      "lodos_voxel": {
+       "mean": 37.560121340172316,
+       "max": 60.4737548828125
+      },
+      "lodos_contacts": {
+       "mean": 7.358286064361858,
+       "max": 14.25048828125
+      },
+      "lodos_tiles": {
+       "mean": 160.06389011846525,
+       "max": 232.828125
+      }
+     },
+     "variant": "default",
+     "sizes": {
+      "caps": {
+       "nconmax": 23,
+       "njmax": 23
+      },
+      "collision": {
+       "capacity_tile": 0.1783625730994152,
+       "capacity2": 0.04912663755458515
+      }
+     },
+     "attempts": 1,
+     "weld_filter": false,
+     "best_json": 1974853.8227371657
+    },
+    "mjwarp": {
+     "B": 2048,
+     "world_steps_per_s": 234901.63499579384,
+     "us_plain": 4.257101062825323,
+     "us_traced": 4.297817753960822,
+     "categories": {
+      "collision": 1.6797616847716794,
+      "rigid body": 0.1273340383690823,
+      "assembly": 0.0691040452769914,
+      "solve": 2.407668225459589,
+      "other": 0.013949760083480176
+     },
+     "collision_stages": {
+      "collide/(self)": 0.00858498592223823,
+      "collide/broadphase": 0.003094918300920203,
+      "collide/narrowphase": 1.6680817805485209
+     },
+     "counts": {
+      "contacts_newton": {
+       "mean": 71.50535740362149,
+       "max": 120.53076171875
+      },
+      "contacts": {
+       "mean": 71.50535740362149,
+       "max": 120.53076171875
+      },
+      "rows_mean": {
+       "mean": 15.82180472400701,
+       "max": 34.8984375
+      },
+      "rows_max": {
+       "mean": 45.25233644859813,
+       "max": 66.0
+      },
+      "iters_mean": {
+       "mean": 3.5053825021904204,
+       "max": 4.46044921875
+      },
+      "iters_max": {
+       "mean": 8.883177570093459,
+       "max": 13.0
+      },
+      "shape_pairs": {
+       "mean": 16.612170067903037,
+       "max": 22.36962890625
+      },
+      "triangle_pairs": {
+       "mean": 0.0,
+       "max": 0.0
+      },
+      "reducer_input": {
+       "mean": 106.73547477365655,
+       "max": 187.10546875
+      }
+     },
+     "variant": null,
+     "sizes": {
+      "contacts_per_world": 263,
+      "triangle_pairs_per_world": 407,
+      "njmax": 95
+     },
+     "attempts": 1,
+     "weld_filter": false,
+     "best_json": 238244.8920384351
+    }
+   },
+   "equal": {
+    "lodos_contact": {
+     "B": 2048,
+     "world_steps_per_s": 1096862.2668473225,
+     "us_plain": 0.9116914951174948,
+     "us_traced": 0.9263598132458577,
+     "categories": {
+      "collision": 0.25389719622893114,
+      "rigid body": 0.07461682292151321,
+      "assembly": 0.0326799102614158,
+      "solve": 0.5571471967380254,
+      "other": 0.008018687095972121
+     },
+     "collision_stages": {
+      "lodos_collision/bbox": 0.0977126163948397,
+      "lodos_collision/sdf_prefilter": 0.03672897192300977,
+      "lodos_collision/narrow": 0.025000000033568004,
+      "lodos_collision/(self)": 0.002102804375817447,
+      "contact_dynamics/reduce": 0.09106308386444058
+     },
+     "counts": {
+      "contacts": {
+       "mean": 5.805294429030374,
+       "max": 12.8427734375
+      },
+      "rows_mean": {
+       "mean": 17.41588328709112,
+       "max": 38.5283203125
+      },
+      "rows_max": {
+       "mean": 40.30373831775701,
+       "max": 60.0
+      },
+      "iters_mean": {
+       "mean": 2.8985059506425235,
+       "max": 3.880859375
+      },
+      "iters_max": {
+       "mean": 8.38785046728972,
+       "max": 14.0
+      },
+      "lodos_stage1": {
+       "mean": 1225.1757082359813,
+       "max": 1782.265625
+      },
+      "lodos_voxel": {
+       "mean": 33.38822922751168,
+       "max": 55.24853515625
+      },
+      "lodos_contacts": {
+       "mean": 5.805447302132009,
+       "max": 12.8427734375
+      },
+      "lodos_tiles": {
+       "mean": 153.14696352949767,
+       "max": 222.783203125
+      }
+     },
+     "variant": "default",
+     "sizes": {
+      "caps": {
+       "nconmax": 24,
+       "njmax": 72
+      },
+      "collision": {
+       "capacity_tile": 0.15380116959064327,
+       "capacity2": 0.04129746835443038
+      }
+     },
+     "attempts": 1,
+     "weld_filter": false
+    },
+    "lodos_ray": {
+     "B": 2048,
+     "world_steps_per_s": 1681967.0635024384,
+     "us_plain": 0.5945419632163625,
+     "us_traced": 0.6147313080499575,
+     "categories": {
+      "collision": 0.25342056040161764,
+      "rigid body": 0.07246028077286815,
+      "assembly": 0.058899531417001896,
+      "solve": 0.22084813067054695,
+      "other": 0.009102804787922785
+     },
+     "collision_stages": {
+      "lodos_collision/bbox": 0.09475014558460162,
+      "lodos_collision/sdf_prefilter": 0.03678971959012653,
+      "lodos_collision/narrow": 0.026443925120661887,
+      "lodos_collision/(self)": 0.0021353683384923083,
+      "contact_dynamics/reduce": 0.09216121483932001
+     },
+     "counts": {
+      "contacts": {
+       "mean": 4.735221506279205,
+       "max": 9.44677734375
+      },
+      "rows_mean": {
+       "mean": 4.735221506279205,
+       "max": 9.44677734375
+      },
+      "rows_max": {
+       "mean": 11.61214953271028,
+       "max": 17.0
+      },
+      "iters_mean": {
+       "mean": 1.7310300452686915,
+       "max": 2.19677734375
+      },
+      "iters_max": {
+       "mean": 4.878504672897196,
+       "max": 8.0
+      },
+      "lodos_stage1": {
+       "mean": 1273.5753687207944,
+       "max": 1848.3984375
+      },
+      "lodos_voxel": {
+       "mean": 37.30974143910631,
+       "max": 59.83203125
+      },
+      "lodos_contacts": {
+       "mean": 7.285697010075935,
+       "max": 14.0234375
+      },
+      "lodos_tiles": {
+       "mean": 159.1969210900993,
+       "max": 231.0498046875
+      }
+     },
+     "variant": "default",
+     "sizes": {
+      "caps": {
+       "nconmax": 23,
+       "njmax": 23
+      },
+      "collision": {
+       "capacity_tile": 0.1783625730994152,
+       "capacity2": 0.04912663755458515
+      }
+     },
+     "attempts": 1,
+     "weld_filter": false
+    }
+   },
+   "weld": {},
+   "compare": {
+    "lodos_contact": {
+     "speedup": 5.234432635598967,
+     "speedup_plain": 5.209613533993865,
+     "ratio": {
+      "collision": 6.508169865223536,
+      "rigid body": 2.4193806544804133,
+      "assembly": 3.15113276356704,
+      "solve": 4.973032717736529,
+      "other": 3.27419487380441
+     },
+     "share": {
+      "collision": 0.4089050812588164,
+      "rigid body": 0.021486495269750244,
+      "assembly": 0.013568454300360015,
+      "solve": 0.5532531019226478,
+      "other": 0.0027868672484255754
+     },
+     "with_lodos_collision": 3.5029516146543873
+    },
+    "lodos_cone": {
+     "speedup": 5.335261167080391,
+     "speedup_plain": 5.308061056507968,
+     "ratio": {
+      "collision": 6.309960781892926,
+      "rigid body": 3.149455666580764,
+      "assembly": 1.9582566384102054,
+      "solve": 5.219804208648853,
+      "other": 5.895340727067652
+     },
+     "share": {
+      "collision": 0.40476667256421345,
+      "rigid body": 0.02488455780645735,
+      "assembly": 0.009682959662315733,
+      "solve": 0.5573489038811552,
+      "other": 0.0033169060858582442
+     },
+     "with_lodos_collision": 3.5804919297844124
+    },
+    "lodos_ray": {
+     "speedup": 8.292008503391024,
+     "speedup_plain": 8.249069420467256,
+     "ratio": {
+      "collision": 6.142826635543579,
+      "rigid body": 3.137172926150478,
+      "assembly": 2.5349500898169963,
+      "solve": 13.80445692589148,
+      "other": 5.373986914863658
+     },
+     "share": {
+      "collision": 0.37208817934904576,
+      "rigid body": 0.022951458826578095,
+      "assembly": 0.011071154045023507,
+      "solve": 0.590885122964389,
+      "other": 0.0030040848149636163
+     },
+     "with_lodos_collision": 5.578738335566498
+    }
+   },
+   "compare_equal": {
+    "lodos_contact": {
+     "speedup": 4.6394691269062776,
+     "speedup_plain": 4.669453521968729,
+     "ratio": {
+      "collision": 6.615912699000783,
+      "rigid body": 1.7065057634927778,
+      "assembly": 2.1145726755125307,
+      "solve": 4.3214221296561455,
+      "other": 1.7396563697425358
+     },
+     "share": {
+      "collision": 0.4229222234462679,
+      "rigid body": 0.015636325997408017,
+      "assembly": 0.010803674747267162,
+      "solve": 0.5488785745697705,
+      "other": 0.0017592012392864938
+     },
+     "with_lodos_collision": 3.1002567515910275
+    },
+    "lodos_ray": {
+     "speedup": 6.991376065738872,
+     "speedup_plain": 7.160303773673418,
+     "ratio": {
+      "collision": 6.628355971234594,
+      "rigid body": 1.7572942998691905,
+      "assembly": 1.1732528869838152,
+      "solve": 10.901918065366191,
+      "other": 1.532468333495202
+     },
+     "share": {
+      "collision": 0.3872678921108823,
+      "rigid body": 0.014898851385130418,
+      "assembly": 0.002770641962889315,
+      "solve": 0.593746610866805,
+      "other": 0.0013160036742929854
+     },
+     "with_lodos_collision": 4.671108485916588
+    }
+   },
+   "compare_weld": {},
+   "collision_kernels": {
+    "lodos": {
+     "lodos_collision": {
+      "ms": 0.3538439993862994,
+      "top": [
+       [
+        "tile_filter",
+        0.08745600050315261,
+        1.0
+       ],
+       [
+        "scatter_nTa",
+        0.07692799903452396,
+        1.0
+       ],
+       [
+        "_make_tiled_sdf_filter__locals__tiled_sdf_filter",
+        0.046847999561578035,
+        1.0
+       ],
+       [
+        "_make_nsdf_kernel__locals__compute_nsdf",
+        0.03369600005680695,
+        1.0
+       ],
+       [
+        "_scan_add",
+        0.011568000016268343,
+        2.0
+       ],
+       [
+        "compute_T_rel",
+        0.011011999915353954,
+        1.0
+       ],
+       [
+        "obb_filter",
+        0.009320000070147216,
+        1.0
+       ],
+       [
+        "scatter_nCa2_tiled",
+        0.009079999988898635,
+        1.0
+       ]
+      ]
+     },
+     "reduce": {
+      "ms": 0.1812680006842129,
+      "top": [
+       [
+        "builtin kernel memtile_value_kernel",
+        0.06868800055235624,
+        1.0
+       ],
+       [
+        "mark_winners",
+        0.04956800024956465,
+        1.0
+       ],
+       [
+        "score_contacts",
+        0.04860399989411235,
+        1.0
+       ],
+       [
+        "assign_rows",
+        0.011591999907977879,
+        1.0
+       ],
+       [
+        "memset",
+        0.002816000080201775,
+        1.0
+       ]
+      ]
+     }
+    },
+    "newton": {
+     "collide": {
+      "ms": 3.3853960406413535,
+      "top": [
+       [
+        "create_narrow_phase_process_mesh_mesh_contacts_kernel__locals__mesh_sdf_collision_global_reduce_kernel",
+        2.6715800389647484,
+        1.0
+       ],
+       [
+        "create_narrow_phase_process_mesh_plane_contacts_kernel__locals__narrow_phase_process_mesh_plane_contacts_reduce_kernel",
+        0.39516400219872594,
+        1.0
+       ],
+       [
+        "create_export_reduced_contacts_kernel__locals__export_reduced_contacts_kernel",
+        0.1765959996264428,
+        1.0
+       ],
+       [
+        "reduce_buffered_contacts_kernel",
+        0.037376000080257654,
+        1.0
+       ],
+       [
+        "_clear_active_kernel",
+        0.03016400011256337,
+        1.0
+       ],
+       [
+        "create_narrow_phase_primitive_kernel__locals__narrow_phase_primitive_kernel",
+        0.01783599960617721,
+        1.0
+       ],
+       [
+        "compute_shape_aabbs",
+        0.013608000008389354,
+        1.0
+       ],
+       [
+        "compute_block_counts_from_weights",
+        0.006500000134110451,
+        2.0
+       ]
+      ]
+     },
+     "convert_contacts": {
+      "ms": 0.0714360003330512,
+      "top": [
+       [
+        "convert_newton_contacts_to_mjwarp_kernel",
+        0.06663200026378036,
+        1.0
+       ],
+       [
+        "_snapshot_nacon_count",
+        0.0025160000659525394,
+        1.0
+       ],
+       [
+        "memset",
+        0.0022880000033183023,
+        1.0
+       ]
+      ]
+     }
+    }
+   },
+   "solve_kernels": {
+    "lodos": {
+     "solve": {
+      "ms": 1.4262440015154425,
+      "top": [
+       [
+        "_update_gradient_JTCJ_dense",
+        0.5598159988876432,
+        10.125
+       ],
+       [
+        "_linesearch_iterative_kernel__locals__kernel",
+        0.20682800083886832,
+        9.125
+       ],
+       [
+        "_update_gradient_cholesky__locals__kernel",
+        0.15548000170383602,
+        10.125
+       ],
+       [
+        "_update_gradient_JTDAJ_dense_tiled__locals__kernel",
+        0.1463759992038831,
+        10.125
+       ],
+       [
+        "memcpy DtoH",
+        0.07125199947040528,
+        10.125
+       ],
+       [
+        "_update_constraint_efc__locals__kernel",
+        0.060800000152084976,
+        10.125
+       ],
+       [
+        "mul_m_kernel__locals___mul_m",
+        0.04848000017227605,
+        10.125
+       ],
+       [
+        "_update_constraint_init_qfrc_constraint_dense__locals__kernel",
+        0.04574399994453415,
+        10.125
+       ]
+      ]
+     },
+     "rest": {
+      "ms": 0.79611200063664,
+      "top": [
+       [
+        "tile_filter",
+        0.08777999971061945,
+        1.0
+       ],
+       [
+        "scatter_nTa",
+        0.0781079987064004,
+        1.0
+       ],
+       [
+        "builtin kernel memtile_value_kernel",
+        0.06962800025939941,
+        1.0
+       ],
+       [
+        "score_contacts",
+        0.050175999756902456,
+        1.0
+       ],
+       [
+        "mark_winners",
+        0.04906000103801489,
+        1.0
+       ],
+       [
+        "_make_tiled_sdf_filter__locals__tiled_sdf_filter",
+        0.046008000150322914,
+        1.0
+       ],
+       [
+        "_make_nsdf_kernel__locals__compute_nsdf",
+        0.03343600005609915,
+        1.0
+       ],
+       [
+        "_efc_contact_jac_dense__locals__kernel",
+        0.03169600002001971,
+        1.0
+       ]
+      ]
+     },
+     "iters": 2.96728515625,
+     "rows": 17.73046875
+    },
+    "newton": {
+     "solve": {
+      "ms": 4.983568013063632,
+      "top": [
+       [
+        "_update_gradient_JTCJ_dense",
+        3.8609600060153753,
+        9.25
+       ],
+       [
+        "mul_m_kernel__locals___mul_m",
+        0.30496400460833684,
+        9.25
+       ],
+       [
+        "_linesearch_iterative_kernel__locals__kernel",
+        0.24540799914393574,
+        8.25
+       ],
+       [
+        "_update_gradient_cholesky__locals__kernel",
+        0.1498480016598478,
+        9.25
+       ],
+       [
+        "_update_gradient_JTDAJ_dense_tiled__locals__kernel",
+        0.14456000074278563,
+        9.25
+       ],
+       [
+        "_update_constraint_efc__locals__kernel",
+        0.060372000152710825,
+        9.25
+       ],
+       [
+        "memcpy DtoH",
+        0.05461199970159214,
+        9.25
+       ],
+       [
+        "_update_constraint_init_qfrc_constraint_dense__locals__kernel",
+        0.04431200004182756,
+        9.25
+       ]
+      ]
+     },
+     "rest": {
+      "ms": 0.2841080012731254,
+      "top": [
+       [
+        "_efc_contact_jac_dense__locals__kernel",
+        0.03895600012037903,
+        1.0
+       ],
+       [
+        "_efc_contact_update__locals__kernel",
+        0.03255600039847195,
+        1.0
+       ],
+       [
+        "memset",
+        0.020748000242747366,
+        7.0
+       ],
+       [
+        "_cdof",
+        0.020075999666005373,
+        1.0
+       ],
+       [
+        "_comvel_branch",
+        0.015063999919220805,
+        1.0
+       ],
+       [
+        "_small_cholesky_factorize_solve_block__locals__kernel",
+        0.01314800011459738,
+        1.0
+       ],
+       [
+        "_kinematics_branch",
+        0.0128960000583902,
+        1.0
+       ],
+       [
+        "_geom_local_to_global",
+        0.008851999940816313,
+        1.0
+       ]
+      ]
+     },
+     "iters": 3.25640869140625,
+     "rows": 16.06640625
+    }
+   }
+  },
+  "arm_walled_5_polytope": {
+   "best": {
+    "lodos_contact": {
+     "B": 8192,
+     "world_steps_per_s": 966635.7874071879,
+     "us_plain": 1.0345158052572263,
+     "us_traced": 1.0239258197747676,
+     "categories": {
+      "collision": 0.36284838608191644,
+      "rigid body": 0.03857126192206889,
+      "assembly": 0.028192756685159658,
+      "solve": 0.5916734797924661,
+      "other": 0.0026399352931564257
+     },
+     "collision_stages": {
+      "prim_poses": 0.017926986036519193,
+      "prim_collision/broadphase": 0.17461998001389448,
+      "prim_collision/hybrid": 0.16451985993201299,
+      "prim_collision/primitive_narrow": 0.0008060930370885497,
+      "prim_collision/(self)": 0.004804322203153064
+     },
+     "counts": {
+      "contacts": {
+       "mean": 6.703986907673773,
+       "max": 13.978759765625
+      },
+      "rows_mean": {
+       "mean": 20.11196072302132,
+       "max": 41.936279296875
+      },
+      "rows_max": {
+       "mean": 68.49532710280374,
+       "max": 126.0
+      },
+      "iters_mean": {
+       "mean": 3.0192192291544977,
+       "max": 4.0030517578125
+      },
+      "iters_max": {
+       "mean": 9.658878504672897,
+       "max": 15.0
+      }
+     },
+     "variant": "no_shared_hessian",
+     "sizes": {
+      "caps": {
+       "nconmax": 291,
+       "njmax": 126,
+       "nccdmax": 20
+      },
+      "collision": {}
+     },
+     "attempts": 1,
+     "weld_filter": false,
+     "best_json": 984715.8174227963
+    },
+    "mjwarp": {
+     "B": 2048,
+     "world_steps_per_s": 154146.76361885876,
+     "us_plain": 6.487324005534016,
+     "us_traced": 6.262165881588916,
+     "categories": {
+      "collision": 3.616584119741657,
+      "rigid body": 0.13555278925115283,
+      "assembly": 0.12147532163559684,
+      "solve": 2.3744065376342967,
+      "other": 0.01414711332621164
+     },
+     "collision_stages": {
+      "collide/(self)": 0.03692698554123895,
+      "collide/broadphase": 0.2663463783052219,
+      "collide/narrowphase": 3.313310755895196
+     },
+     "counts": {
+      "contacts_newton": {
+       "mean": 58.32874561915888,
+       "max": 92.82568359375
+      },
+      "contacts": {
+       "mean": 58.32874561915888,
+       "max": 92.82568359375
+      },
+      "rows_mean": {
+       "mean": 32.84291262047313,
+       "max": 58.6376953125
+      },
+      "rows_max": {
+       "mean": 154.72429906542055,
+       "max": 459.0
+      },
+      "iters_mean": {
+       "mean": 3.2509469005549065,
+       "max": 4.7734375
+      },
+      "iters_max": {
+       "mean": 9.453271028037383,
+       "max": 17.0
+      },
+      "shape_pairs": {
+       "mean": 276.0139000438084,
+       "max": 397.0048828125
+      }
+     },
+     "variant": null,
+     "sizes": {
+      "contacts_per_world": 233,
+      "triangle_pairs_per_world": 1,
+      "njmax": 1192
+     },
+     "attempts": 4,
+     "weld_filter": false,
+     "best_json": 163122.35625211804
+    }
+   },
+   "equal": {
+    "lodos_contact": {
+     "B": 2048,
+     "world_steps_per_s": 799893.8395062503,
+     "us_plain": 1.2501658977862224,
+     "us_traced": 1.2772242970020449,
+     "categories": {
+      "collision": 0.477785922404135,
+      "rigid body": 0.07237850371825728,
+      "assembly": 0.04011915894535324,
+      "solve": 0.6790654201340148,
+      "other": 0.007875291800284685
+     },
+     "collision_stages": {
+      "prim_poses": 0.023419172916491735,
+      "prim_collision/broadphase": 0.17693472624142767,
+      "prim_collision/hybrid": 0.26503037307206073,
+      "prim_collision/primitive_narrow": 0.0016965537665400406,
+      "prim_collision/convex_narrow": 0.0005186915874754763,
+      "prim_collision/(self)": 0.010186404820139298
+     },
+     "counts": {
+      "contacts": {
+       "mean": 6.760306385075935,
+       "max": 14.06005859375
+      },
+      "rows_mean": {
+       "mean": 20.280919155227803,
+       "max": 42.18017578125
+      },
+      "rows_max": {
+       "mean": 61.822429906542055,
+       "max": 102.0
+      },
+      "iters_mean": {
+       "mean": 3.000894421728972,
+       "max": 4.0458984375
+      },
+      "iters_max": {
+       "mean": 8.855140186915888,
+       "max": 14.0
+      }
+     },
+     "variant": "no_shared_hessian",
+     "sizes": {
+      "caps": {
+       "nconmax": 291,
+       "njmax": 126,
+       "nccdmax": 20
+      },
+      "collision": {}
+     },
+     "attempts": 1,
+     "weld_filter": false
+    }
+   },
+   "weld": {},
+   "compare": {
+    "lodos_contact": {
+     "speedup": 6.115839410091643,
+     "speedup_plain": 6.270879548254926,
+     "ratio": {
+      "collision": 9.967204646530188,
+      "rigid body": 3.5143467570501006,
+      "assembly": 4.308742241568028,
+      "solve": 4.0130352613862925,
+      "other": 5.358886395013385
+     },
+     "share": {
+      "collision": 0.6211505572986056,
+      "rigid body": 0.018514143335289703,
+      "assembly": 0.017807997313916697,
+      "solve": 0.3403305378914651,
+      "other": 0.0021967641607227063
+     },
+     "with_lodos_collision": 2.938132909463049
+    }
+   },
+   "compare_equal": {
+    "lodos_contact": {
+     "speedup": 4.9029492284853475,
+     "speedup_plain": 5.189170506907671,
+     "ratio": {
+      "collision": 7.569465633360732,
+      "rigid body": 1.872832157166576,
+      "assembly": 3.0278631164990206,
+      "solve": 3.496579957150083,
+      "other": 1.796392271547352
+     },
+     "share": {
+      "collision": 0.6296559636811975,
+      "rigid body": 0.012673024239286273,
+      "assembly": 0.016320384363538335,
+      "solve": 0.3400924742512873,
+      "other": 0.0012581534646903458
+     },
+     "with_lodos_collision": 2.4454339708246198
+    }
+   },
+   "compare_weld": {},
+   "collision_kernels": {
+    "lodos": {
+     "prim_collision": {
+      "ms": 0.9154720027872827,
+      "top": [
+       [
+        "_nxn_broadphase__locals__kernel",
+        0.35037200152873993,
+        1.0
+       ],
+       [
+        "epa_kernel",
+        0.15193600190104917,
+        1.0
+       ],
+       [
+        "warm_kernel",
+        0.13943200057838112,
+        1.0
+       ],
+       [
+        "gjk_kernel",
+        0.11677999934181571,
+        1.0
+       ],
+       [
+        "geom_kinematics",
+        0.04249599948525429,
+        1.0
+       ],
+       [
+        "plane_kernel",
+        0.03597600059583783,
+        1.0
+       ],
+       [
+        "manifold_kernel",
+        0.0325759993866086,
+        1.0
+       ],
+       [
+        "memset",
+        0.017100000026402995,
+        9.0
+       ]
+      ]
+     }
+    },
+    "newton": {
+     "collide": {
+      "ms": 7.665819933172315,
+      "top": [
+       [
+        "create_narrow_phase_kernels_gjk_mpr_split__locals__narrow_phase_gjk_kernel",
+        4.314367964863777,
+        1.0
+       ],
+       [
+        "create_narrow_phase_kernels_gjk_mpr_split__locals__narrow_phase_mpr_kernel",
+        2.0732559571042657,
+        1.0
+       ],
+       [
+        "create_narrow_phase_kernels_gjk_mpr_split__locals__narrow_phase_manifold_kernel",
+        0.6118760108947754,
+        1.0
+       ],
+       [
+        "_nxn_broadphase_precomputed_pairs",
+        0.5212160013616085,
+        1.0
+       ],
+       [
+        "compute_shape_aabbs",
+        0.08115999959409237,
+        1.0
+       ],
+       [
+        "create_narrow_phase_primitive_kernel__locals__narrow_phase_primitive_kernel",
+        0.05855999933555722,
+        1.0
+       ],
+       [
+        "verify_narrow_phase_buffers",
+        0.0035920000227633864,
+        1.0
+       ],
+       [
+        "memset",
+        0.001791999995475635,
+        1.0
+       ]
+      ]
+     },
+     "convert_contacts": {
+      "ms": 0.0977280011138646,
+      "top": [
+       [
+        "convert_newton_contacts_to_mjwarp_kernel",
+        0.09312400105409324,
+        1.0
+       ],
+       [
+        "_snapshot_nacon_count",
+        0.0026040000666398555,
+        1.0
+       ],
+       [
+        "memset",
+        0.001999999993131496,
+        1.0
+       ]
+      ]
+     }
+    }
+   },
+   "solve_kernels": {
+    "lodos": {
+     "solve": {
+      "ms": 1.8322720016585663,
+      "top": [
+       [
+        "_update_gradient_JTCJ_dense",
+        0.6730159986764193,
+        10.5
+       ],
+       [
+        "mul_m_kernel__locals___mul_m",
+        0.2722279987647198,
+        10.5
+       ],
+       [
+        "_linesearch_iterative_kernel__locals__kernel",
+        0.23935600044205785,
+        9.5
+       ],
+       [
+        "_update_gradient_JTDAJ_dense_tiled__locals__kernel",
+        0.16294799995375797,
+        10.5
+       ],
+       [
+        "_update_gradient_cholesky__locals__kernel",
+        0.16017200180795044,
+        10.5
+       ],
+       [
+        "_update_constraint_efc__locals__kernel",
+        0.073036000772845,
+        10.5
+       ],
+       [
+        "memcpy DtoH",
+        0.06559599966567475,
+        10.5
+       ],
+       [
+        "_update_constraint_init_qfrc_constraint_dense__locals__kernel",
+        0.052992000157246366,
+        10.5
+       ]
+      ]
+     },
+     "rest": {
+      "ms": 1.2098960096918745,
+      "top": [
+       [
+        "_nxn_broadphase__locals__kernel",
+        0.35071200504899025,
+        1.0
+       ],
+       [
+        "epa_kernel",
+        0.15989600092871115,
+        1.0
+       ],
+       [
+        "warm_kernel",
+        0.13948800135403872,
+        1.0
+       ],
+       [
+        "gjk_kernel",
+        0.12326400121673942,
+        1.0
+       ],
+       [
+        "_efc_contact_jac_dense__locals__kernel",
+        0.0424280003644526,
+        1.0
+       ],
+       [
+        "geom_kinematics",
+        0.04052399983629584,
+        1.0
+       ],
+       [
+        "plane_kernel",
+        0.036351999500766397,
+        1.0
+       ],
+       [
+        "manifold_kernel",
+        0.03306000027805567,
+        1.0
+       ]
+      ]
+     },
+     "iters": 3.01422119140625,
+     "rows": 20.47576904296875
+    },
+    "newton": {
+     "solve": {
+      "ms": 4.899228013440734,
+      "top": [
+       [
+        "_update_gradient_JTCJ_dense",
+        3.2307480113813654,
+        9.0
+       ],
+       [
+        "mul_m_kernel__locals___mul_m",
+        0.5159639999619685,
+        9.0
+       ],
+       [
+        "_linesearch_iterative_kernel__locals__kernel",
+        0.3028640008997172,
+        8.0
+       ],
+       [
+        "_update_constraint_efc__locals__kernel",
+        0.2454479990992695,
+        9.0
+       ],
+       [
+        "_update_gradient_JTDAJ_dense_tiled__locals__kernel",
+        0.20007599971722811,
+        9.0
+       ],
+       [
+        "_update_gradient_cholesky__locals__kernel",
+        0.14449600130319595,
+        9.0
+       ],
+       [
+        "_update_constraint_init_qfrc_constraint_dense__locals__kernel",
+        0.07280800002627075,
+        9.0
+       ],
+       [
+        "memcpy DtoH",
+        0.057955999771365896,
+        9.0
+       ]
+      ]
+     },
+     "rest": {
+      "ms": 0.5050920065550599,
+      "top": [
+       [
+        "_efc_contact_jac_dense__locals__kernel",
+        0.22855200432240963,
+        1.0
+       ],
+       [
+        "_efc_contact_update__locals__kernel",
+        0.03886400070041418,
+        1.0
+       ],
+       [
+        "_geom_local_to_global",
+        0.03554800013080239,
+        1.0
+       ],
+       [
+        "memset",
+        0.023568000324303284,
+        7.0
+       ],
+       [
+        "_comvel_branch",
+        0.022135999985039234,
+        1.0
+       ],
+       [
+        "_cdof",
+        0.019779999973252416,
+        1.0
+       ],
+       [
+        "_small_cholesky_factorize_solve_block__locals__kernel",
+        0.01398800010792911,
+        1.0
+       ],
+       [
+        "_kinematics_branch",
+        0.010512000066228211,
+        1.0
+       ]
+      ]
+     },
+     "iters": 2.9830322265625,
+     "rows": 33.509033203125
+    }
+   },
+   "hybrid": {
+    "scene": "arm_walled_5_polytope",
+    "B": 2048,
+    "points": 8,
+    "per_world": {
+     "broadphase_pairs": 75.66754150390625,
+     "pairs": 66.88348388671875,
+     "cache_found": 57.9031982421875,
+     "cert_contact": 2.74090576171875,
+     "cert_separated": 54.57147216796875,
+     "cold": 9.516845703125,
+     "epa": 0.89825439453125,
+     "epa_fail": 0.0,
+     "feat_fail": 0.00067138671875,
+     "manifold_fallback": 0.1248779296875,
+     "cap_overflow": 0.0,
+     "epa_facet_decoded": 0.85784912109375,
+     "cold_certified": 0.0,
+     "seeded_epa": 0.05426025390625,
+     "gjk_unproven_to_epa": 0.03546142578125,
+     "gjk_unproven_far": 0.0,
+     "gjk_unproven_point": 0.0,
+     "contacts": 6.848876953125
+    }
+   }
+  }
+ }
+}
