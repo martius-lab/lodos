@@ -579,11 +579,13 @@ def _make_nsdf_kernel(eval_nsdf, with_radius: bool = False, toa: bool = False):
                     # Reported by `collide.check_toa_band`: the margin reaches past the band.
                     dcol.toa_band[id_nB_2] = 1
                 traced = sdf >= 0.0 and mcol.g_plane[id_nB_2] == 0 and mcol.seg_trace[id_SEG] != 0  # bool
-                if traced or mcol.seg_drift[id_SEG] != 0:
+                sided = sdf < 0.0 and mcol.seg_side[id_SEG] != 0  # bool: a penetrating one to check (`toa_side`)
+                if traced or sided or mcol.seg_drift[id_SEG] != 0:
                     # Listed for `trace_toa`: a speculative contact the segment traces (`toa_trace`), which it
-                    # drops if its path misses the surface (a half-space is linear: nothing to trace), and any
-                    # contact of a segment with `toa_drift`, which it gives its second-order drift. Here, the
-                    # trace's registers would slow this kernel for every candidate.
+                    # drops if its path misses the surface (a half-space is linear: nothing to trace); a
+                    # penetrating one of a segment with `toa_side`, which it checks against the side it came
+                    # from; and any contact of a segment with `toa_drift`, which it gives its second-order
+                    # drift. Here, the trace's registers would slow this kernel for every candidate.
                     dcol.trace_list[wp.atomic_add(dcol.trace_ct, 0, 1)] = id_nCa2
 
     return compute_nsdf
@@ -598,6 +600,55 @@ compute_nsdf_t = _make_nsdf_kernel(eval_nsdf_c2, toa=True)
 compute_nsdf_c0_t = _make_nsdf_kernel(eval_nsdf_c0, toa=True)
 compute_nsdf_r_t = _make_nsdf_kernel(eval_nsdf_c2, with_radius=True, toa=True)
 compute_nsdf_c0_r_t = _make_nsdf_kernel(eval_nsdf_c0, with_radius=True, toa=True)
+
+
+@wp.func
+def side_find(b: int, s: int, v: int, dcol: CollisionData):  # type: ignore
+    """
+    The last step's candidate of vertex v in world b's segment s, for `toa_side`: a binary search of that
+    (world, segment)'s run of the last step's stage-2 candidates, sorted by vertex.
+
+    Called by `trace_toa`.
+    In: b, s, v int, the world, segment and vertex (an index into mcol.v_b); dcol, read for side_idul (B, nSEG+1)
+    and side_v (nCa2_max,) int32. Out: int, its slot in the side_* arrays, -1 if it had none.
+    """
+    lo = dcol.side_idul[b, s]  # int: the run's first slot
+    hi = dcol.side_idul[b, s + 1]  # int: one past its last
+    while lo < hi:
+        mid = (lo + hi) / 2  # int: the middle slot
+        vm = dcol.side_v[mid]  # int: its vertex
+        if vm == v:
+            return mid
+        if vm < v:
+            lo = mid + 1
+        else:
+            hi = mid
+    return -1
+
+
+@wp.kernel
+def side_snapshot(mcol: CollisionModel, dcol: CollisionData):
+    """
+    This step's stage-2 candidates, remembered for the next step's `toa_side`: each one's vertex, its normal in
+    its SDF geometry's body frame, and its plane's offset, so that the plane's gap at y is `side_nB . y + side_c`.
+    Candidates rather than contacts: a vertex near a surface whose straight path misses it is no contact (its
+    trace drops it), yet an arc may carry it in.
+
+    Launch: dim=(nCa2_max,), a thread per candidate slot, by `collide.narrowphase_sdf` in a context with a `toa`
+    pair, after the trace (the runs' bounds, `idul_B_nSEG_to_nCa2`, are copied beside it).
+    Reads: dcol.ct[1], idm_nCa2_to_nCa1 (nCa2_max,) int32, sdf_nCa2 and n_nCa2, dcol.T_rel; mcol.v_b and the
+    stage-1 tables (`resolve_nCa1`). Writes: dcol.side_v, side_nB and side_c (nCa2_max,).
+    """
+    i = wp.tid()  # int: the candidate
+    if i >= dcol.ct[1]:
+        return
+    id_Batch, id_nC, id_SEG, id_Tile = resolve_nCa1(dcol.idm_nCa2_to_nCa1[i], mcol, dcol)  # int x 4
+    id_nV = mcol.idm_nC_to_prim[id_nC]  # int: its vertex
+    y = wp.transform_point(dcol.T_rel[id_Batch, id_SEG], mcol.v_b[id_nV])  # wp.vec3: in the SDF frame
+    nb = dcol.n_nCa2[i]  # wp.vec3: its normal, SDF frame
+    dcol.side_v[i] = id_nV
+    dcol.side_nB[i] = nb
+    dcol.side_c[i] = dcol.sdf_nCa2[i] - wp.dot(nb, y)
 
 
 def _make_trace_kernel(eval_nsdf, with_radius: bool = False):
@@ -653,9 +704,10 @@ def _make_trace_kernel(eval_nsdf, with_radius: bool = False):
     @wp.kernel
     def trace_toa(mcol: CollisionModel, dcol: CollisionData, width: int):
         """
-        The `toa` contacts the narrowphase listed: a speculative one traced along its path over the
+        The `toa` contacts the narrowphase listed: a penetrating one checked against the side it came from
+        where its segment has `toa_side` (`side_find`); a speculative one traced along its path over the
         horizon (`toa_trace`) -- dropped from stage 3 if it misses the surface, else linearized where its
-        path arrives -- and every one kept given its predicted second-order drift where its segment has
+        path arrives; and every one kept given its predicted second-order drift where its segment has
         `toa_drift` (`toa_drift`). A kernel of its own, over the list alone: the trace needs far more
         registers than the narrowphase, and would slow it for every candidate.
 
@@ -663,7 +715,8 @@ def _make_trace_kernel(eval_nsdf, with_radius: bool = False):
         `collide.narrowphase_sdf` in a context with a `toa` pair, after the narrowphase.
         Reads: dcol.trace_list (nCa2_max,) and trace_ct (1,) int32, the candidates' slots and their gaps and normals
         (dcol.sdf_nCa2, n_nCa2), dcol.T_rel and twist_end (B, nSEG); mcol.seg_trace and seg_trace_iters (nSEG,),
-        toa_h and the SDF tables; with `toa_drift`, mcol.seg_drift and toa_dt, and dcol.twist_rel.
+        toa_h and the SDF tables; with `toa_drift`, mcol.seg_drift and toa_dt, and dcol.twist_rel; with `toa_side`,
+        mcol.seg_side and the last step's contacts (dcol.side_*).
         Writes: dcol.flag2 (nCa2_max,) int32, 0 for a miss; dcol.sdf_nCa2 and n_nCa2 for the rest; dcol.e_nCa2
         (nCa2_max,) float32; dcol.toa_band (nB,) int32.
         """
@@ -678,6 +731,20 @@ def _make_trace_kernel(eval_nsdf, with_radius: bool = False):
             d0 = dcol.sdf_nCa2[id_nCa2]  # float: its gap
             n0 = dcol.n_nCa2[id_nCa2]  # wp.vec3: the field's normal at it
             keep = int(1)  # int: 0 once its path is proved to miss
+            if d0 < 0.0 and mcol.seg_side[id_SEG] != 0:
+                # `toa_side`: a vertex past a thin feature's midsurface reads the far side's field, its normal
+                # turned against the last step's. Behind the plane it had then, it keeps that side: the last
+                # step's normal, its depth measured from that plane.
+                j = side_find(id_Batch, id_SEG, id_nV, dcol)  # int: its last contact, -1 for none
+                if j >= 0:
+                    nb = dcol.side_nB[j]  # wp.vec3: the last step's normal
+                    if wp.dot(n0, nb) < 0.0:
+                        g = wp.dot(nb, v_b) + dcol.side_c[j]  # float: its gap to the last step's plane
+                        if g < 0.0:
+                            dcol.sdf_nCa2[id_nCa2] = g
+                            dcol.n_nCa2[id_nCa2] = nb
+                            d0 = g
+                            n0 = nb
             if d0 >= 0.0 and mcol.g_plane[id_nB_2] == 0 and mcol.seg_trace[id_SEG] != 0:
                 tw = dcol.twist_end[id_Batch, id_SEG]  # wp.spatial_vector: (Omega, a) at the step's end
                 u = wp.spatial_bottom(tw) + wp.cross(wp.spatial_top(tw), v_b)  # wp.vec3: the vertex's velocity

@@ -209,6 +209,10 @@ class CollisionModel:
     # second-order drift (`toa_drift`, `narrowphase._make_trace_kernel`); and the timestep (s) it is taken over.
     seg_drift: wp.array(dtype=int)  # type: ignore
     toa_dt: wp.float32
+    # (nSEG,) with a `toa` pair, (1,) without: 1 where a `toa` segment's penetrating contacts keep the side they
+    # came from (`toa_side`, `narrowphase.trace_toa`).
+    seg_side: wp.array(dtype=int)  # type: ignore
+    has_side: wp.int32  # 1 when some segment has `toa_side`: the last step's candidates are remembered (host-side)
     # (nB,), the root body of each geometry's kinematic tree, whose subtree COM the
     # rigid-body velocities `cvel` are taken about; read only by `toa` kernels.
     g_root: wp.array(dtype=int)  # type: ignore
@@ -527,6 +531,15 @@ class CollisionData:
     # (nCa2_max,) with a `toa` pair, (1,) without: each stage-2 contact's predicted second-order drift (m), 0 unless
     # its segment has `toa_drift`; read by the export (`lodos.cd.driver.export_lodos_toa`).
     e_nCa2: wp.array(dtype=float)  # type: ignore
+    # The last step's stage-2 candidates, for `toa_side` -- every vertex near a surface, contact or not (a trace
+    # drops a vertex whose straight path misses, though its arc may not): each one's vertex, its normal in its SDF
+    # geometry's body frame, and its plane, gap(y) = side_nB . y + side_c; each (world, segment)'s run of them,
+    # sorted by vertex (`idul_B_nSEG_to_nCa2`'s). (nCa2_max,) and (B, nSEG+1) with a `toa` pair, (1,) and (1, 1)
+    # without.
+    side_v: wp.array(dtype=int)  # type: ignore
+    side_nB: wp.array(dtype=wp.vec3)  # type: ignore
+    side_c: wp.array(dtype=float)  # type: ignore
+    side_idul: wp.array(dtype=int, ndim=2)  # type: ignore
     idm_nCa3_to_nCa2: wp.array(
         dtype=int
     )  # (nCa3_max,), maps nCa3 index to nCa2 index # type: ignore
@@ -619,6 +632,7 @@ def make_collision_context(
     toa_trace="relaxed",
     toa_trace_iters=128,
     toa_drift=False,
+    toa_side=False,
 ):
     """
     - `cprs` indexes `surfaces`, not the MuJoCo model's geoms
@@ -881,6 +895,18 @@ def make_collision_context(
         ring with a 1 cm wall holds at 40 m/s with it, sticks at 10 m/s without. Off by default:
         on a hand scene it raised the mean depth by about 15% (the one-voxel curvature reads
         sharp detail as curving the whole step). A rotating body's own arc is not covered.
+
+    toa_side: whether a `toa` pair's penetrating contacts keep the side they came from, in
+        `toa`'s spellings (False by default): a safety net for thin features. A vertex pushed
+        past a thin feature's midsurface, by whatever error, reads the field of the far side,
+        whose normal turned against the one it had, and would be pushed on through. Such a
+        contact (the normal turned by more than 90 degrees since the step before, and the vertex
+        behind the plane it had then) takes the last step's normal instead, its depth measured
+        from that plane, and is pushed back the way it came (`narrowphase.trace_toa`; the last
+        step's candidates kept by `narrowphase.side_snapshot`). It catches a step's overshoot
+        between the feature's half-thickness and its thickness; a vertex carried past the far face
+        has no flip left to catch. Off by default: the snapshot sweeps every stage-2 candidate a
+        step (about a tenth of the collision time on a scene of many candidates).
 
     Called by `lodos.sim.make_sim` and `tools.performance_tuning.tune.time_collision`.
     In: m, reads nbody; drbd, reads qpos (B, nq) float32 for B and binds xpos (B, nbody) wp.vec3 and xquat
@@ -1189,6 +1215,7 @@ def make_collision_context(
     seg_trace = _per_pair(toa_trace, "toa_trace", "relaxed", _trace_mode)  # nSEG ints: each segment's trace
     seg_trace_iters = _per_pair(toa_trace_iters, "toa_trace_iters", 128, _trace_iters)  # nSEG ints
     seg_drift = [x & t for x, t in zip(_per_pair(toa_drift, "toa_drift", False, lambda x: int(bool(x))), seg_toa)]
+    seg_side = [x & t for x, t in zip(_per_pair(toa_side, "toa_side", False, lambda x: int(bool(x))), seg_toa)]
     cpr_toa = [int(any(seg_toa[cpr_seg_beg[j]:cpr_seg_beg[j + 1]])) for j in range(nCPR)]  # nCPR ints
     has_toa = int(any(seg_toa))  # int: 1 when some segment is `toa`
     toa_h = 0.0  # float: the motion bound's horizon (s)
@@ -1204,6 +1231,8 @@ def make_collision_context(
     mcol.seg_trace = wp.array(seg_trace if has_toa else [0], dtype=wp.int32)
     mcol.seg_trace_iters = wp.array(seg_trace_iters if has_toa else [0], dtype=wp.int32)
     mcol.seg_drift = wp.array(seg_drift if has_toa else [0], dtype=wp.int32)
+    mcol.seg_side = wp.array(seg_side if has_toa else [0], dtype=wp.int32)
+    mcol.has_side = wp.int32(int(any(seg_side)))
     mcol.toa_dt = float(m.opt.timestep)
     mcol.g_root = wp.array(g_root, dtype=wp.int32)
     tree = [np.zeros(1, dtype=np.int32)] * 3  # body_parentid, body_dofadr, body_dofnum: (1,) without `toa`
@@ -1542,6 +1571,10 @@ def make_collision_context(
     dcol.e_nCa2 = wp.zeros(nCa2_max if has_toa else 1, dtype=wp.float32)
     dcol.trace_ct = wp.zeros(1, dtype=wp.int32)
     dcol.idm_nCa3_to_nCa2 = wp.zeros(nCa3_max, dtype=wp.int32)
+    dcol.side_v = wp.zeros(nCa2_max if has_toa else 1, dtype=wp.int32)
+    dcol.side_nB = wp.zeros(nCa2_max if has_toa else 1, dtype=wp.vec3)
+    dcol.side_c = wp.zeros(nCa2_max if has_toa else 1, dtype=wp.float32)
+    dcol.side_idul = wp.zeros((B, nSEG + 1) if has_toa else (1, 1), dtype=wp.int32)
     dcol.idul_B_nSEG_to_nCa3 = wp.zeros((B, nSEG + 1), dtype=wp.int32)
 
     dcol.p_nCa3 = wp.zeros(nCa3_max, dtype=wp.vec3)

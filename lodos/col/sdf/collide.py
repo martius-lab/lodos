@@ -112,6 +112,10 @@ def narrowphase_sdf(mcol: CollisionModel, dcol: CollisionData):
     sdf_compact.compact_nCa3(mcol, dcol)
     wp.launch(sdf_narrowphase.contact_kernel(mcol), dim=(dcol.nCa3_max,),
               inputs=(mcol, dcol))
+    if int(mcol.has_side):
+        # This step's stage-2 candidates, remembered for the next one's `toa_side`.
+        wp.launch(sdf_narrowphase.side_snapshot, dim=(dcol.nCa2_max,), inputs=(mcol, dcol))
+        wp.copy(dcol.side_idul, dcol.idul_B_nSEG_to_nCa2)
 
 
 def collide(mcol: CollisionModel, dcol: CollisionData):
@@ -479,6 +483,10 @@ def resize_context(mcol, dcol, capacity1=None, capacity2=None,
         if int(mcol.has_toa):
             dcol.trace_list = wp.zeros(nCa2_max, dtype=wp.int32)
             dcol.e_nCa2 = wp.zeros(nCa2_max, dtype=wp.float32)
+            dcol.side_v = wp.zeros(nCa2_max, dtype=wp.int32)  # the last step's candidates, for `toa_side`: forgotten
+            dcol.side_nB = wp.zeros(nCa2_max, dtype=wp.vec3)
+            dcol.side_c = wp.zeros(nCa2_max, dtype=wp.float32)
+            dcol.side_idul.zero_()
 
         if contacts:
             # `make_collision_context`'s own rule, `nCa3_max = nCa2_max`. The
