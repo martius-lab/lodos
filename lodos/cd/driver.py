@@ -326,99 +326,80 @@ LODOS_SPECULATIVE = int(LODOS_CONTACT | ContactType.SPECULATIVE)
 LODOS_DRIFT = int(ContactType.DRIFT)
 
 
-@wp.kernel
-def export_lodos(lc: LodosContacts, co: ContactOut):  # type: ignore
+def _make_export_lodos(toa: bool = False):
     """
-    Appends Lodos's contacts to MJWarp's arrays: `collision_core.write_contact`'s
-    writes, for contacts that are all active (`sdf < 0`, zero margin and gap) and
-    typed `LODOS_CONTACT`.
+    The export of Lodos's contacts to MJWarp's arrays, without or with `toa`'s contact types.
 
-    Launch: dim=nCa3_max, a thread per Lodos contact slot, by `SolverDriver.contact_dynamics`.
-    Reads: lc, `LodosContacts`: the contacts (nCa3_max,), their segments' pairs and geometries (nSEG,), g_geom (nB,),
-    the pairs' friction, solref and solimp (nCPR,), keep and key (nCa3_max,). Writes: co, `ContactOut`: co.nacon (1,)
-    int32, added to, and the slots it hands out in co's (naconmax,) contact arrays and (naconmax, nmaxpyramid)
-    efc_address.
+    Two kernels rather than a branch: without a `toa` pair the export runs as it ran before the option existed
+    (its `toa` part sits under `wp.static(toa)`).
+
+    Called by this module at import, for `export_lodos` and `export_lodos_toa`.
+    In: toa bool. Out: the `export_lodos` kernel.
     """
-    i = wp.tid()  # int: the Lodos contact
-    if i >= lc.ct[2]:
-        return
-    if lc.reduced != 0:
-        if lc.keep[i] == wp.uint8(0):
+
+    @wp.kernel
+    def export_lodos(lc: LodosContacts, co: ContactOut):  # type: ignore
+        """
+        Appends Lodos's contacts to MJWarp's arrays: `collision_core.write_contact`'s
+        writes, for contacts that are all active (`sdf < 0`, zero margin and gap) and
+        typed `LODOS_CONTACT`.
+
+        In a context with a `toa` pair (`export_lodos_toa`), a contact at a positive gap, a speculative one
+        (`lodos.col.sdf.narrowphase`), is typed `SPECULATIVE` as well, so that the solve gives it rows
+        (`constraint._efc_contact_init` under the model's `flg_speculative`); one with a predicted second-order drift
+        (`toa_drift`) carries it in its includemargin, typed `DRIFT`, which the exact mode's bias adds as a feed-forward
+        (`nlsp._prox_init`).
+
+        Launch: dim=nCa3_max, a thread per Lodos contact slot, by `SolverDriver.contact_dynamics`.
+        Reads: lc, `LodosContacts`: the contacts (nCa3_max,), their segments' pairs and geometries (nSEG,), g_geom (nB,),
+        the pairs' friction, solref and solimp (nCPR,), keep and key (nCa3_max,). Writes: co, `ContactOut`: co.nacon (1,)
+        int32, added to, and the slots it hands out in co's (naconmax,) contact arrays and (naconmax, nmaxpyramid)
+        efc_address.
+        """
+        i = wp.tid()  # int: the Lodos contact
+        if i >= lc.ct[2]:
             return
-    if lc.grouped != 0:
-        if lc.key[i] >= 0:
+        if lc.reduced != 0:
+            if lc.keep[i] == wp.uint8(0):
+                return
+        if lc.grouped != 0:
+            if lc.key[i] >= 0:
+                return
+        sg = lc.seg_nCa3[i]  # int: its segment
+        j = lc.seg_cpr[sg]  # int: its pair
+        cid = wp.atomic_add(co.nacon, 0, 1)  # int: its MJWarp contact
+        if cid >= co.naconmax:
             return
-    sg = lc.seg_nCa3[i]  # int: its segment
-    j = lc.seg_cpr[sg]  # int: its pair
-    cid = wp.atomic_add(co.nacon, 0, 1)  # int: its MJWarp contact
-    if cid >= co.naconmax:
-        return
-    co.dist[cid] = lc.sdf_nCa3[i]
-    co.pos[cid] = lc.p_nCa3[i]
-    co.frame[cid] = make_frame(lc.n_nCa3[i])
-    co.geom[cid] = wp.vec2i(lc.g_geom[lc.seg_g_s[sg]], lc.g_geom[lc.seg_g_v[sg]])
-    co.worldid[cid] = lc.b_nCa3[i]
-    co.includemargin[cid] = 0.0
-    co.dim[cid] = lc.condim
-    co.friction[cid] = lc.cpr_friction[j]
-    co.solref[cid] = lc.cpr_solref[j]
-    co.solreffriction[cid] = wp.vec2(0.0, 0.0)
-    co.solimp[cid] = lc.cpr_solimp[j]
-    co.adhesion[cid] = 0.0
-    co.type[cid] = LODOS_CONTACT
-    co.geomcollisionid[cid] = 0
-    for k in range(co.efc_address.shape[1]):  # k: int, an efc_address column
-        co.efc_address[cid, k] = -1
+        co.dist[cid] = lc.sdf_nCa3[i]
+        co.pos[cid] = lc.p_nCa3[i]
+        co.frame[cid] = make_frame(lc.n_nCa3[i])
+        co.geom[cid] = wp.vec2i(lc.g_geom[lc.seg_g_s[sg]], lc.g_geom[lc.seg_g_v[sg]])
+        co.worldid[cid] = lc.b_nCa3[i]
+        co.includemargin[cid] = 0.0
+        co.dim[cid] = lc.condim
+        co.friction[cid] = lc.cpr_friction[j]
+        co.solref[cid] = lc.cpr_solref[j]
+        co.solreffriction[cid] = wp.vec2(0.0, 0.0)
+        co.solimp[cid] = lc.cpr_solimp[j]
+        co.adhesion[cid] = 0.0
+        co.type[cid] = LODOS_CONTACT
+        if wp.static(toa):
+            if lc.sdf_nCa3[i] >= 0.0:  # no gap left to close is a row too: `pos < 0` alone would drop it
+                co.type[cid] = LODOS_SPECULATIVE
+            e = lc.e_nCa2[lc.idm_nCa3_to_nCa2[i]]  # float: its predicted second-order drift (m), `toa_drift`
+            if e > 0.0:
+                # Not a margin: the drift, which the exact mode's bias adds as a feed-forward (ContactType.DRIFT).
+                co.includemargin[cid] = e
+                co.type[cid] = co.type[cid] | LODOS_DRIFT
+        co.geomcollisionid[cid] = 0
+        for k in range(co.efc_address.shape[1]):  # k: int, an efc_address column
+            co.efc_address[cid, k] = -1
+
+    return export_lodos
 
 
-@wp.kernel
-def export_lodos_toa(lc: LodosContacts, co: ContactOut):  # type: ignore
-    """
-    `export_lodos` for a context with a `toa` pair: a contact at a positive gap, a speculative one
-    (`lodos.col.sdf.narrowphase`), is typed `SPECULATIVE` as well, so that the solve gives it rows
-    (`constraint._efc_contact_init` under the model's `flg_speculative`); one with a predicted second-order drift
-    (`toa_drift`) carries it in its includemargin, typed `DRIFT`, which the exact mode's bias adds as a feed-forward
-    (`nlsp._prox_init`).
-
-    Launch, Reads, Writes: as `export_lodos`, by `SolverDriver.contact_dynamics`.
-    """
-    i = wp.tid()  # int: the Lodos contact
-    if i >= lc.ct[2]:
-        return
-    if lc.reduced != 0:
-        if lc.keep[i] == wp.uint8(0):
-            return
-    if lc.grouped != 0:
-        if lc.key[i] >= 0:
-            return
-    sg = lc.seg_nCa3[i]  # int: its segment
-    j = lc.seg_cpr[sg]  # int: its pair
-    cid = wp.atomic_add(co.nacon, 0, 1)  # int: its MJWarp contact
-    if cid >= co.naconmax:
-        return
-    co.dist[cid] = lc.sdf_nCa3[i]
-    co.pos[cid] = lc.p_nCa3[i]
-    co.frame[cid] = make_frame(lc.n_nCa3[i])
-    co.geom[cid] = wp.vec2i(lc.g_geom[lc.seg_g_s[sg]], lc.g_geom[lc.seg_g_v[sg]])
-    co.worldid[cid] = lc.b_nCa3[i]
-    co.includemargin[cid] = 0.0
-    co.dim[cid] = lc.condim
-    co.friction[cid] = lc.cpr_friction[j]
-    co.solref[cid] = lc.cpr_solref[j]
-    co.solreffriction[cid] = wp.vec2(0.0, 0.0)
-    co.solimp[cid] = lc.cpr_solimp[j]
-    co.adhesion[cid] = 0.0
-    co.type[cid] = LODOS_CONTACT
-    if lc.sdf_nCa3[i] >= 0.0:  # no gap left to close is a row too: `pos < 0` alone would drop it
-        co.type[cid] = LODOS_SPECULATIVE
-    e = lc.e_nCa2[lc.idm_nCa3_to_nCa2[i]]  # float: its predicted second-order drift (m), `toa_drift`
-    if e > 0.0:
-        # Not a margin: the drift, which the exact mode's bias adds as a feed-forward (ContactType.DRIFT).
-        co.includemargin[cid] = e
-        co.type[cid] = co.type[cid] | LODOS_DRIFT
-    co.geomcollisionid[cid] = 0
-    for k in range(co.efc_address.shape[1]):  # k: int, an efc_address column
-        co.efc_address[cid, k] = -1
+export_lodos = _make_export_lodos()  # the export
+export_lodos_toa = _make_export_lodos(toa=True)  # with `toa`'s contact types
 
 
 @wp.kernel

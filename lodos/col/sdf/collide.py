@@ -34,6 +34,7 @@ def broadphase_bbox(mcol: CollisionModel, dcol: CollisionData):
     # pair's motion could bring within reach over the horizon; without one, the kernels as before.
     toa = int(mcol.has_toa)  # int: 1 when some pair is `toa`
     if toa:
+        wp.launch(sdf_broadphase.compute_body_acc, dim=dcol.acc_free.shape, inputs=(mcol, dcol))
         wp.launch(sdf_broadphase.compute_twist_rel, dim=(mcol.B, mcol.nSEG), inputs=(mcol, dcol))
     wp.launch(sdf_broadphase.obb_filter_toa if toa else sdf_broadphase.obb_filter, dim=(mcol.B, mcol.nCPR),
               inputs=(mcol, dcol))
@@ -309,6 +310,46 @@ def check_toa_band(mcol: CollisionModel, dcol: CollisionData, warn=True):
     msg = (f"`toa` gaps were read outside the baked SDF grid of {detail}: the bounding box's distance stood in, "
            "which can slow a fast body a step early. Rebake with a band wider than the largest speed x timestep "
            "(`create_surface_data.py --d-max`).")  # str
+    if warn:
+        import warnings
+
+        warnings.warn(msg, stacklevel=2)
+    return msg
+
+
+def check_toa_bend(mcol: CollisionModel, dcol: CollisionData, tol=None, warn=True):
+    """
+    Reports the `toa` pairs whose predicted bend in a step exceeded `tol`: how far the arcs the integrator moves
+    a rotating body's points on strayed from the straight lines `toa`'s margins, trace and speculative rows take
+    (`broadphase.compute_twist_rel`'s bound, about w^2 r dt^2 / 2). Where that exceeds half a feature's thickness,
+    on the side the arc bends to, the feature can be crossed in one step. The remedy is a smaller timestep: the
+    bend goes with its square. The maxima are sticky, over every world and step since the context was made.
+
+    Synchronizes, so this is a check for the end of a run, like `check_overflow`.
+
+    Not called in the repository.
+    In: mcol, read for has_toa, seg_toa, seg_g_v, seg_g_s (nSEG,), g_plane and g_Vox_h (nB,); dcol, read for
+    toa_bend (nSEG,) float32; tol float (m), or None for half the SDF geometry's smallest voxel edge (the
+    half-thickness of the thinnest feature its field resolves is about a voxel); warn bool, also issue a
+    `UserWarning`. Out: None if no pair exceeded it, else the message (str).
+    """
+    if not int(mcol.has_toa):
+        return None
+    bend = dcol.toa_bend.numpy()  # (nSEG,) float32: each segment's largest bend (m)
+    seg_toa, gv, gs = mcol.seg_toa.numpy(), mcol.seg_g_v.numpy(), mcol.seg_g_s.numpy()  # (nSEG,) int32 each
+    plane, vox = mcol.g_plane.numpy(), mcol.g_Vox_h.numpy()  # (nB,) int32, (nB, 3) float32
+    over = []  # list of str: the pairs past the tolerance
+    for sg in range(bend.shape[0]):
+        if not seg_toa[sg] or plane[gs[sg]]:  # a half-space has no thin feature
+            continue
+        t = float(tol) if tol is not None else 0.5 * float(vox[gs[sg]].min())  # float: the tolerance (m)
+        if bend[sg] > t:
+            over.append(f"geometry {gv[sg]} against {gs[sg]}: {bend[sg] * 1e3:.2f} mm (tolerance {t * 1e3:.2f} mm)")
+    if not over:
+        return None
+    msg = ("`toa` pairs bent off their straight-line motion by more than the tolerance in a step (a rotating "
+           "body's arc): " + "; ".join(over) + ". A feature thinner than twice the bend, on the side the arc "
+           "bends to, can be crossed in one step; lower the timestep (the bend goes with its square).")  # str
     if warn:
         import warnings
 

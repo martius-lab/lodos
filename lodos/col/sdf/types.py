@@ -429,6 +429,17 @@ class CollisionData:
     # grid, where the narrowphase falls back to the distance to g's bounding box (a bound that
     # can only under-estimate); (1,) without a `toa` pair. `collide.check_toa_band` reports them.
     toa_band: wp.array(dtype=int)  # type: ignore
+    # The rotation limit (`collide.check_toa_bend`): each `toa` segment's largest predicted bend of a step (m), how
+    # far the arcs the integrator moves the vertex geometry's points on stray from the straight lines the margins,
+    # the trace and the speculative rows assume (`broadphase.compute_twist_rel`); sticky, (nSEG,), (1,) without
+    # a `toa` pair. Taken from `cdof_dot` and `qvel`, bound to `RbdData`'s.
+    toa_bend: wp.array(dtype=float)  # type: ignore
+    cdof_dot: wp.array(dtype=wp.spatial_vector, ndim=2)  # (B, nv) # type: ignore
+    qvel: wp.array(dtype=float, ndim=2)  # (B, nv) # type: ignore
+    # Each body's free-motion and bias accelerations (`broadphase.compute_body_acc`), once per body rather than once
+    # per segment, for `compute_twist_rel`; (B, nbody) with a `toa` pair, (1, 1) without.
+    acc_free: wp.array(dtype=wp.spatial_vector, ndim=2)  # type: ignore
+    acc_bias: wp.array(dtype=wp.spatial_vector, ndim=2)  # type: ignore
     # --------------------------------------------------------------------------------------
     # Capacities (host-side constants, mirrored here so kernels can clamp).
     nCa1_max: wp.int32  # stage-1 slots: the primitives of the surviving tiles
@@ -867,6 +878,13 @@ def make_collision_context(
         instead (`narrowphase.box_gap`), which is safe but can stop a fast body a step
         early; give a `toa` surface a band wider than the largest speed x timestep it
         meets. `collide.check_toa_band` reports the geometries where it happened.
+        **A rotation's arc is the limit.** Everything here is first order in the motion: a
+        point of a body turning at w at radius r strays from the straight line it is taken
+        to move on by about w^2 r dt^2 / 2 a step, and where that exceeds half a feature's
+        thickness, on the side the arc bends to, the feature can be crossed in one step (or,
+        with `toa_side`, past its thickness). For a robot's links that is microns; spinning
+        parts reach it. `collide.check_toa_bend` reports the pairs whose predicted bend
+        exceeded a tolerance: lower the timestep there (the bend goes with its square).
 
     toa_horizon: the horizon (s) of the motion bound, `m.opt.timestep` if None.
 
@@ -1531,6 +1549,11 @@ def make_collision_context(
     dcol.qacc_smooth = drbd.qacc_smooth
     dcol.twist_end = wp.zeros((B, nSEG) if has_toa else (1, 1), dtype=wp.spatial_vector)
     dcol.toa_band = wp.zeros(nB if has_toa else 1, dtype=wp.int32)
+    dcol.toa_bend = wp.zeros(nSEG if has_toa else 1, dtype=wp.float32)
+    dcol.cdof_dot = drbd.cdof_dot
+    dcol.qvel = drbd.qvel
+    dcol.acc_free = wp.zeros((B, int(m.nbody)) if has_toa else (1, 1), dtype=wp.spatial_vector)
+    dcol.acc_bias = wp.zeros((B, int(m.nbody)) if has_toa else (1, 1), dtype=wp.spatial_vector)
 
     dcol.cpr_active = wp.zeros((B, nCPR), dtype=wp.bool)
     # `B * nG_world`, which is `B * nSEG` exactly when no segment has
