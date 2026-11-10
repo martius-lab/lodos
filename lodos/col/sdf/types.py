@@ -205,6 +205,10 @@ class CollisionModel:
     # a trace takes (`toa_trace_iters`). Read only by the `toa` narrowphase kernels, at run time.
     seg_trace: wp.array(dtype=int)  # type: ignore
     seg_trace_iters: wp.array(dtype=int)  # type: ignore
+    # (nSEG,) with a `toa` pair, (1,) without: 1 where a `toa` segment's contacts carry their predicted
+    # second-order drift (`toa_drift`, `narrowphase._make_trace_kernel`); and the timestep (s) it is taken over.
+    seg_drift: wp.array(dtype=int)  # type: ignore
+    toa_dt: wp.float32
     # (nB,), the root body of each geometry's kinematic tree, whose subtree COM the
     # rigid-body velocities `cvel` are taken about; read only by `toa` kernels.
     g_root: wp.array(dtype=int)  # type: ignore
@@ -520,6 +524,9 @@ class CollisionData:
     # stage-2 slots: (nCa2_max,), at most every candidate, (1,) without a `toa` pair; and their count, (1,).
     trace_list: wp.array(dtype=int)  # type: ignore
     trace_ct: wp.array(dtype=int)  # type: ignore
+    # (nCa2_max,) with a `toa` pair, (1,) without: each stage-2 contact's predicted second-order drift (m), 0 unless
+    # its segment has `toa_drift`; read by the export (`lodos.cd.driver.export_lodos_toa`).
+    e_nCa2: wp.array(dtype=float)  # type: ignore
     idm_nCa3_to_nCa2: wp.array(
         dtype=int
     )  # (nCa3_max,), maps nCa3 index to nCa2 index # type: ignore
@@ -611,6 +618,7 @@ def make_collision_context(
     toa_horizon=None,
     toa_trace="relaxed",
     toa_trace_iters=128,
+    toa_drift=False,
 ):
     """
     - `cprs` indexes `surfaces`, not the MuJoCo model's geoms
@@ -862,6 +870,17 @@ def make_collision_context(
     toa_trace_iters: the most field evaluations one trace takes, in `toa`'s spellings (128 by
         default). A graze takes about its path length over its clearance; a trace that runs
         out keeps its contact, linearized at the last point it reached.
+
+    toa_drift: whether a `toa` pair's contacts carry their predicted second-order drift, in
+        `toa`'s spellings (False by default): how much faster than first order the gap of a
+        vertex sliding along a concave surface closes in a step, as the surface curves into its
+        path -- e = dt^2/2 |u_t|^2 max(0, -kappa), about v^2 dt^2/(2 rho) on a curve of radius
+        rho (`narrowphase._make_trace_kernel`'s `toa_drift`). The exact mode's bias corrects it as a
+        feed-forward in the step it happens; uncorrected, the depenetration gain lets it settle at
+        about e / baumgarte_alpha in sustained sliding. Measured: a cube sliding inside a 10 cm
+        ring with a 1 cm wall holds at 40 m/s with it, sticks at 10 m/s without. Off by default:
+        on a hand scene it raised the mean depth by about 15% (the one-voxel curvature reads
+        sharp detail as curving the whole step). A rotating body's own arc is not covered.
 
     Called by `lodos.sim.make_sim` and `tools.performance_tuning.tune.time_collision`.
     In: m, reads nbody; drbd, reads qpos (B, nq) float32 for B and binds xpos (B, nbody) wp.vec3 and xquat
@@ -1169,6 +1188,7 @@ def make_collision_context(
     seg_toa = _per_pair(toa, "toa", False, lambda x: int(bool(x)))  # nSEG ints: 1 for a `toa` segment
     seg_trace = _per_pair(toa_trace, "toa_trace", "relaxed", _trace_mode)  # nSEG ints: each segment's trace
     seg_trace_iters = _per_pair(toa_trace_iters, "toa_trace_iters", 128, _trace_iters)  # nSEG ints
+    seg_drift = [x & t for x, t in zip(_per_pair(toa_drift, "toa_drift", False, lambda x: int(bool(x))), seg_toa)]
     cpr_toa = [int(any(seg_toa[cpr_seg_beg[j]:cpr_seg_beg[j + 1]])) for j in range(nCPR)]  # nCPR ints
     has_toa = int(any(seg_toa))  # int: 1 when some segment is `toa`
     toa_h = 0.0  # float: the motion bound's horizon (s)
@@ -1183,6 +1203,8 @@ def make_collision_context(
     mcol.seg_toa = wp.array(seg_toa, dtype=wp.int32)
     mcol.seg_trace = wp.array(seg_trace if has_toa else [0], dtype=wp.int32)
     mcol.seg_trace_iters = wp.array(seg_trace_iters if has_toa else [0], dtype=wp.int32)
+    mcol.seg_drift = wp.array(seg_drift if has_toa else [0], dtype=wp.int32)
+    mcol.toa_dt = float(m.opt.timestep)
     mcol.g_root = wp.array(g_root, dtype=wp.int32)
     tree = [np.zeros(1, dtype=np.int32)] * 3  # body_parentid, body_dofadr, body_dofnum: (1,) without `toa`
     if has_toa:
@@ -1517,6 +1539,7 @@ def make_collision_context(
     dcol.flag2 = wp.zeros(nCa2_max, dtype=wp.int32)
     dcol.off2 = wp.zeros(nCa2_max, dtype=wp.int32)
     dcol.trace_list = wp.zeros(nCa2_max if has_toa else 1, dtype=wp.int32)
+    dcol.e_nCa2 = wp.zeros(nCa2_max if has_toa else 1, dtype=wp.float32)
     dcol.trace_ct = wp.zeros(1, dtype=wp.int32)
     dcol.idm_nCa3_to_nCa2 = wp.zeros(nCa3_max, dtype=wp.int32)
     dcol.idul_B_nSEG_to_nCa3 = wp.zeros((B, nSEG + 1), dtype=wp.int32)

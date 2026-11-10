@@ -1490,7 +1490,8 @@ class FusedNewton:
                           self.prox_done],
                   outputs=[self.Jaref])
         wp.launch(
-            nlsp._prox_init(bool(m.opt.prox_baumgarte), self.carry, self.desaxce, False, self.groups),
+            nlsp._prox_init(bool(m.opt.prox_baumgarte), self.carry, self.desaxce, False, self.groups,
+                            bool(m.flg_speculative)),
             dim=d.contact.dist.shape[0],
             inputs=[
                 m.opt.timestep, m.opt.impratio_invsqrt, m.opt.prox_rho, m.opt.prox_baumgarte_alpha,

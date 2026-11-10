@@ -299,6 +299,8 @@ class LodosContacts:
     p_nCa3: wp.array(dtype=wp.vec3)  # (nCa3_max,) its world position
     n_nCa3: wp.array(dtype=wp.vec3)  # (nCa3_max,) its normal, out of the SDF surface
     sdf_nCa3: wp.array(dtype=float)  # (nCa3_max,) its depth, < 0
+    idm_nCa3_to_nCa2: wp.array(dtype=int)  # (nCa3_max,) its stage-2 slot
+    e_nCa2: wp.array(dtype=float)  # (nCa2_max,) a `toa` contact's second-order drift (m), by stage-2 slot; (1,) without
     seg_cpr: wp.array(dtype=int)  # (nSEG,) a segment's pair
     seg_g_v: wp.array(dtype=int)  # (nSEG,) its geometry supplying the vertices
     seg_g_s: wp.array(dtype=int)  # (nSEG,) its geometry supplying the SDF
@@ -320,6 +322,8 @@ class LodosContacts:
 LODOS_CONTACT = int(ContactType.CONSTRAINT | ContactType.NOCARRY)
 # A `toa` pair's contact at a positive gap: rows of its own (`export_lodos_toa`).
 LODOS_SPECULATIVE = int(LODOS_CONTACT | ContactType.SPECULATIVE)
+# A `toa` pair's contact carrying a second-order drift in its includemargin (`export_lodos_toa`).
+LODOS_DRIFT = int(ContactType.DRIFT)
 
 
 @wp.kernel
@@ -372,7 +376,9 @@ def export_lodos_toa(lc: LodosContacts, co: ContactOut):  # type: ignore
     """
     `export_lodos` for a context with a `toa` pair: a contact at a positive gap, a speculative one
     (`lodos.col.sdf.narrowphase`), is typed `SPECULATIVE` as well, so that the solve gives it rows
-    (`constraint._efc_contact_init` under the model's `flg_speculative`).
+    (`constraint._efc_contact_init` under the model's `flg_speculative`); one with a predicted second-order drift
+    (`toa_drift`) carries it in its includemargin, typed `DRIFT`, which the exact mode's bias adds as a feed-forward
+    (`nlsp._prox_init`).
 
     Launch, Reads, Writes: as `export_lodos`, by `SolverDriver.contact_dynamics`.
     """
@@ -405,6 +411,11 @@ def export_lodos_toa(lc: LodosContacts, co: ContactOut):  # type: ignore
     co.type[cid] = LODOS_CONTACT
     if lc.sdf_nCa3[i] >= 0.0:  # no gap left to close is a row too: `pos < 0` alone would drop it
         co.type[cid] = LODOS_SPECULATIVE
+    e = lc.e_nCa2[lc.idm_nCa3_to_nCa2[i]]  # float: its predicted second-order drift (m), `toa_drift`
+    if e > 0.0:
+        # Not a margin: the drift, which the exact mode's bias adds as a feed-forward (ContactType.DRIFT).
+        co.includemargin[cid] = e
+        co.type[cid] = co.type[cid] | LODOS_DRIFT
     co.geomcollisionid[cid] = 0
     for k in range(co.efc_address.shape[1]):  # k: int, an efc_address column
         co.efc_address[cid, k] = -1
@@ -541,7 +552,7 @@ class SolverDriver:
             mcol, dcol, g_geom, params, condim = lodos
             params = np.asarray(params, dtype=np.float32).reshape(int(mcol.nCPR), 8)
             lc = LodosContacts()  # LodosContacts: what export_lodos reads
-            for f in ("ct", "b_nCa3", "seg_nCa3", "p_nCa3", "n_nCa3", "sdf_nCa3"):  # f: str, a field
+            for f in ("ct", "b_nCa3", "seg_nCa3", "p_nCa3", "n_nCa3", "sdf_nCa3", "idm_nCa3_to_nCa2", "e_nCa2"):
                 setattr(lc, f, getattr(dcol, f))
             for f in ("seg_cpr", "seg_g_v", "seg_g_s"):
                 setattr(lc, f, getattr(mcol, f))

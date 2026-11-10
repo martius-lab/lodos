@@ -1933,6 +1933,10 @@ class ContactType(enum.IntFlag):
     SPECULATIVE: a speculative contact of a `toa` pair (lodos.col.sdf): its rows exist at a
       positive gap too, which the exact mode's Baumgarte term lets the contact close by at
       most in a step; allocated only when the model's `flg_speculative` is set
+    DRIFT: a `toa` pair's contact (lodos.col.sdf, `toa_drift`) whose includemargin is not a margin
+      but the second-order drift its gap is predicted to close by in a step (m): the exact
+      mode's bias takes the gap as dist and adds the drift as a feed-forward velocity, drift / dt,
+      so that it is corrected the step it happens; read only when `flg_speculative` is set
   """
 
   CONSTRAINT = 1 << 0
@@ -1940,6 +1944,7 @@ class ContactType(enum.IntFlag):
   NOCARRY = 1 << 2
   GROUP = 1 << 3
   SPECULATIVE = 1 << 4
+  DRIFT = 1 << 5
 
 
 @dataclasses.dataclass

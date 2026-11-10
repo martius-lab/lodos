@@ -478,6 +478,7 @@ def resize_context(mcol, dcol, capacity1=None, capacity2=None,
         dcol.off2 = wp.zeros(nCa2_max, dtype=wp.int32)
         if int(mcol.has_toa):
             dcol.trace_list = wp.zeros(nCa2_max, dtype=wp.int32)
+            dcol.e_nCa2 = wp.zeros(nCa2_max, dtype=wp.float32)
 
         if contacts:
             # `make_collision_context`'s own rule, `nCa3_max = nCa2_max`. The
