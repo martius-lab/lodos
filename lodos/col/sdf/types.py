@@ -203,6 +203,12 @@ class CollisionModel:
     # (nB,), the root body of each geometry's kinematic tree, whose subtree COM the
     # rigid-body velocities `cvel` are taken about; read only by `toa` kernels.
     g_root: wp.array(dtype=int)  # type: ignore
+    # The kinematic tree, for a body's velocity at the end of the free (contact-free) step: the
+    # sum of `cdof * qacc_smooth` over the dofs from the body to its root (`broadphase.body_acc`).
+    # (nbody,) each, with a `toa` pair; (1,) zeros without. Read only by `toa` kernels.
+    body_parentid: wp.array(dtype=int)  # type: ignore
+    body_dofadr: wp.array(dtype=int)  # type: ignore
+    body_dofnum: wp.array(dtype=int)  # type: ignore
     g_nV_cumsum: wp.array(
         dtype=int
     )  # (nB+1), cumsum of g_nV, leading zero # type: ignore
@@ -400,6 +406,16 @@ class CollisionData:
     cvel: wp.array(dtype=wp.spatial_vector, ndim=2)  # (B, nbody) # type: ignore
     subtree_com: wp.array(dtype=wp.vec3, ndim=2)  # (B, nbody) # type: ignore
     twist_rel: wp.array(dtype=wp.spatial_vector, ndim=2)  # (B, nSEG) # type: ignore
+    # The same at the end of the horizon under the free motion, `cvel + toa_h J qacc_smooth`
+    # (`cdof` and `qacc_smooth` bound to `RbdData`'s): `toa_margin` bounds a point's speed by
+    # the larger of the two, so that a step's own acceleration is inside the margin.
+    cdof: wp.array(dtype=wp.spatial_vector, ndim=2)  # (B, nv) # type: ignore
+    qacc_smooth: wp.array(dtype=float, ndim=2)  # (B, nv) # type: ignore
+    twist_end: wp.array(dtype=wp.spatial_vector, ndim=2)  # (B, nSEG), (1, 1) without a `toa` pair # type: ignore
+    # (nB,) sticky flags, 1 once a `toa` contact's gap to SDF geometry g was read outside g's
+    # grid, where the narrowphase falls back to the distance to g's bounding box (a bound that
+    # can only under-estimate); (1,) without a `toa` pair. `collide.check_toa_band` reports them.
+    toa_band: wp.array(dtype=int)  # type: ignore
     # --------------------------------------------------------------------------------------
     # Capacities (host-side constants, mirrored here so kernels can clamp).
     nCa1_max: wp.int32  # stage-1 slots: the primitives of the surviving tiles
@@ -805,8 +821,19 @@ def make_collision_context(
         whose distance that motion could close: a speculative contact with a positive
         gap, which the exact mode's Baumgarte term lets close by at most the gap in a
         step. The bounds are path-length bounds on a 1-Lipschitz field, so they hold
-        under rotation; they take the velocities at the start of the step. With no
+        under rotation; a point's speed is the larger of its speed at the start of the
+        step and at the horizon's end under the free motion (`qacc_smooth`), so the
+        step's own acceleration is inside them, though not its contact forces. A
+        speculative contact is kept only if its vertex's path over the step can reach
+        the surface (a sphere trace along it, `narrowphase._make_toa_trace`), and is
+        linearized where the path arrives: a vertex passing an edge is not stopped. With no
         `toa` pair the context compiles and runs exactly the kernels it did before.
+        **Bake `toa` surfaces with a wide band.** The baked field exists only inside
+        its grid, the mesh's box plus a band (`create_surface_data.py`'s `--dilation`
+        and `--d-max`). A speculative gap read outside it comes from the bounding box
+        instead (`narrowphase.box_gap`), which is safe but can stop a fast body a step
+        early; give a `toa` surface a band wider than the largest speed x timestep it
+        meets. `collide.check_toa_band` reports the geometries where it happened.
 
     toa_horizon: the horizon (s) of the motion bound, `m.opt.timestep` if None.
 
@@ -1106,6 +1133,10 @@ def make_collision_context(
     mcol.cpr_toa = wp.array(cpr_toa, dtype=wp.int32)
     mcol.seg_toa = wp.array(seg_toa, dtype=wp.int32)
     mcol.g_root = wp.array(g_root, dtype=wp.int32)
+    tree = [np.zeros(1, dtype=np.int32)] * 3  # body_parentid, body_dofadr, body_dofnum: (1,) without `toa`
+    if has_toa:
+        tree = [np.asarray(x, dtype=np.int32) for x in (m.body_parentid, m.body_dofadr, m.body_dofnum)]
+    mcol.body_parentid, mcol.body_dofadr, mcol.body_dofnum = (wp.array(x, dtype=wp.int32) for x in tree)
 
     for s in range(nSEG):  # s: int, a segment
         assert seg_K[s] >= 1, (
@@ -1394,6 +1425,10 @@ def make_collision_context(
     dcol.cvel = drbd.cvel
     dcol.subtree_com = drbd.subtree_com
     dcol.twist_rel = wp.zeros((B, nSEG) if has_toa else (1, 1), dtype=wp.spatial_vector)
+    dcol.cdof = drbd.cdof
+    dcol.qacc_smooth = drbd.qacc_smooth
+    dcol.twist_end = wp.zeros((B, nSEG) if has_toa else (1, 1), dtype=wp.spatial_vector)
+    dcol.toa_band = wp.zeros(nB if has_toa else 1, dtype=wp.int32)
 
     dcol.cpr_active = wp.zeros((B, nCPR), dtype=wp.bool)
     # `B * nG_world`, which is `B * nSEG` exactly when no segment has

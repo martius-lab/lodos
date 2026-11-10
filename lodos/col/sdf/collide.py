@@ -263,6 +263,45 @@ def check_overflow(dcol: CollisionData, raise_on_overflow=True):
     return msg
 
 
+def check_toa_band(mcol: CollisionModel, dcol: CollisionData, warn=True):
+    """
+    Reports the SDF geometries a `toa` pair's speculative gap has been read outside of.
+
+    The baked field exists only inside a geometry's grid, its bounding box plus a band. A
+    `toa` vertex whose motion reaches it from farther out gets its gap from the bounding box
+    instead (`narrowphase.box_gap`): never too large, so never an overshoot, but where the box
+    is far from the mesh a fast body is slowed a step before it would arrive. A band wider than
+    the largest speed x timestep the surface meets avoids it: rebake with a larger `--d-max`
+    (`tools/mesh_processing/create_surface_data.py`). The flags are sticky.
+
+    Synchronizes, so this is a check for the end of a run, like `check_overflow`.
+
+    Not called in the repository.
+    In: mcol, read for has_toa and the geometries' grids (g_Vox_pmin, g_Vox_h, g_Vox_N) and bounding boxes (g_obb_c,
+    g_obb_A, g_obb_h); dcol, read for toa_band (nB,) int32; warn bool, also issue a `UserWarning`.
+    Out: None if no geometry was reached outside its band, else the message (str).
+    """
+    if not int(mcol.has_toa):
+        return None
+    flags = dcol.toa_band.numpy()  # (nB,) int32: 1 where a gap was read outside the grid
+    if not flags.any():
+        return None
+    pmin = mcol.g_Vox_pmin.numpy()  # (nB, 3) float32: the grids' lower corners
+    pmax = pmin + mcol.g_Vox_h.numpy() * mcol.g_Vox_N.numpy()  # (nB, 3): their upper corners
+    c, A, h = mcol.g_obb_c.numpy(), mcol.g_obb_A.numpy(), mcol.g_obb_h.numpy()  # the bounding boxes
+    e = np.einsum("gkj,gk->gj", np.abs(A), h)  # (nB, 3): each box's half-extents along the body axes
+    band = np.minimum(c - e - pmin, pmax - c - e).min(axis=1)  # (nB,): the narrowest band around the box (m)
+    detail = ", ".join(f"geometry {g} (band {band[g] * 1e3:.1f} mm)" for g in np.flatnonzero(flags))  # str
+    msg = (f"`toa` gaps were read outside the baked SDF grid of {detail}: the bounding box's distance stood in, "
+           "which can slow a fast body a step early. Rebake with a band wider than the largest speed x timestep "
+           "(`create_surface_data.py --d-max`).")  # str
+    if warn:
+        import warnings
+
+        warnings.warn(msg, stacklevel=2)
+    return msg
+
+
 def reset_overflow(dcol: CollisionData):
     """
     Clears the overflow flags and the peaks they are reported against.

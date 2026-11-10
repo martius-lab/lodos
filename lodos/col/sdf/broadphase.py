@@ -228,10 +228,51 @@ def obb_filter(mcol: CollisionModel, dcol: CollisionData):
 # is not `toa` gets a margin of exactly zero, so it is decided as before.
 
 
+@wp.func
+def body_acc(b: int, i: int, mcol: CollisionModel, dcol: CollisionData):  # type: ignore
+    """
+    Body i's acceleration under the free (contact-free) motion, `J_i qacc_smooth`, as a spatial
+    vector [angular, linear] about its tree root's subtree COM, as `cvel` is: every `cdof` of a
+    tree is expressed there, so a body's motion is the sum over the dofs from it to its root.
+
+    Called by `compute_twist_rel`.
+    In: b int, the world; i int, the body; mcol, read for body_parentid, body_dofadr and body_dofnum (nbody,);
+    dcol, read for cdof (B, nv) wp.spatial_vector and qacc_smooth (B, nv) float32. Out: wp.spatial_vector.
+    """
+    acc = wp.spatial_vector()  # wp.spatial_vector: the sum so far
+    k = int(i)  # int: the body whose dofs are added, walking to the root
+    while k > 0:
+        adr = mcol.body_dofadr[k]  # int: its first dof (-1 without)
+        for d in range(adr, adr + mcol.body_dofnum[k]):  # d: int, a dof of the body
+            acc += dcol.cdof[b, d] * dcol.qacc_smooth[b, d]
+        k = mcol.body_parentid[k]
+    return acc
+
+
+@wp.func
+def twist_in_b(va: wp.spatial_vector, vb: wp.spatial_vector, pa: wp.vec3, pb: wp.vec3, T_b: wp.transformf):  # type: ignore
+    """
+    Body A's motion relative to body B, in B's frame: see `compute_twist_rel`.
+
+    Called by `compute_twist_rel`.
+    In: va, vb wp.spatial_vector, the bodies' [angular, linear] velocities about pa and pb (wp.vec3, world, m);
+    T_b wp.transformf, B's pose. Out: wp.spatial_vector, (Omega, a) in B's frame.
+    """
+    wa, la = wp.spatial_top(va), wp.spatial_bottom(va)  # wp.vec3, wp.vec3
+    wb, lb = wp.spatial_top(vb), wp.spatial_bottom(vb)  # wp.vec3, wp.vec3
+    W = wa - wb  # wp.vec3: the relative angular velocity, world frame (rad/s)
+    a_w = la - lb - wp.cross(wa, pa) + wp.cross(wb, pb)  # wp.vec3: the relative velocity at the world origin
+    q_inv = wp.quat_inverse(wp.transform_get_rotation(T_b))  # wp.quat: world to B's frame
+    omega = wp.quat_rotate(q_inv, W)  # wp.vec3: Omega, B's frame
+    a = wp.quat_rotate(q_inv, a_w + wp.cross(W, wp.transform_get_translation(T_b)))  # wp.vec3: at B's origin
+    return wp.spatial_vector(omega, a)
+
+
 @wp.kernel
 def compute_twist_rel(mcol: CollisionModel, dcol: CollisionData):
     """
-    A `toa` segment's relative motion in its SDF geometry's body frame.
+    A `toa` segment's relative motion in its SDF geometry's body frame, now and at the end of
+    the horizon under the free motion.
 
     The vertex geometry A's material point at world x moves at `v_A + w_A x (x - p_A)`, with
     (w_A, v_A) its body's `cvel`, taken about its tree root's subtree COM p_A; the SDF
@@ -239,31 +280,31 @@ def compute_twist_rel(mcol: CollisionModel, dcol: CollisionData):
     `W = w_A - w_B` and `a_w = v_A - v_B - w_A x p_A + w_B x p_B`. In B's body frame
     (rotation R, origin x_B), at `y = R^T (x - x_B)`, it is `a + Omega x y` with
     `Omega = R^T W` and `a = R^T (a_w + W x x_B)`, stored as the spatial vector (Omega, a).
+    The end twist is the same with each body's `cvel + toa_h J qacc_smooth` (`body_acc`), at the
+    same poses: the step's own acceleration (gravity, actuation), though not its contact forces.
 
     Launch: dim=(B, nSEG), a thread per world and segment, by `collide.broadphase_bbox` in a
     context with a `toa` pair; a segment that is not `toa` is left as it is.
     Reads: dcol.cvel (B, nbody) wp.spatial_vector, dcol.subtree_com (B, nbody) wp.vec3, dcol.T_w
-    (B, nB) wp.transformf; mcol.seg_toa, seg_g_v, seg_g_s (nSEG,) and g_bid, g_root (nB,) int.
-    Writes: dcol.twist_rel (B, nSEG) wp.spatial_vector.
+    (B, nB) wp.transformf, dcol.cdof and qacc_smooth (`body_acc`); mcol.seg_toa, seg_g_v, seg_g_s (nSEG,),
+    g_bid, g_root (nB,) int and toa_h. Writes: dcol.twist_rel and twist_end (B, nSEG) wp.spatial_vector.
     """
     b, s = wp.tid()  # int, int: the world, the segment
     if mcol.seg_toa[s] == 0:
         return
     ga = mcol.seg_g_v[s]  # int: the vertex geometry
     gb = mcol.seg_g_s[s]  # int: the SDF geometry
-    va = dcol.cvel[b, mcol.g_bid[ga]]  # wp.spatial_vector: A's body velocity, [angular, linear]
-    vb = dcol.cvel[b, mcol.g_bid[gb]]  # wp.spatial_vector: B's
-    wa, la = wp.spatial_top(va), wp.spatial_bottom(va)  # wp.vec3, wp.vec3
-    wb, lb = wp.spatial_top(vb), wp.spatial_bottom(vb)  # wp.vec3, wp.vec3
+    ia = mcol.g_bid[ga]  # int: A's body
+    ib = mcol.g_bid[gb]  # int: B's body
+    va = dcol.cvel[b, ia]  # wp.spatial_vector: A's body velocity, [angular, linear]
+    vb = dcol.cvel[b, ib]  # wp.spatial_vector: B's
     pa = dcol.subtree_com[b, mcol.g_root[ga]]  # wp.vec3: the point A's linear velocity is taken at
     pb = dcol.subtree_com[b, mcol.g_root[gb]]  # wp.vec3: B's
-    W = wa - wb  # wp.vec3: the relative angular velocity, world frame (rad/s)
-    a_w = la - lb - wp.cross(wa, pa) + wp.cross(wb, pb)  # wp.vec3: the relative velocity at the world origin
     T_b = dcol.T_w[b, gb]  # wp.transformf: B's body pose
-    q_inv = wp.quat_inverse(wp.transform_get_rotation(T_b))  # wp.quat: world to B's frame
-    omega = wp.quat_rotate(q_inv, W)  # wp.vec3: Omega, B's frame
-    a = wp.quat_rotate(q_inv, a_w + wp.cross(W, wp.transform_get_translation(T_b)))  # wp.vec3: at B's origin
-    dcol.twist_rel[b, s] = wp.spatial_vector(omega, a)
+    dcol.twist_rel[b, s] = twist_in_b(va, vb, pa, pb, T_b)
+    h = mcol.toa_h  # float: the horizon (s)
+    dcol.twist_end[b, s] = twist_in_b(va + h * body_acc(b, ia, mcol, dcol), vb + h * body_acc(b, ib, mcol, dcol),
+                                      pa, pb, T_b)
 
 
 @wp.func
@@ -271,19 +312,26 @@ def toa_margin(b: int, s: int, y: wp.vec3, R: float, mcol: CollisionModel, dcol:
     """
     How far segment s's relative motion can carry any point of the sphere (y, R) over the
     horizon: `(|a + Omega x y| + |Omega| R) toa_h` -- a point of the sphere moves at most
-    |Omega| R faster than its centre. Zero for a segment that is not `toa`.
+    |Omega| R faster than its centre -- with the larger of the speeds now (`twist_rel`) and at
+    the horizon's end under the free motion (`twist_end`): under a constant acceleration a
+    point's speed is convex in time, so its largest is at one end. Zero for a segment that is
+    not `toa`.
 
     Called by `obb_filter_toa`, `sphere_survives_toa`, the `toa` voxel prefilters and
     `narrowphase`'s `toa` kernels.
     In: b int, the world; s int, the segment; y wp.vec3, the sphere's centre in the SDF geometry's
     body frame (m); R float, its radius (m); mcol, read for seg_toa and toa_h; dcol, read for
-    twist_rel. Out: float, the distance (m).
+    twist_rel and twist_end. Out: float, the distance (m).
     """
     if mcol.seg_toa[s] == 0:
         return float(0.0)
-    tw = dcol.twist_rel[b, s]  # wp.spatial_vector: (Omega, a)
-    omega = wp.spatial_top(tw)  # wp.vec3
-    return (wp.length(wp.spatial_bottom(tw) + wp.cross(omega, y)) + wp.length(omega) * R) * mcol.toa_h
+    tw = dcol.twist_rel[b, s]  # wp.spatial_vector: (Omega, a) now
+    te = dcol.twist_end[b, s]  # wp.spatial_vector: at the horizon's end
+    o0 = wp.spatial_top(tw)  # wp.vec3
+    o1 = wp.spatial_top(te)  # wp.vec3
+    u0 = wp.length(wp.spatial_bottom(tw) + wp.cross(o0, y)) + wp.length(o0) * R  # float: the speed bound now (m/s)
+    u1 = wp.length(wp.spatial_bottom(te) + wp.cross(o1, y)) + wp.length(o1) * R  # float: at the end
+    return wp.max(u0, u1) * mcol.toa_h
 
 
 @wp.func
