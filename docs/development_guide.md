@@ -126,7 +126,7 @@ Joint limits and dof friction loss are MuJoCo's soft rows in the same solve, und
 | `tools/mesh_processing/` | the offline mesh-to-surface pipeline (five steps; `create_surface_data.py` is the bake); `nutbolt/`, which remakes the nut-bolt's surfaces, and `nist/`, which makes the NIST parts' surfaces |
 | `notebooks/` | five tutorial notebooks, `01_quickstart` to `05_make_a_surface`, stored with their outputs |
 | `docs/` | the manuals and guides as PDF and Markdown; `docs/manual/` their LaTeX sources, figures, data and build |
-| `papers/` | the papers: `lodos_v2.pdf`, the extended abstract on Lodos v2; `contact_tutorial.pdf`, the contact tutorial (coming soon); `lodos_v1.pdf`, Lodos-v1; `lodos_precursor.pdf`, its precursor ([Section 8](#8-where-the-theory-and-the-workflows-live)) |
+| `papers/` | the papers: `lodos_v2.pdf`, the extended abstract on Lodos v2; `contact_tutorial.pdf`, the contact tutorial; `lodos_v1.pdf`, Lodos-v1; `lodos_precursor.pdf`, its precursor ([Section 8](#8-where-the-theory-and-the-workflows-live)) |
 | `README.md` | the overview, install, quick start and layout |
 | `pyproject.toml`, `uv.lock`, `.python-version` | the package (hatchling: `lodos` and `viewer`), its extras and uv groups; Python 3.14 in development |
 | `results/` | local output: what the benchmarks and the tuning tools write by default (their records, state sets and reports), and experiments' scripts and logs |
@@ -561,7 +561,7 @@ Each was found the hard way.
 | `docs/reading_guide.pdf` | every source file, and every kernel one step launches, in order |
 | `docs/development_guide.pdf` | this guide |
 | `papers/lodos_v2.pdf` | the extended abstract, *LODOS-v2: An Efficient Primal Formulation of the Exact Frictional Contact Problem*: the solver and its two modes, the design of contact groups (its *Contact-Group Reparameterization*), and the two comparisons' results, in short |
-| `papers/contact_tutorial.pdf` (coming soon) | the contact tutorial, *Cone Complementarity Based Models of Contact Dynamics: A Self-Contained Tutorial for Roboticists*: the exact contact problem and its convex relaxation, their transcriptions and solution methods, MuJoCo's Newton and the proximal minimization the exact mode builds on among them |
+| `papers/contact_tutorial.pdf` | the contact tutorial, *Frictional Contact Simulation for Robotics in a Nutshell*: the exact contact problem and its convex relaxation, their transcriptions and solution methods, MuJoCo's Newton and the proximal minimization the exact mode builds on among them |
 | `papers/lodos_v1.pdf` | Lodos-v1, *LODOS: A Lightweight Simulator Designed for Contact-Rich Interactions with Detailed Meshes*: the vertex–SDF collision detection, and the contact model that scales a collision pair's spring-damper forces by one factor |
 | `papers/lodos_precursor.pdf` | the precursor to Lodos, *Novel Algorithms for Smoothly Differentiable and Efficiently Vectorizable Contact Manifold Construction* (ICRA 2026 workshop): contact-manifold construction, among it an efficient edge–SDF collision, which Lodos leaves out |
 | `README.md` | the overview and the quick start |

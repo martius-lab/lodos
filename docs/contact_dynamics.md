@@ -624,9 +624,9 @@ The guide *Performance Tuning* (`docs/performance_tuning.pdf`) measures the solv
 
 ## References
 
-1. O. Beker et al. Cone complementarity based models of contact dynamics: a self-contained tutorial for roboticists. Coming soon as `papers/contact_tutorial.pdf`, 2026.
+1. O. Beker et al. Frictional contact simulation for robotics in a nutshell. `papers/contact_tutorial.pdf`, 2026.
 2. O. Beker, A. R. Geist, G. Martius. LODOS: a lightweight simulator designed for contact-rich interactions with detailed meshes. `papers/lodos_v1.pdf`, 2026.
-3. Lodos-v2: an exact and efficient primal-form solver for cone complementarity-based contact dynamics. `papers/lodos_v2.pdf`, 2026.
+3. O. Beker, A. R. Geist, G. Martius. LODOS-v2: an efficient primal formulation of the exact frictional contact problem. `papers/lodos_v2.pdf`, 2026.
 4. E. Todorov, T. Erez, Y. Tassa. MuJoCo: a physics engine for model-based control. IROS, 2012.
 5. E. Todorov. Convex and analytically-invertible dynamics with contacts and constraints: theory and implementation in MuJoCo. ICRA, 2014.
 6. Google DeepMind and NVIDIA. MuJoCo Warp (MJWarp). <https://github.com/google-deepmind/mujoco_warp>, 2025.

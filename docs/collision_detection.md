@@ -707,7 +707,7 @@ Also refused: `capacity1` outside $(0, 1]$; a `tile_size` or `super_size` dict k
 
 ## References
 
-1. O. Beker et al. Cone complementarity based models of contact dynamics: a self-contained tutorial for roboticists. Coming soon as `papers/contact_tutorial.pdf`, 2026.
+1. O. Beker et al. Frictional contact simulation for robotics in a nutshell. `papers/contact_tutorial.pdf`, 2026.
 2. O. Beker, A. R. Geist, G. Martius. LODOS: a lightweight simulator designed for contact-rich interactions with detailed meshes. `papers/lodos_v1.pdf`, 2026.
 3. E. Todorov, T. Erez, Y. Tassa. MuJoCo: a physics engine for model-based control. IROS, 2012.
 4. Google DeepMind and NVIDIA. MuJoCo Warp (MJWarp). <https://github.com/google-deepmind/mujoco_warp>, 2025.

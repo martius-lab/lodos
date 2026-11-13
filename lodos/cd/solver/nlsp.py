@@ -52,7 +52,7 @@ target), and on the tangent rows the pure -v_t/dt. Gamma(sigma) =
 mu*||sigma_t|| on the normal row is the De Saxce correction at the last outer iterate
 sigma = J(qvel + dt*qacc), and z is the proximal anchor, updated to the contact force f*
 after every inner solve.  At the fixed point (z, sigma), f* solves the unregularized CCP
-with exact Coulomb friction (the contact tutorial, papers/contact_tutorial.pdf, Section 5.2.6).
+with exact Coulomb friction (the contact tutorial, papers/contact_tutorial.pdf, Section 5.2.7).
 
 Requires Newton solver, elliptic cone, condim <= 3, no flex, no sleeping.  Isotropic
 effective friction mu = friction[0] * impratio_invsqrt is assumed (guaranteed for
@@ -7186,7 +7186,7 @@ def _prox_update(soft: bool, groups: bool):
   ):
     """Prox/De Saxce update of one contact after an inner Newton solve.
 
-    The contact tutorial's Algorithm 13, lines 15 and 16: z <- f* always; sigma (through its only use,
+    The contact tutorial's Algorithm 14, lines 15 and 16: z <- f* always; sigma (through its only use,
     Gamma_n = mu*||sigma_t||) only when update_sigma is set, i.e. at the end of each
     outer round. Finishes by rewriting aref = aref0 - Gamma/dt + z/D for the next solve.
 
