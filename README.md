@@ -1,6 +1,6 @@
 # Lodos
 
-Lodos is a *research codebase* for running massively parallelized simulations of rigid-body dynamics with contact. It is particularly optimized for achieving high-throughput in scenes involving collisions between large numbers of detailed meshes. 
+Lodos is a *research codebase* for running massively parallelized simulations of rigid-body dynamics with contact. It is particularly optimized for achieving high-throughput in scenes involving collisions between large numbers of detailed meshes. The main repo is https://github.com/martius-lab/lodos
 
 The framework builds upon two of our previous works:
 * `papers/lodos_v1.pdf`: The first version of the framework, under review. The current codebase incorporates significant extensions beyond this initial version, as described in `papers/lodos_v2.pdf`. These developments will eventually find their way into a follow-up publication.
