@@ -1,20 +1,18 @@
 # Lodos
 
-Lodos is a *research codebase* for running massively parallelized simulations of rigid-body dynamics with contact. It is particularly optimized for achieving high-throughput in scenes involving collisions between large numbers of detailed meshes.
+Lodos is a *research codebase* for running massively parallelized simulations of rigid-body dynamics with contact. It is particularly optimized for achieving high-throughput in scenes involving collisions between large numbers of detailed meshes. The main repo is https://github.com/martius-lab/lodos
 
 The framework builds upon two of our previous works:
 * `papers/lodos_v1.pdf`: The first version of the framework, under review. The current codebase incorporates significant extensions beyond this initial version, as described in `papers/lodos_v2.pdf`. These developments will eventually find their way into a follow-up publication.
-* `papers/contact_tutorial.pdf`: A tutorial on discrete time-stepping methods for simulating cone-complementarity-based contact dynamics. It concludes by proposing a general proximal minimization blueprint, and this codebase essentially constitutes a concrete implementation.
+* `papers/contact_tutorial.pdf`: *(Coming soon)* A tutorial on discrete time-stepping methods for simulating cone-complementarity-based contact dynamics. It concludes by proposing a general proximal minimization blueprint, and this codebase essentially constitutes a concrete implementation.
 
 
 From an implementation perspective, Lodos is built entirely using [NVIDIA Warp](https://nvidia.github.io/warp/). Its architecture builds upon a core subset of the [MJWarp](https://github.com/google-deepmind/mujoco_warp) codebase, particularly its constraint model and its excellent GPU implementation of a nonsmooth Newton solver with exact line-search.
 
-The main repository is https://github.com/martius-lab/lodos
-
 ## How to Get Started?
 
 * Read through `papers/lodos_v1.pdf` and `papers/lodos_v2.pdf` to understand the context around Lodos and its contributions.
-* Read through `papers/contact_tutorial.pdf` to understand the theory behind Lodos.
+* *(Once the paper is released to public)* Read through `papers/contact_tutorial.pdf` (coming soon) to understand the theory behind Lodos.
 * Read `viewer/README.md` to run interactive simulations of an existing catalogue of scenes.
 * Read `bench/README.md` to reproduce the benchmark comparing Lodos to [MJWarp](https://github.com/google-deepmind/mujoco_warp) and [Kamino](https://disneyresearch.github.io/kamino-site/).
 * Run the examples in `notebooks/` to familiarize yourself with the API.
